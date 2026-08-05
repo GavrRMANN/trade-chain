@@ -2,6 +2,7 @@ services:
   postgres:
     image: postgres:16-alpine
     container_name: trade-chain-db
+    restart: unless-stopped
     environment:
       POSTGRES_USER: ${DB_USER:-postgres}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
@@ -10,7 +11,7 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./migrations:/docker-entrypoint-initdb.d
+      - ./back/infrastructure/migrations:/docker-entrypoint-initdb.d
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
@@ -18,18 +19,32 @@ services:
       retries: 5
 
   app:
-    build: .
-    container_name: trade-chain-app
-    ports:
-      - "8080:8080"
+    build:
+      context: ./back
+      dockerfile: Dockerfile
+    container_name: trade-chain-back
+    restart: unless-stopped
     depends_on:
       postgres:
         condition: service_healthy
     environment:
       DATABASE_URL: postgres://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@postgres:5432/${DB_NAME:-trade_chain}?sslmode=disable
       PORT: 8080
-    volumes:
-      - .:/app
+    ports:
+      - "8080:8080"
+
+  front:
+    build:
+      context: ./front
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: http://localhost:8080
+    container_name: trade-chain-front
+    depends_on:
+      - app
+    ports:
+      - "3000:80"
+
 
 volumes:
   postgres_data:
