@@ -25,10 +25,12 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           BRANCH: ${{ github.ref_name }}
+          PR_ASSIGNEE: ${{ github.actor }}
         run: |
           existing=$(gh pr list --base dev --head "$BRANCH" --state open --json number --jq 'length')
           if [ "$existing" = "0" ]; then
             gh pr create --base dev --head "$BRANCH" \
+              --assignee "$PR_ASSIGNEE" \
               --title "$BRANCH -> dev" \
               --body "Автоматический PR из $BRANCH в dev."
           else
