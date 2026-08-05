@@ -24,6 +24,7 @@ services:
       dockerfile: Dockerfile
     container_name: trade-chain-back
     restart: unless-stopped
+
     depends_on:
       postgres:
         condition: service_healthy
@@ -45,6 +46,7 @@ services:
     ports:
       - "3000:80"
 
+      - app
 
 volumes:
   postgres_data:
