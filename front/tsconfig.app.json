@@ -12,6 +12,7 @@
         "forceConsistentCasingInFileNames": true,
         "module": "ESNext",
         "moduleResolution": "Bundler",
+        "allowImportingTsExtensions": true,
         "baseUrl": ".",
         "paths": {
             "@/*": ["./src/*"],
@@ -33,5 +34,6 @@
         "noEmit": true,
         "jsx": "react-jsx"
     },
-    "include": ["src"]
+    "include": ["src"],
+    "exclude": ["src/**/*.test.ts", "src/**/*.test.tsx"]
 }
