@@ -1,17 +1,30 @@
-import { ConfigProvider } from 'antd';
+import {type Location, Outlet, useLocation} from 'react-router-dom';
+import {HeaderMenu} from "@widgets/headerMenu";
+import {Layout} from "antd";
 
-import { HomePage } from '../pages/home/ui/HomePage';
+import Styles from "./app.module.css";
 
-export function App() {
+const {Content} = Layout;
+
+type TAppLayoutState = {
+    backgroundLocation?: Location;
+};
+
+export const App = () => {
+    const location = useLocation();
+    const state = location.state as TAppLayoutState | null;
+    const backgroundLocation = state?.backgroundLocation;
+
     return (
-        <ConfigProvider
-            theme={{
-                token: {
-                    colorPrimary: '#1677ff',
-                },
-            }}
-        >
-            <HomePage />
-        </ConfigProvider>
+        <Layout>
+            <HeaderMenu/>
+            <Layout>
+                <Content
+                    className={Styles.content}
+                >
+                    <Outlet/>
+                </Content>
+            </Layout>
+        </Layout>
     );
-}
+};
