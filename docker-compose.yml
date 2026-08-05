@@ -1,31 +1,36 @@
 services:
-  db:
+  postgres:
     image: postgres:16-alpine
+    container_name: trade-chain-db
     environment:
-      POSTGRES_USER: tchainapp
-      POSTGRES_PASSWORD: 12345
-      POSTGRES_DB: tchaindb
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      POSTGRES_DB: ${DB_NAME:-trade_chain}
     ports:
       - "5432:5432"
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
+      - ./migrations:/docker-entrypoint-initdb.d
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U tchainapp -d tchaindb"]
-      interval: 3s
-      timeout: 3s
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
       retries: 5
-      start_period: 2s
+
   app:
     build:
       context: ./back
       dockerfile: Dockerfile
     ports:
       - "8080:8080"
-    environment:
-      - DATABASE_URL=postgres://tchainapp:12345@db:5432/tchaindb?sslmode=disable
     depends_on:
-      db:
+      postgres:
         condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@postgres:5432/${DB_NAME:-trade_chain}?sslmode=disable
+      PORT: 8080
+    volumes:
+      - .:/app
 
   front:
     build:
@@ -39,4 +44,4 @@ services:
       - app
 
 volumes:
-  pgdata:
+  postgres_data:
