@@ -1,0 +1,11 @@
+name: Deploy (placeholder)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy пока не настроен
+        run: echo "Пустой placeholder под будущие потоки back и front"

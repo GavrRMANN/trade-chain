@@ -1,0 +1,30 @@
+name: Auto PR dev -> main
+
+on:
+  push:
+    branches: [dev]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  auto-pr:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Create PR dev -> main (if none exists)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_ASSIGNEE: ${{ github.actor }}
+        run: |
+          existing=$(gh pr list --base main --head dev --state open --json number --jq 'length')
+          if [ "$existing" = "0" ]; then
+            gh pr create --base main --head dev \
+              --assignee "$PR_ASSIGNEE" \
+              --title "dev -> main" \
+              --body "Автоматический PR из dev в main. Смержить вручную после ревью — прямые коммиты в main запрещены."
+          else
+            echo "PR dev -> main уже существует, пропускаю."
+          fi

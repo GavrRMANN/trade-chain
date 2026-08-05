@@ -1,0 +1,39 @@
+{
+    "compilerOptions": {
+        "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
+        "target": "ES2022",
+        "useDefineForClassFields": true,
+        "lib": ["ES2022", "DOM", "DOM.Iterable"],
+        "allowJs": false,
+        "skipLibCheck": true,
+        "esModuleInterop": true,
+        "allowSyntheticDefaultImports": true,
+        "strict": true,
+        "forceConsistentCasingInFileNames": true,
+        "module": "ESNext",
+        "moduleResolution": "Bundler",
+        "allowImportingTsExtensions": true,
+        "baseUrl": ".",
+        "paths": {
+            "@/*": ["./src/*"],
+            "@app": ["./src/app/index.ts"],
+            "@app/*": ["./src/app/*"],
+            "@pages": ["./src/pages/index.ts"],
+            "@pages/*": ["./src/pages/*"],
+            "@widgets": ["./src/widgets/index.ts"],
+            "@widgets/*": ["./src/widgets/*"],
+            "@features": ["./src/features/index.ts"],
+            "@features/*": ["./src/features/*"],
+            "@entities": ["./src/entities/index.ts"],
+            "@entities/*": ["./src/entities/*"],
+            "@shared": ["./src/shared/index.ts"],
+            "@shared/*": ["./src/shared/*"]
+        },
+        "resolveJsonModule": true,
+        "isolatedModules": true,
+        "noEmit": true,
+        "jsx": "react-jsx"
+    },
+    "include": ["src"],
+    "exclude": ["src/**/*.test.ts", "src/**/*.test.tsx"]
+}

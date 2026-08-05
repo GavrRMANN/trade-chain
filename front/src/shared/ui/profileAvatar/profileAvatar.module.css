@@ -1,0 +1,39 @@
+.profileAvatar__img {
+    box-sizing: border-box;
+
+    color: var(--color-neutral-gray-800);
+    background: transparent;
+    border: 1px solid transparent;
+
+    transition: border-color var(--animation-normal);
+}
+
+.profileAvatar__img svg {
+    display: block;
+
+    width: 60%;
+    height: 60%;
+}
+
+.profileAvatar__img svg path {
+    transition: stroke var(--animation-normal);
+}
+
+.profileAvatar__img:hover {
+    border-color: var(--color-accent-blue-600);
+}
+
+.profileAvatar__img--active {
+    border-color: var(--color-accent-blue-600);
+}
+
+.profileAvatar__img:hover svg path,
+.profileAvatar__img--active svg path {
+    stroke: var(--color-accent-blue-600);
+}
+
+@media (max-width: 768px) {
+    .profileAvatar__img--active {
+        border-color: transparent;
+    }
+}

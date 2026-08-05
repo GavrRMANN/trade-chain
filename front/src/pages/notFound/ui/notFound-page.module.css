@@ -1,0 +1,14 @@
+.page {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 64px 24px;
+
+    grid-area: main;
+}
+
+.btn-block {
+    display: flex;
+    justify-content: center;
+
+    gap: var(--main-gap);
+}

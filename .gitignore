@@ -7,6 +7,8 @@
 *.dll
 *.so
 *.dylib
+bin/
+back/bin/
 
 # Test binary, built with `go test -c`
 *.test
@@ -16,6 +18,27 @@
 coverage.*
 *.coverprofile
 profile.cov
+
+# Go profiling and local tooling
+*.prof
+
+# Frontend / Node.js / TypeScript
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+dist/
+build/
+.next/
+.nuxt/
+.turbo/
+*.tsbuildinfo
+
+# Local environment and OS files
+.env.*
+!.env.example
+.DS_Store
 
 # Dependency directories (remove the comment below to include it)
 # vendor/
@@ -30,3 +53,5 @@ go.work.sum
 # Editor/IDE
 # .idea/
 # .vscode/
+.idea/
+.vscode/
