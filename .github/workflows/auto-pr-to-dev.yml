@@ -1,0 +1,36 @@
+name: Auto PR to dev
+
+on:
+  push:
+    branches-ignore:
+      - main
+      - dev
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: auto-pr-to-dev-${{ github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  auto-pr:
+    if: github.event.deleted != true
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Create PR ${{ github.ref_name }} -> dev (if none exists)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BRANCH: ${{ github.ref_name }}
+        run: |
+          existing=$(gh pr list --base dev --head "$BRANCH" --state open --json number --jq 'length')
+          if [ "$existing" = "0" ]; then
+            gh pr create --base dev --head "$BRANCH" \
+              --title "$BRANCH -> dev" \
+              --body "Автоматический PR из $BRANCH в dev."
+          else
+            echo "PR $BRANCH -> dev уже существует, пропускаю."
+          fi
