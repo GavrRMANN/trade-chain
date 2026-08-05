@@ -18,8 +18,9 @@ services:
       retries: 5
 
   app:
-    build: .
-    container_name: trade-chain-app
+    build:
+      context: ./back
+      dockerfile: Dockerfile
     ports:
       - "8080:8080"
     depends_on:
@@ -30,6 +31,17 @@ services:
       PORT: 8080
     volumes:
       - .:/app
+
+  front:
+    build:
+      context: ./front
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: http://localhost:8080
+    ports:
+      - "3000:80"
+    depends_on:
+      - app
 
 volumes:
   postgres_data:
