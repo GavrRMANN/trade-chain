@@ -1,0 +1,60 @@
+.button {
+    width: var(--app-button-width, auto);
+    min-width: var(--app-button-min-width, initial);
+    height: var(--app-button-height, auto);
+
+    font-size: var(--app-button-font-size, inherit);
+    font-weight: var(--app-button-font-weight, inherit);
+    line-height: var(--app-button-line-height, normal);
+
+    transition:
+        color var(--animation-normal),
+        background var(--animation-normal),
+        border-color var(--animation-normal);
+}
+
+.button--fullWidth {
+    --app-button-width: 100%;
+}
+
+.button--primary {
+    --app-button-font-weight: var(--font-weight-bold);
+
+    color: var(--app-button-color, var(--color-bg-white));
+    background: var(--app-button-bg, var(--color-accent-blue-500));
+    border-color: var(--app-button-border, var(--color-accent-blue-500));
+}
+
+.button--primary:hover {
+    color: var(--app-button-hover-color, var(--color-bg-white));
+    background: var(--app-button-hover-bg, var(--color-accent-blue-600));
+    border-color: var(--app-button-hover-border, var(--color-accent-blue-600));
+}
+
+.button--outline {
+    --app-button-font-weight: var(--font-weight-bold);
+
+    color: var(--app-button-color, var(--color-neutral-gray-800));
+    background: var(--app-button-bg, var(--color-bg-white));
+    border-color: var(--app-button-border, var(--color-neutral-gray-300));
+}
+
+.button--outline:hover {
+    color: var(--app-button-hover-color, var(--color-neutral-gray-800));
+    background: var(--app-button-hover-bg, var(--color-bg-white));
+    border-color: var(--app-button-hover-border, var(--color-accent-blue-500));
+}
+
+.button--link {
+    padding: 0;
+
+    color: var(--app-button-color, var(--color-accent-blue-500));
+    background: transparent;
+    border-color: transparent;
+}
+
+.button--link:hover {
+    color: var(--app-button-hover-color, var(--color-accent-blue-600));
+    background: transparent;
+    border-color: transparent;
+}
