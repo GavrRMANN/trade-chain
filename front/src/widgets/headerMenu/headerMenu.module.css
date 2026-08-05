@@ -1,9 +1,0 @@
-.header {
-    display: flex;
-    flex-direction: row;
-    justify-content: center;
-
-    gap: var(--main-gap);
-
-    height: 50px;
-}

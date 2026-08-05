@@ -15,6 +15,7 @@ createRoot(document.getElementById('root')!).render(
                 theme={{
                     token: {
                         colorPrimary: '#1677ff',
+                        colorBgLayout: '#f9fafb'
                     },
                 }}
             >
