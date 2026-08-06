@@ -1,63 +1,79 @@
 package search
 
 import (
+	"context"
 	"trade-chain/internal/domain"
+	"trade-chain/internal/repository"
 )
 
 type ChainResult struct {
 	Products []domain.Product
-
-	Length int
+	Length   int
 }
 
 type queueNode struct {
 	Product domain.Product
-
-	Path []domain.Product
-
-	Depth int
+	Depth   int
 }
 
-func FindChain(
-	graph *ReverseGraph,
+func findChainBFS(
+	ctx context.Context,
+	repo repository.ProductRepository,
 	target domain.Product,
 	userProducts []domain.Product,
 	maxDepth int,
-) *ChainResult {
+) (*ChainResult, error) {
 
-	myProducts := make(map[string]bool)
+	myProducts := make(map[string]domain.Product)
 
 	for _, product := range userProducts {
-		myProducts[product.ProductID] = true
+		myProducts[product.ProductID] = product
 	}
 
 	queue := []queueNode{
-
 		{
 			Product: target,
-			Path: []domain.Product{
-				target,
-			},
-			Depth: 0,
+			Depth:   0,
 		},
 	}
 
 	visited := make(map[string]bool)
+	parent := make(map[string]string)
+	productMap := make(map[string]domain.Product)
 
 	visited[target.ProductID] = true
+	productMap[target.ProductID] = target
 
 	for len(queue) > 0 {
 
 		current := queue[0]
-
 		queue = queue[1:]
+
+		if _, ok := myProducts[current.Product.ProductID]; ok {
+
+			path := restorePath(
+				current.Product.ProductID,
+				parent,
+				productMap,
+			)
+
+			return &ChainResult{
+				Products: reverse(path),
+				Length:   len(path) - 1,
+			}, nil
+		}
 
 		if current.Depth >= maxDepth {
 			continue
 		}
 
-		neighbors :=
-			graph.Nodes[current.Product.ProductID]
+		neighbors, err := repo.GetExchangeCandidates(
+			ctx,
+			current.Product.ProductID,
+		)
+		if err != nil {
+			return nil, err
+		}
 
 		for _, next := range neighbors {
 
@@ -67,48 +83,55 @@ func FindChain(
 
 			visited[next.ProductID] = true
 
-			newPath :=
-				append(
-					append([]domain.Product{}, current.Path...),
-					next,
-				)
+			parent[next.ProductID] = current.Product.ProductID
 
-			if myProducts[next.ProductID] {
+			productMap[next.ProductID] = next
 
-				return &ChainResult{
-
-					Products: reverse(newPath),
-
-					Length: len(newPath) - 1,
-				}
-			}
-
-			queue = append(
-				queue,
-				queueNode{
-
-					Product: next,
-
-					Path: newPath,
-
-					Depth: current.Depth + 1,
-				},
-			)
+			queue = append(queue, queueNode{
+				Product: next,
+				Depth:   current.Depth + 1,
+			})
 		}
 	}
 
-	return nil
+	return nil, nil
 }
 
-func reverse(
-	items []domain.Product,
+func restorePath(
+	productID string,
+	parent map[string]string,
+	products map[string]domain.Product,
 ) []domain.Product {
 
-	for i, j := 0, len(items)-1; i < j; i, j = i+1, j-1 {
+	path := make([]domain.Product, 0)
 
-		items[i], items[j] =
-			items[j], items[i]
+	current := productID
+
+	for {
+
+		product, ok := products[current]
+		if !ok {
+			break
+		}
+
+		path = append(path, product)
+
+		prev, ok := parent[current]
+		if !ok {
+			break
+		}
+
+		current = prev
 	}
 
-	return items
+	return path
+}
+
+func reverse(products []domain.Product) []domain.Product {
+
+	for i, j := 0, len(products)-1; i < j; i, j = i+1, j-1 {
+		products[i], products[j] = products[j], products[i]
+	}
+
+	return products
 }
