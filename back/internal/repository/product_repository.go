@@ -242,3 +242,71 @@ func (r *productRepository) Search(ctx context.Context, query string, categoryID
 
 	return products, nil
 }
+
+// Функция, которая возвращает все товары,
+// на которые пользователь хотел бы обменять товар из своего объявления
+
+func (r *productRepository) GetExchangeCandidates(
+	ctx context.Context,
+	productID string,
+) ([]domain.Product, error) {
+
+	query := `
+		SELECT DISTINCT
+			p.product_id,
+			p.customer_id,
+			p.category_id,
+			p.name,
+			p.description,
+			p.is_active,
+			p.created_at,
+			p.updated_at
+		FROM products source
+		JOIN wishlists w
+			ON w.product_id = source.product_id
+		JOIN wishlist_options wo
+			ON wo.wishlist_id = w.wishlist_id
+		JOIN products p
+			ON p.category_id = wo.category_id
+		WHERE
+			source.product_id = $1
+			AND p.is_active = TRUE
+			AND p.product_id <> source.product_id
+			AND p.customer_id <> source.customer_id
+		ORDER BY p.created_at DESC
+	`
+
+	rows, err := r.db.Query(ctx, query, productID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	products := make([]domain.Product, 0)
+
+	for rows.Next() {
+		var product domain.Product
+
+		err := rows.Scan(
+			&product.ProductID,
+			&product.CustomerID,
+			&product.CategoryID,
+			&product.Name,
+			&product.Description,
+			&product.IsActive,
+			&product.CreatedAt,
+			&product.UpdatedAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		products = append(products, product)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return products, nil
+}

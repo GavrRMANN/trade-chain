@@ -22,6 +22,7 @@ type ProductRepository interface {
 	Delete(ctx context.Context, id string) error
 	List(ctx context.Context, offset, limit int) ([]domain.Product, error)
 	Search(ctx context.Context, query string, categoryID *string) ([]domain.Product, error)
+	GetExchangeCandidates(ctx context.Context, productID string) ([]domain.Product, error)
 }
 
 type CategoryRepository interface {

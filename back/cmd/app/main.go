@@ -1,232 +1,107 @@
 package main
 
 import (
+	"context"
 	"fmt"
-	"time"
+	"log"
+	"os"
 
-	"trade-chain/internal/domain"
+	"trade-chain/internal/repository"
 	"trade-chain/internal/search"
+
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-func product(
-	id string,
-	name string,
-	user string,
-) domain.Product {
-
-	category := "electronics"
-
-	return domain.Product{
-		ProductID:  id,
-		CustomerID: user,
-		CategoryID: &category,
-		Name:       name,
-		IsActive:   true,
-		CreatedAt:  time.Now(),
-	}
-}
-
 func main() {
+	ctx := context.Background()
 
-	// Товары из действенной цепочки
+	dbURL := os.Getenv("DATABASE_URL")
 
-	rtx := product(
-		"rtx",
-		"RTX 4090",
-		"user10",
-	)
+	if dbURL == "" {
+		dbURL = "postgres://postgres:postgres@localhost:5432/trade_chain?sslmode=disable"
+	}
 
-	ps5 := product(
-		"ps5",
-		"PlayStation 5",
-		"user9",
-	)
+	db, err := pgxpool.New(ctx, dbURL)
+	if err != nil {
+		log.Fatal("database connection error:", err)
+	}
 
-	console := product(
-		"console",
-		"Xbox Series X",
-		"user8",
-	)
+	defer db.Close()
 
-	bike := product(
-		"bike",
-		"Mountain Bike",
-		"user7",
-	)
+	if err := db.Ping(ctx); err != nil {
+		log.Fatal("database ping error:", err)
+	}
 
-	watch := product(
-		"watch",
-		"Apple Watch",
-		"user6",
-	)
+	fmt.Println("✅ Database connected")
 
-	phone := product(
-		"phone",
-		"iPhone",
-		"user1",
-	)
+	// Репозиторий
+	productRepo := repository.NewProductRepository(db)
 
-	// Вторая цепочка
+	// Сервис поиска
+	searchService := search.NewSearchService(productRepo)
 
-	macbook := product(
-		"macbook",
-		"MacBook",
-		"user20",
-	)
+	// Берём User1
+	var customerID string
 
-	laptop := product(
-		"laptop",
-		"Gaming Laptop",
-		"user19",
-	)
+	err = db.QueryRow(
+		ctx,
+		`
+		SELECT customer_id
+		FROM customers
+		WHERE email = 'user1@test.com'
+		`,
+	).Scan(&customerID)
 
-	drone := product(
-		"drone",
-		"Drone",
-		"user18",
-	)
+	if err != nil {
+		log.Fatal("cannot find user1:", err)
+	}
 
-	camera := product(
-		"camera",
-		"Camera",
-		"user17",
-	)
+	// Ищем RTX4080
+	var targetProductID string
 
-	// Мусорные товары
+	err = db.QueryRow(
+		ctx,
+		`
+		SELECT product_id
+		FROM products
+		WHERE name = 'RTX 4080'
+		`,
+	).Scan(&targetProductID)
 
-	tv := product(
-		"tv",
-		"TV",
-		"user30",
-	)
+	if err != nil {
+		log.Fatal("cannot find target:", err)
+	}
 
-	printer := product(
-		"printer",
-		"Printer",
-		"user31",
-	)
+	fmt.Println("User1:", customerID)
+	fmt.Println("Target:", targetProductID)
 
-	// ==========================
-	// Создаём граф
-	// ==========================
-
-	graph := search.NewReverseGraph()
-
-	graph.AddEdge(phone, watch)
-
-	graph.AddEdge(watch, bike)
-
-	graph.AddEdge(bike, console)
-
-	graph.AddEdge(console, ps5)
-
-	graph.AddEdge(ps5, rtx)
-
-	// Цепочка 2:
-	//
-	// Camera
-	//  |
-	// Drone
-	//  |
-	// Laptop
-	//  |
-	// MacBook
-	//  |
-	// RTX
-
-	graph.AddEdge(camera, drone)
-
-	graph.AddEdge(drone, laptop)
-
-	graph.AddEdge(laptop, macbook)
-
-	graph.AddEdge(macbook, rtx)
-
-	// Ложная ветка
-
-	graph.AddEdge(
-		tv,
-		printer,
-	)
-
-	graph.AddEdge(
-		printer,
-		rtx,
-	)
-
-	// ==========================
-	// Тест 1
-	// Пользователь имеет Phone
-	// ==========================
-
-	fmt.Println("====== TEST 1 ======")
-
-	result := search.FindChain(
-		graph,
-		rtx,
-		[]domain.Product{
-			phone,
-		},
+	result, err := searchService.FindChain(
+		ctx,
+		customerID,
+		targetProductID,
 		10,
 	)
 
+	if err != nil {
+		log.Fatal("search error:", err)
+	}
+
 	if result == nil {
+		fmt.Println("❌ Chain not found")
+		return
+	}
 
-		fmt.Println(
-			"Цепочка не найдена",
-		)
+	fmt.Println("\n✅ Chain found")
+	fmt.Println("====================")
 
-	} else {
-
-		for _, p := range result.Products {
-
-			fmt.Println(
-				p.Name,
-			)
-		}
-
-		fmt.Println(
-			"Длина:",
-			result.Length,
+	for i, product := range result.Products {
+		fmt.Printf(
+			"%d. %s\n",
+			i+1,
+			product.Name,
 		)
 	}
 
-	// ==========================
-	// Тест 2
-	// У пользователя нет нужного товара
-	// ==========================
-
-	fmt.Println()
-	fmt.Println("====== TEST 2 ======")
-
-	result = search.FindChain(
-		graph,
-		rtx,
-		[]domain.Product{
-			laptop,
-		},
-		10,
-	)
-
-	if result == nil {
-
-		fmt.Println(
-			"Цепочка отсутствует",
-		)
-
-	} else {
-
-		for _, p := range result.Products {
-
-			fmt.Println(
-				p.Name,
-			)
-		}
-
-		fmt.Println(
-			"Длина:",
-			result.Length,
-		)
-	}
-
+	fmt.Println("====================")
+	fmt.Println("Length:", result.Length)
 }
