@@ -3,17 +3,17 @@ package search
 import (
 	"context"
 	"errors"
-	"trade-chain/internal/repository"
+	"trade-chain/internal/service"
 )
 
 type SearchService struct {
-	productRepo repository.ProductRepository
+	productService service.ProductService
 }
 
 func NewSearchService(
-	productRepo repository.ProductRepository) *SearchService {
+	productService service.ProductService) *SearchService {
 	return &SearchService{
-		productRepo: productRepo,
+		productService: productService,
 	}
 }
 
@@ -24,12 +24,12 @@ func (s *SearchService) FindChain(
 	maxDepth int,
 ) (*ChainResult, error) {
 
-	target, err := s.productRepo.GetByID(ctx, targetProductID)
+	target, err := s.productService.GetByID(ctx, targetProductID)
 	if err != nil {
 		return nil, err
 	}
 
-	myProducts, err := s.productRepo.GetByCustomerID(ctx, customerID)
+	myProducts, err := s.productService.GetByCustomerID(ctx, customerID)
 	if err != nil {
 		return nil, err
 	}
@@ -40,7 +40,7 @@ func (s *SearchService) FindChain(
 
 	return findChainBFS(
 		ctx,
-		s.productRepo,
+		s.productService,
 		*target,
 		myProducts,
 		maxDepth,
