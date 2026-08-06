@@ -3,11 +3,17 @@ package search
 import (
 	"context"
 	"errors"
+	"trade-chain/internal/domain"
 	"trade-chain/internal/service"
 )
 
 type SearchService struct {
 	productService service.ProductService
+}
+
+type SearchResult struct {
+	Products []domain.Product
+	Length   int
 }
 
 func NewSearchService(
@@ -22,7 +28,7 @@ func (s *SearchService) FindChain(
 	customerID string,
 	targetProductID string,
 	maxDepth int,
-) (*ChainResult, error) {
+) (*SearchResult, error) {
 
 	target, err := s.productService.GetByID(ctx, targetProductID)
 	if err != nil {
@@ -45,4 +51,21 @@ func (s *SearchService) FindChain(
 		myProducts,
 		maxDepth,
 	)
+}
+
+func (s *SearchService) FindProduct(
+	ctx context.Context,
+	searchQuery string,
+) (*SearchResult, error) {
+	target, err := s.productService.Search(ctx, searchQuery, nil)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &SearchResult{
+		Products: target,
+		Length:   len(target),
+	}, nil
+
 }
