@@ -83,3 +83,11 @@ func (s *customerService) List(ctx context.Context, offset, limit int) ([]domain
 	v, e := s.repo.List(ctx, o, l)
 	return v, normalizeError(e)
 }
+
+func (s *customerService) GetByEmail(ctx context.Context, email string) (*domain.Customer, error) {
+	if blank(email) {
+		return nil, ErrInvalidInput
+	}
+	v, err := s.repo.GetByEmail(ctx, email)
+	return v, normalizeError(err)
+}

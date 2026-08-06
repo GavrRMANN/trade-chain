@@ -78,5 +78,5 @@ func (s *productService) GetExchangeCandidates(ctx context.Context, productID st
 	if blank(productID) {
 		return nil, ErrInvalidInput
 	}
-	return s.GetExchangeCandidates(ctx, productID)
+	return s.repo.GetExchangeCandidates(ctx, productID)
 }

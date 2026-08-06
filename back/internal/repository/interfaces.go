@@ -50,6 +50,7 @@ type ChainRepository interface {
 	GetByProductID(ctx context.Context, productID string) ([]domain.Chain, error)
 	GetFullChain(ctx context.Context, chainID string) ([]domain.Chain, error)
 	UpdateStatus(ctx context.Context, id string, status domain.ChainStatus) error
+	CompleteExchange(ctx context.Context, chainID string) error // добавить
 	Delete(ctx context.Context, id string) error
 }
 

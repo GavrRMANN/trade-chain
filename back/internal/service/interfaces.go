@@ -8,6 +8,7 @@ import (
 type CustomerService interface {
 	Create(context.Context, *domain.CreateCustomerDTO) (*domain.Customer, error)
 	GetByID(context.Context, string) (*domain.Customer, error)
+	GetByEmail(context.Context, string) (*domain.Customer, error) // добавить
 	Update(context.Context, string, *domain.UpdateCustomerDTO) (*domain.Customer, error)
 	Delete(context.Context, string) error
 	List(context.Context, int, int) ([]domain.Customer, error)
@@ -29,7 +30,7 @@ type ChainService interface {
 	GetByID(context.Context, string) (*domain.Chain, error)
 	GetByProductID(context.Context, string) ([]domain.Chain, error)
 	GetFullChain(context.Context, string) ([]domain.Chain, error)
-	UpdateStatus(context.Context, string, domain.ChainStatus) error
+	UpdateStatus(context.Context, string, domain.ChainStatus, string) error // добавили userID
 	Delete(context.Context, string) error
 }
 

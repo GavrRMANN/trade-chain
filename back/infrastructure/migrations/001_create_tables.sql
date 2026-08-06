@@ -87,6 +87,13 @@ BEGIN
 END;
 $$ language 'plpgsql';
 
+-- Добавляем поля для цепочки: кто инициировал, сообщение
+ALTER TABLE chains ADD COLUMN initiator_id UUID REFERENCES customers(customer_id) ON DELETE CASCADE;
+ALTER TABLE chains ADD COLUMN message TEXT;
+
+-- Индекс для быстрого поиска по инициатору
+CREATE INDEX idx_chains_initiator_id ON chains(initiator_id);
+
 CREATE OR REPLACE TRIGGER update_customers_updated_at BEFORE UPDATE ON customers FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE OR REPLACE TRIGGER update_products_updated_at BEFORE UPDATE ON products FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE OR REPLACE TRIGGER update_categories_updated_at BEFORE UPDATE ON categories FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();

@@ -1,10 +1,12 @@
 package httpapi
 
 import (
-	"github.com/go-chi/chi/v5"
 	"net/http"
+	"trade-chain/internal/auth"
 	"trade-chain/internal/domain"
 	"trade-chain/internal/service"
+
+	"github.com/go-chi/chi/v5"
 )
 
 type chainHandler struct{ s service.ChainService }
@@ -23,58 +25,78 @@ func mountChainRoutes(r chi.Router, s service.ChainService) {
 		r.Get("/by-product/{productID}", h.byProduct)
 	})
 }
+
 func (h chainHandler) create(w http.ResponseWriter, r *http.Request) {
+	userID, ok := auth.UserIDFromContext(r.Context())
+	if !ok {
+		writeError(w, service.ErrForbidden)
+		return
+	}
+
 	var v domain.Chain
 	if decodeJSON(r, &v) != nil {
 		writeError(w, service.ErrInvalidInput)
 		return
 	}
-	out, e := h.s.Create(r.Context(), &v)
-	if e != nil {
-		writeError(w, e)
+	v.InitiatorID = userID // устанавливаем инициатора из токена
+
+	out, err := h.s.Create(r.Context(), &v)
+	if err != nil {
+		writeError(w, err)
 		return
 	}
 	writeJSON(w, http.StatusCreated, out)
 }
+
 func (h chainHandler) get(w http.ResponseWriter, r *http.Request) {
-	v, e := h.s.GetByID(r.Context(), chi.URLParam(r, "id"))
-	if e != nil {
-		writeError(w, e)
+	v, err := h.s.GetByID(r.Context(), chi.URLParam(r, "id"))
+	if err != nil {
+		writeError(w, err)
 		return
 	}
 	writeJSON(w, http.StatusOK, v)
 }
+
 func (h chainHandler) full(w http.ResponseWriter, r *http.Request) {
-	v, e := h.s.GetFullChain(r.Context(), chi.URLParam(r, "id"))
-	if e != nil {
-		writeError(w, e)
+	v, err := h.s.GetFullChain(r.Context(), chi.URLParam(r, "id"))
+	if err != nil {
+		writeError(w, err)
 		return
 	}
 	writeJSON(w, http.StatusOK, v)
 }
+
 func (h chainHandler) byProduct(w http.ResponseWriter, r *http.Request) {
-	v, e := h.s.GetByProductID(r.Context(), chi.URLParam(r, "productID"))
-	if e != nil {
-		writeError(w, e)
+	v, err := h.s.GetByProductID(r.Context(), chi.URLParam(r, "productID"))
+	if err != nil {
+		writeError(w, err)
 		return
 	}
 	writeJSON(w, http.StatusOK, v)
 }
+
 func (h chainHandler) status(w http.ResponseWriter, r *http.Request) {
-	var v chainStatusRequest
-	if decodeJSON(r, &v) != nil {
+	userID, ok := auth.UserIDFromContext(r.Context())
+	if !ok {
+		writeError(w, service.ErrForbidden)
+		return
+	}
+
+	var req chainStatusRequest
+	if decodeJSON(r, &req) != nil {
 		writeError(w, service.ErrInvalidInput)
 		return
 	}
-	if e := h.s.UpdateStatus(r.Context(), chi.URLParam(r, "id"), v.Status); e != nil {
-		writeError(w, e)
+	if err := h.s.UpdateStatus(r.Context(), chi.URLParam(r, "id"), req.Status, userID); err != nil {
+		writeError(w, err)
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
 }
+
 func (h chainHandler) delete(w http.ResponseWriter, r *http.Request) {
-	if e := h.s.Delete(r.Context(), chi.URLParam(r, "id")); e != nil {
-		writeError(w, e)
+	if err := h.s.Delete(r.Context(), chi.URLParam(r, "id")); err != nil {
+		writeError(w, err)
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
