@@ -21,6 +21,19 @@ func mountSearchRoutes(r chi.Router, s *search.SearchService) {
 	})
 }
 
+// findChain godoc
+// @Summary Find exchange chain
+// @Description Find a chain of exchanges from user's products to target product
+// @Tags search
+// @Accept json
+// @Produce json
+// @Param target_product_id query string true "Target product ID"
+// @Param max_depth query int false "Maximum depth" default(10)
+// @Success 200 {object} map[string]interface{} "chain (array of products) and length"
+// @Failure 400 {object} ErrorResponse
+// @Failure 403 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /search/chain [get]
 func (h searchHandler) findChain(w http.ResponseWriter, r *http.Request) {
 	userID, ok := auth.UserIDFromContext(r.Context())
 	if !ok {
@@ -35,7 +48,7 @@ func (h searchHandler) findChain(w http.ResponseWriter, r *http.Request) {
 	}
 
 	maxDepthStr := r.URL.Query().Get("max_depth")
-	maxDepth := 10 // default
+	maxDepth := 10
 	if maxDepthStr != "" {
 		if d, err := strconv.Atoi(maxDepthStr); err == nil && d > 0 {
 			maxDepth = d

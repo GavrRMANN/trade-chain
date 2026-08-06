@@ -13,6 +13,12 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+// @title Trade Chain API
+// @version 1.0
+// @description API для обмена товарами
+// @host localhost:8080
+// @BasePath /
+
 func main() {
 	ctx := context.Background()
 
@@ -34,8 +40,8 @@ func main() {
 	// Репозитории
 	customerRepo := repository.NewCustomerRepository(pool)
 	productRepo := repository.NewProductRepository(pool)
-	categoryRepo := repository.NewCategoryRepository(pool) // нужно создать, если нет
-	wishlistRepo := repository.NewWishlistRepository(pool) // нужно создать
+	categoryRepo := repository.NewCategoryRepository(pool)
+	wishlistRepo := repository.NewWishlistRepository(pool)
 	chainRepo := repository.NewChainRepository(pool)
 	reviewRepo := repository.NewReviewRepository(pool)
 

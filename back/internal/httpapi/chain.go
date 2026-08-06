@@ -10,7 +10,8 @@ import (
 )
 
 type chainHandler struct{ s service.ChainService }
-type chainStatusRequest struct {
+
+type ChainStatusRequest struct {
 	Status domain.ChainStatus `json:"status"`
 }
 
@@ -26,6 +27,18 @@ func mountChainRoutes(r chi.Router, s service.ChainService) {
 	})
 }
 
+// create godoc
+// @Summary Create a chain
+// @Description Create a new exchange chain
+// @Tags chains
+// @Accept json
+// @Produce json
+// @Param request body domain.Chain true "Chain data (initiator_id will be set from token)"
+// @Success 201 {object} domain.Chain
+// @Failure 400 {object} ErrorResponse
+// @Failure 403 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /chains [post]
 func (h chainHandler) create(w http.ResponseWriter, r *http.Request) {
 	userID, ok := auth.UserIDFromContext(r.Context())
 	if !ok {
@@ -38,7 +51,7 @@ func (h chainHandler) create(w http.ResponseWriter, r *http.Request) {
 		writeError(w, service.ErrInvalidInput)
 		return
 	}
-	v.InitiatorID = userID // устанавливаем инициатора из токена
+	v.InitiatorID = userID
 
 	out, err := h.s.Create(r.Context(), &v)
 	if err != nil {
@@ -48,6 +61,18 @@ func (h chainHandler) create(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, out)
 }
 
+// get godoc
+// @Summary Get chain by ID
+// @Description Get chain details
+// @Tags chains
+// @Accept json
+// @Produce json
+// @Param id path string true "Chain ID"
+// @Success 200 {object} domain.Chain
+// @Failure 400 {object} ErrorResponse
+// @Failure 404 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /chains/{id} [get]
 func (h chainHandler) get(w http.ResponseWriter, r *http.Request) {
 	v, err := h.s.GetByID(r.Context(), chi.URLParam(r, "id"))
 	if err != nil {
@@ -57,6 +82,18 @@ func (h chainHandler) get(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, v)
 }
 
+// full godoc
+// @Summary Get full chain
+// @Description Get full chain details (all linked chains)
+// @Tags chains
+// @Accept json
+// @Produce json
+// @Param id path string true "Chain ID"
+// @Success 200 {array} domain.Chain
+// @Failure 400 {object} ErrorResponse
+// @Failure 404 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /chains/{id}/full [get]
 func (h chainHandler) full(w http.ResponseWriter, r *http.Request) {
 	v, err := h.s.GetFullChain(r.Context(), chi.URLParam(r, "id"))
 	if err != nil {
@@ -66,6 +103,17 @@ func (h chainHandler) full(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, v)
 }
 
+// byProduct godoc
+// @Summary Get chains by product
+// @Description Get chains associated with a product (either from or to)
+// @Tags chains
+// @Accept json
+// @Produce json
+// @Param productID path string true "Product ID"
+// @Success 200 {array} domain.Chain
+// @Failure 400 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /chains/by-product/{productID} [get]
 func (h chainHandler) byProduct(w http.ResponseWriter, r *http.Request) {
 	v, err := h.s.GetByProductID(r.Context(), chi.URLParam(r, "productID"))
 	if err != nil {
@@ -75,6 +123,20 @@ func (h chainHandler) byProduct(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, v)
 }
 
+// status godoc
+// @Summary Update chain status
+// @Description Update chain status (pending -> active -> completed, or cancelled/rejected)
+// @Tags chains
+// @Accept json
+// @Produce json
+// @Param id path string true "Chain ID"
+// @Param request body ChainStatusRequest true "New status"
+// @Success 204 "No content"
+// @Failure 400 {object} ErrorResponse
+// @Failure 403 {object} ErrorResponse
+// @Failure 404 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /chains/{id}/status [patch]
 func (h chainHandler) status(w http.ResponseWriter, r *http.Request) {
 	userID, ok := auth.UserIDFromContext(r.Context())
 	if !ok {
@@ -82,7 +144,7 @@ func (h chainHandler) status(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var req chainStatusRequest
+	var req ChainStatusRequest
 	if decodeJSON(r, &req) != nil {
 		writeError(w, service.ErrInvalidInput)
 		return
@@ -94,6 +156,18 @@ func (h chainHandler) status(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// delete godoc
+// @Summary Delete chain
+// @Description Delete a chain (soft delete maybe, but hard delete in repo)
+// @Tags chains
+// @Accept json
+// @Produce json
+// @Param id path string true "Chain ID"
+// @Success 204 "No content"
+// @Failure 400 {object} ErrorResponse
+// @Failure 404 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /chains/{id} [delete]
 func (h chainHandler) delete(w http.ResponseWriter, r *http.Request) {
 	if err := h.s.Delete(r.Context(), chi.URLParam(r, "id")); err != nil {
 		writeError(w, err)
