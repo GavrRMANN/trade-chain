@@ -2,10 +2,10 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
+	"net/http"
 	"os"
-
+	"trade-chain/internal/httpapi"
 	"trade-chain/internal/repository"
 	"trade-chain/internal/search"
 	"trade-chain/internal/service"
@@ -13,116 +13,61 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-// @title Trade Chain API
-// @version 1.0
-// @description API для обмена товарами
-// @host localhost:8080
-// @BasePath /
-
 func main() {
 	ctx := context.Background()
 
 	dbURL := os.Getenv("DATABASE_URL")
-
 	if dbURL == "" {
 		dbURL = "postgres://postgres:postgres@localhost:5432/trade_chain?sslmode=disable"
 	}
 
-	db, err := pgxpool.New(ctx, dbURL)
+	pool, err := pgxpool.New(ctx, dbURL)
 	if err != nil {
-		log.Fatal("database connection error:", err)
+		log.Fatal("failed to connect to database:", err)
+	}
+	defer pool.Close()
+
+	if err := pool.Ping(ctx); err != nil {
+		log.Fatal("failed to ping database:", err)
 	}
 
-	defer db.Close()
+	// Репозитории
+	customerRepo := repository.NewCustomerRepository(pool)
+	productRepo := repository.NewProductRepository(pool)
+	categoryRepo := repository.NewCategoryRepository(pool) // нужно создать, если нет
+	wishlistRepo := repository.NewWishlistRepository(pool) // нужно создать
+	chainRepo := repository.NewChainRepository(pool)
+	reviewRepo := repository.NewReviewRepository(pool)
 
-	if err := db.Ping(ctx); err != nil {
-		log.Fatal("database ping error:", err)
-	}
-
-	fmt.Println("✅ Database connected")
-
-	// Репозиторий
-	prodRepo := repository.NewProductRepository(db)
-	customerRepo := repository.NewCustomerRepository(db)
-	prod := service.NewProductService(prodRepo, customerRepo)
+	// Сервисы
+	customerService := service.NewCustomerService(customerRepo)
+	productService := service.NewProductService(productRepo, customerRepo)
+	categoryService := service.NewCategoryService(categoryRepo)
+	wishlistService := service.NewWishlistService(wishlistRepo, productRepo)
+	chainService := service.NewChainService(chainRepo, productRepo)
+	reviewService := service.NewReviewService(reviewRepo, customerRepo, productRepo)
 
 	// Сервис поиска
-	searchService := search.NewSearchService(prod)
+	searchService := search.NewSearchService(productService, categoryService)
 
-	// Берём User1
-	var customerID string
-
-	err = db.QueryRow(
-		ctx,
-		`
-		SELECT customer_id
-		FROM customers
-		WHERE email = 'user1@test.com'
-		`,
-	).Scan(&customerID)
-
-	if err != nil {
-		log.Fatal("cannot find user1:", err)
+	// HTTP роутер
+	deps := httpapi.Dependencies{
+		Customers:  customerService,
+		Products:   productService,
+		Chains:     chainService,
+		Reviews:    reviewService,
+		Categories: categoryService,
+		Wishlists:  wishlistService,
+		Search:     searchService,
 	}
+	router := httpapi.NewRouter(deps)
 
-	// Ищем RTX4080
-	var targetProductID string
-
-	err = db.QueryRow(
-		ctx,
-		`
-		SELECT product_id
-		FROM products
-		WHERE name = 'RTX 4080'
-		`,
-	).Scan(&targetProductID)
-
-	if err != nil {
-		log.Fatal("cannot find target:", err)
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
 	}
-
-	fmt.Println("User1:", customerID)
-	fmt.Println("Target:", targetProductID)
-
-	result, err := searchService.FindChain(
-		ctx,
-		customerID,
-		targetProductID,
-		10,
-	)
-
-	if err != nil {
-		log.Fatal("search error:", err)
-	}
-
-	if result == nil {
-		fmt.Println("❌ Chain not found")
-		return
-	}
-
-	fmt.Println("\n✅ Chain found")
-	fmt.Println("====================")
-
-	for i, product := range result.Products {
-		fmt.Printf(
-			"%d. %s\n",
-			i+1,
-			product.Name,
-		)
-	}
-
-	fmt.Println("====================")
-	fmt.Println("Length:", result.Length)
-
-	fmt.Println("Выполняем поисковый запрос: ")
-	fmt.Println("====================")
-	result, err = searchService.FindProduct(ctx, "телефон")
-	if err != nil {
-		fmt.Println("Сбой при поиске товара ", err)
-		return
-	}
-	fmt.Println("Ищу iphone, получаю: ")
-	for _, value := range result.Products {
-		fmt.Println(value.Name)
+	log.Printf("starting server on port %s", port)
+	if err := http.ListenAndServe(":"+port, router); err != nil {
+		log.Fatal(err)
 	}
 }

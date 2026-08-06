@@ -206,51 +206,67 @@ func (r *productRepository) Search(
 ) ([]domain.Product, error) {
 
 	query := `
-	SELECT
-		product_id,
-		customer_id,
-		category_id,
-		name,
-		description,
-		is_active,
-		created_at,
-		updated_at,
+SELECT
+	product_id,
+	customer_id,
+	category_id,
+	name,
+	description,
+	is_active,
+	created_at,
+	updated_at,
 
-		(
-			0.7 * ts_rank(
-				search_vector,
-				plainto_tsquery('russian', $1)
-			)
-			+
-			0.3 * similarity(name, $1)
-		) AS score
-
-	FROM products
-
-	WHERE
-		is_active = true
-
-		AND
-		(
-			search_vector @@ plainto_tsquery('russian', $1)
-			OR
-			similarity(name, $1) > 0.15
+	(
+		0.60 * ts_rank_cd(
+			search_vector,
+			websearch_to_tsquery('simple', $1)
 		)
-	`
+
+		+
+
+		0.25 * similarity(name, $1)
+
+		+
+
+		0.15 * similarity(description, $1)
+
+	) AS score
+
+FROM products
+
+WHERE
+	is_active = TRUE
+
+	AND (
+
+		search_vector @@ websearch_to_tsquery('simple', $1)
+
+		OR
+
+		name % $1
+
+		OR
+
+		description % $1
+	)
+`
 
 	args := []interface{}{search}
 
 	if categoryID != nil {
-		query += `
-		AND category_id = $2
-		`
 
-		args = append(args, categoryID)
+		query += `
+AND category_id = $2
+`
+		args = append(args, *categoryID)
 	}
 
 	query += `
-	ORDER BY score DESC
-	`
+ORDER BY
+	score DESC,
+	created_at DESC
+LIMIT 100;
+`
 
 	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {
@@ -259,7 +275,7 @@ func (r *productRepository) Search(
 
 	defer rows.Close()
 
-	products := make([]domain.Product, 0)
+	var products []domain.Product
 
 	for rows.Next() {
 

@@ -17,7 +17,7 @@ func findChainBFS(
 	target domain.Product,
 	userProducts []domain.Product,
 	maxDepth int,
-) (*SearchResult, error) {
+) (*ProductSearchResult, error) {
 
 	myProducts := make(map[string]domain.Product)
 
@@ -52,7 +52,7 @@ func findChainBFS(
 				productMap,
 			)
 
-			return &SearchResult{
+			return &ProductSearchResult{
 				Products: reverse(path),
 				Length:   len(path) - 1,
 			}, nil

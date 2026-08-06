@@ -45,6 +45,21 @@ func (s *categoryService) Delete(ctx context.Context, id string) error {
 	}
 	return normalizeError(s.repo.Delete(ctx, id))
 }
+
+func (s *categoryService) Search(
+	ctx context.Context,
+	search string,
+) ([]domain.Category, error) {
+	if blank(search) {
+		return nil, ErrInvalidInput
+	}
+	v, e := s.repo.Search(ctx, search)
+	if e != nil {
+		return nil, e
+	}
+	return v, nil
+}
+
 func (s *categoryService) List(ctx context.Context) ([]domain.Category, error) {
 	v, e := s.repo.List(ctx)
 	return v, normalizeError(e)

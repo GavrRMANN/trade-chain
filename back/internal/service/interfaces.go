@@ -22,7 +22,7 @@ type ProductService interface {
 	Delete(context.Context, string) error
 	List(context.Context, int, int) ([]domain.Product, error)
 	Search(context.Context, string, *string) ([]domain.Product, error)
-	GetExchangeCandidates(ctx context.Context, productID string) ([]domain.Product, error)
+	GetExchangeCandidates(context.Context, string) ([]domain.Product, error)
 }
 
 type ChainService interface {
@@ -48,6 +48,7 @@ type CategoryService interface {
 	GetSubcategories(context.Context, string) ([]domain.Category, error)
 	Update(context.Context, string, *domain.Category) (*domain.Category, error)
 	Delete(context.Context, string) error
+	Search(context.Context, string) ([]domain.Category, error)
 	List(context.Context) ([]domain.Category, error)
 }
 

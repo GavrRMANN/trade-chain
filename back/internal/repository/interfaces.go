@@ -30,6 +30,7 @@ type CategoryRepository interface {
 	GetByID(ctx context.Context, id string) (*domain.Category, error)
 	GetSubcategories(ctx context.Context, parentID string) ([]domain.Category, error)
 	Update(ctx context.Context, id string, category *domain.Category) (*domain.Category, error)
+	Search(ctx context.Context, search string) ([]domain.Category, error)
 	Delete(ctx context.Context, id string) error
 	List(ctx context.Context) ([]domain.Category, error)
 }

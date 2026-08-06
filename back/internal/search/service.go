@@ -8,18 +8,26 @@ import (
 )
 
 type SearchService struct {
-	productService service.ProductService
+	productService  service.ProductService
+	categoryService service.CategoryService
 }
 
-type SearchResult struct {
+type ProductSearchResult struct {
 	Products []domain.Product
 	Length   int
 }
 
+type CategorySearchResult struct {
+	Categories []domain.Category
+	Length     int
+}
+
 func NewSearchService(
-	productService service.ProductService) *SearchService {
+	productService service.ProductService,
+	categoryService service.CategoryService) *SearchService {
 	return &SearchService{
-		productService: productService,
+		productService:  productService,
+		categoryService: categoryService,
 	}
 }
 
@@ -28,7 +36,7 @@ func (s *SearchService) FindChain(
 	customerID string,
 	targetProductID string,
 	maxDepth int,
-) (*SearchResult, error) {
+) (*ProductSearchResult, error) {
 
 	target, err := s.productService.GetByID(ctx, targetProductID)
 	if err != nil {
@@ -56,16 +64,32 @@ func (s *SearchService) FindChain(
 func (s *SearchService) FindProduct(
 	ctx context.Context,
 	searchQuery string,
-) (*SearchResult, error) {
+) (*ProductSearchResult, error) {
 	target, err := s.productService.Search(ctx, searchQuery, nil)
 
 	if err != nil {
 		return nil, err
 	}
 
-	return &SearchResult{
+	return &ProductSearchResult{
 		Products: target,
 		Length:   len(target),
 	}, nil
 
+}
+
+func (s *SearchService) FindCategory(
+	ctx context.Context,
+	categoryQuery string,
+) (*CategorySearchResult, error) {
+	target, err := s.categoryService.Search(ctx, categoryQuery)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &CategorySearchResult{
+		Categories: target,
+		Length:     len(target),
+	}, nil
 }
