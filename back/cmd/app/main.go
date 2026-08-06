@@ -8,6 +8,7 @@ import (
 
 	"trade-chain/internal/repository"
 	"trade-chain/internal/search"
+	"trade-chain/internal/service"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -35,10 +36,12 @@ func main() {
 	fmt.Println("✅ Database connected")
 
 	// Репозиторий
-	productRepo := repository.NewProductRepository(db)
+	prodRepo := repository.NewProductRepository(db)
+	customerRepo := repository.NewCustomerRepository(db)
+	prod := service.NewProductService(prodRepo, customerRepo)
 
 	// Сервис поиска
-	searchService := search.NewSearchService(productRepo)
+	searchService := search.NewSearchService(prod)
 
 	// Берём User1
 	var customerID string
@@ -104,4 +107,16 @@ func main() {
 
 	fmt.Println("====================")
 	fmt.Println("Length:", result.Length)
+
+	fmt.Println("Выполняем поисковый запрос: ")
+	fmt.Println("====================")
+	result, err = searchService.FindProduct(ctx, "телефон")
+	if err != nil {
+		fmt.Println("Сбой при поиске товара ", err)
+		return
+	}
+	fmt.Println("Ищу iphone, получаю: ")
+	for _, value := range result.Products {
+		fmt.Println(value.Name)
+	}
 }

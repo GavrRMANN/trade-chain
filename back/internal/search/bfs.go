@@ -6,11 +6,6 @@ import (
 	"trade-chain/internal/service"
 )
 
-type ChainResult struct {
-	Products []domain.Product
-	Length   int
-}
-
 type queueNode struct {
 	Product domain.Product
 	Depth   int
@@ -22,7 +17,7 @@ func findChainBFS(
 	target domain.Product,
 	userProducts []domain.Product,
 	maxDepth int,
-) (*ChainResult, error) {
+) (*SearchResult, error) {
 
 	myProducts := make(map[string]domain.Product)
 
@@ -57,7 +52,7 @@ func findChainBFS(
 				productMap,
 			)
 
-			return &ChainResult{
+			return &SearchResult{
 				Products: reverse(path),
 				Length:   len(path) - 1,
 			}, nil

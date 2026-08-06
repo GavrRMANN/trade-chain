@@ -199,31 +199,73 @@ func (r *productRepository) List(ctx context.Context, offset, limit int) ([]doma
 	return products, nil
 }
 
-func (r *productRepository) Search(ctx context.Context, query string, categoryID *string) ([]domain.Product, error) {
-	sqlQuery := `
-		SELECT product_id, customer_id, category_id, name, description, is_active, created_at, updated_at
-		FROM products
-		WHERE is_active = true
-		AND (LOWER(name) LIKE LOWER($1) OR LOWER(description) LIKE LOWER($2))
+func (r *productRepository) Search(
+	ctx context.Context,
+	search string,
+	categoryID *string,
+) ([]domain.Product, error) {
+
+	query := `
+	SELECT
+		product_id,
+		customer_id,
+		category_id,
+		name,
+		description,
+		is_active,
+		created_at,
+		updated_at,
+
+		(
+			0.7 * ts_rank(
+				search_vector,
+				plainto_tsquery('russian', $1)
+			)
+			+
+			0.3 * similarity(name, $1)
+		) AS score
+
+	FROM products
+
+	WHERE
+		is_active = true
+
+		AND
+		(
+			search_vector @@ plainto_tsquery('russian', $1)
+			OR
+			similarity(name, $1) > 0.15
+		)
 	`
-	args := []interface{}{"%" + query + "%", "%" + query + "%"}
+
+	args := []interface{}{search}
 
 	if categoryID != nil {
-		sqlQuery += " AND category_id = $3"
+		query += `
+		AND category_id = $2
+		`
+
 		args = append(args, categoryID)
 	}
 
-	sqlQuery += " ORDER BY created_at DESC"
+	query += `
+	ORDER BY score DESC
+	`
 
-	rows, err := r.db.Query(ctx, sqlQuery, args...)
+	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
+
 	defer rows.Close()
 
-	var products []domain.Product
+	products := make([]domain.Product, 0)
+
 	for rows.Next() {
+
 		var product domain.Product
+		var score float64
+
 		err := rows.Scan(
 			&product.ProductID,
 			&product.CustomerID,
@@ -233,14 +275,17 @@ func (r *productRepository) Search(ctx context.Context, query string, categoryID
 			&product.IsActive,
 			&product.CreatedAt,
 			&product.UpdatedAt,
+			&score,
 		)
+
 		if err != nil {
 			return nil, err
 		}
+
 		products = append(products, product)
 	}
 
-	return products, nil
+	return products, rows.Err()
 }
 
 // Функция, которая возвращает все товары,
