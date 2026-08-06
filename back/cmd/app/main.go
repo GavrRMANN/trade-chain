@@ -13,6 +13,12 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+// @title Trade Chain API
+// @version 1.0
+// @description API для обмена товарами
+// @host localhost:8080
+// @BasePath /
+
 func main() {
 	ctx := context.Background()
 
