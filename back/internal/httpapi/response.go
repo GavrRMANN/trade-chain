@@ -7,7 +7,7 @@ import (
 	"trade-chain/internal/service"
 )
 
-type errorResponse struct {
+type ErrorResponse struct {
 	Error string `json:"error"`
 }
 
@@ -29,7 +29,7 @@ func writeError(w http.ResponseWriter, err error) {
 	case errors.Is(err, service.ErrForbidden):
 		status = http.StatusForbidden
 	}
-	writeJSON(w, status, errorResponse{Error: err.Error()})
+	writeJSON(w, status, ErrorResponse{Error: err.Error()})
 }
 
 func decodeJSON(r *http.Request, dst any) error {
