@@ -1,31 +1,55 @@
 services:
-  db:
+
+  postgres:
     image: postgres:16-alpine
+    container_name: trade-chain-db
+    restart: unless-stopped
+
     environment:
-      POSTGRES_USER: tchainapp
-      POSTGRES_PASSWORD: 12345
-      POSTGRES_DB: tchaindb
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      POSTGRES_DB: ${DB_NAME:-trade_chain}
+
     ports:
       - "5432:5432"
+
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
+      - ./back/infrastructure/migrations:/docker-entrypoint-initdb.d
+
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U tchainapp -d tchaindb"]
-      interval: 3s
-      timeout: 3s
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
       retries: 5
-      start_period: 2s
+
+
+
   app:
     build:
       context: ./back
       dockerfile: Dockerfile
+
+    container_name: trade-chain-back
+    restart: unless-stopped
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@postgres:5432/${DB_NAME:-trade_chain}?sslmode=disable
+      PORT: 8080
+    volumes:
+      - .:/app
+
+    environment:
+      DATABASE_URL: postgres://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@postgres:5432/${DB_NAME:-trade_chain}?sslmode=disable
+      PORT: 8080
+
     ports:
       - "8080:8080"
-    environment:
-      - DATABASE_URL=postgres://tchainapp:12345@db:5432/tchaindb?sslmode=disable
-    depends_on:
-      db:
-        condition: service_healthy
+
+
 
   front:
     build:
@@ -33,10 +57,16 @@ services:
       dockerfile: Dockerfile
       args:
         VITE_API_BASE_URL: http://localhost:8080
-    ports:
-      - "3000:80"
+
+    container_name: trade-chain-front
+
     depends_on:
       - app
 
+    ports:
+      - "3000:80"
+
+
+
 volumes:
-  pgdata:
+  postgres_data:
