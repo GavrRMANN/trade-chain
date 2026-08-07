@@ -346,6 +346,7 @@ func (r *productRepository) GetExchangeCandidates(
 	products := make([]domain.Product, 0)
 
 	for rows.Next() {
+
 		var product domain.Product
 
 		err := rows.Scan(
@@ -357,7 +358,9 @@ func (r *productRepository) GetExchangeCandidates(
 			&product.IsActive,
 			&product.CreatedAt,
 			&product.UpdatedAt,
+			&score,
 		)
+
 		if err != nil {
 			return nil, err
 		}

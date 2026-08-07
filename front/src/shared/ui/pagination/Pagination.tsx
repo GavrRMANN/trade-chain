@@ -59,7 +59,7 @@ export const Pagination = memo(({
     };
 
     return (
-        <>
+        <div className={Styles['pagination-block']}>
             <Button
                 icon={<ArrowSVG/>}
                 variant={'default'}
@@ -75,6 +75,6 @@ export const Pagination = memo(({
                 disabled={disabled || loading || currentPage === total}
                 onClick={() => onBtnClick(currentPage + 1)}
             />
-        </>
+        </div>
     );
 });
