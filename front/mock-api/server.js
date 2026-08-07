@@ -28,6 +28,22 @@ const server = createServer(async (request, response) => {
         return;
     }
 
+    if (url.pathname === '/api/v1/auth/register' && request.method === 'POST') {
+        const body = await readJson(request);
+        if (!body || typeof body !== 'object' || !body.email || !body.password) {
+            sendError(response, 400, 'Некорректное тело запроса');
+            return;
+        }
+        const now = new Date().toISOString();
+        sendJson(response, 201, {
+            customer_id: randomUUID(),
+            email: body.email,
+            created_at: now,
+            updated_at: now,
+        });
+        return;
+    }
+
     if (url.pathname.startsWith('/api/v1/products')) {
         await handleProducts(request, response, url);
         return;
