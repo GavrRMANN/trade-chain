@@ -98,7 +98,7 @@ func (h productHandler) update(w http.ResponseWriter, r *http.Request) {
 
 // delete godoc
 // @Summary Delete product
-// @Description Soft delete product (set is_active=false)
+// @Description Soft delete product (set status to archived)
 // @Tags products
 // @Accept json
 // @Produce json
