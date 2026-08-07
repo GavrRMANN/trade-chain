@@ -1,4 +1,8 @@
 .header {
+    position: fixed;
+    top: 0;
+    left: 0;
+
     width: 100%;
 
     display: flex;
@@ -11,6 +15,8 @@
     gap: var(--main-gap);
 
     height: var(--header-height);
+
+    background-color: var(--bg-secondary);
 }
 
 .header__logo {

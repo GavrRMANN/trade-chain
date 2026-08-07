@@ -1,8 +1,14 @@
+.main-layout {
+    padding-top: var(--header-height);
+}
+
 .content {
     display: flex;
     flex-direction: column;
     justify-content: start;
     align-items: start;
+
+    gap: var(--main-gap);
 
     height: calc(100vh - var(--header-height));
 }
@@ -13,6 +19,6 @@
 
 @media (max-width: 768px) {
     .content {
-        gap: var(--main-gap);
+        gap: var(--second-gap);
     }
 }

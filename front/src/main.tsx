@@ -7,6 +7,7 @@ import './index.css';
 
 import { StoreProvider } from '@app/providers';
 import { browserRouting } from '@app/router';
+import {PageTitleProvider} from "@app/providers/pageTitle";
 
 createRoot(document.getElementById('root')!).render(
     <StrictMode>
@@ -15,11 +16,13 @@ createRoot(document.getElementById('root')!).render(
                 theme={{
                     token: {
                         colorPrimary: '#1677ff',
-                        colorBgLayout: '#f9fafb'
+                        colorBgLayout: '#ffffff'
                     },
                 }}
             >
-                <RouterProvider router={browserRouting} />
+                <PageTitleProvider>
+                    <RouterProvider router={browserRouting} />
+                </PageTitleProvider>
             </ConfigProvider>
         </StoreProvider>
     </StrictMode>,

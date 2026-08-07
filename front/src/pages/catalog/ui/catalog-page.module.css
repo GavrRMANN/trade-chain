@@ -1,0 +1,32 @@
+.catalog-page {
+    display: grid;
+
+    grid-template-columns: repeat(5, 1fr);
+
+    gap: var(--main-gap);
+}
+
+@media (max-width: 1200px) {
+    .catalog-page {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+@media (max-width: 1000px) {
+    .catalog-page {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (max-width: 800px) {
+    .catalog-page {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 600px) {
+    .catalog-page {
+        grid-template-columns: repeat(1, 1fr);
+    }
+}
+
