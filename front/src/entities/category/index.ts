@@ -1,2 +1,6 @@
-export type { Category, TCategoryListRequest } from './types';
+export type {
+    Category,
+    TCreateCategoryRequest,
+    TUpdateCategoryRequest,
+} from './types';
 export * from './api';

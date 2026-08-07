@@ -3,7 +3,7 @@ import {MainSection} from '@shared/ui/mainSection';
 import {ProductCard} from '@shared/ui/productCard';
 import {useGetProductsQuery} from '@entities/product';
 import {usePageTitle} from "@app/providers/pageTitle";
-import {useEffect, useLayoutEffect} from "react";
+import {useLayoutEffect} from "react";
 
 export const CatalogPage = () => {
     const {setTitle} = usePageTitle();
@@ -13,13 +13,13 @@ export const CatalogPage = () => {
         isLoading,
         isError,
     } = useGetProductsQuery({
-        page: 1,
+        offset: 0,
         limit: 20,
     });
 
     useLayoutEffect(() => {
         setTitle('Вещи в обороте');
-    }, []);
+    }, [setTitle]);
 
     if (isLoading) {
         return <p>Загрузка товаров...</p>;
@@ -32,13 +32,10 @@ export const CatalogPage = () => {
     return (
         <MainSection>
             <div className={Styles['catalog-page']}>
-                {data?.items.map((product) => (
+                {data?.map((product) => (
                     <ProductCard
                         key={product.product_id}
                         title={product.name}
-                        img={product.image_url || undefined}
-                        price={product.price}
-                        location={product.location}
                     />
                 ))}
             </div>

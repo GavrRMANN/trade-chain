@@ -4,8 +4,6 @@ import type {
     TCreateProductRequest,
     TProduct,
     TProductListRequest,
-    TProductWishlistRequest,
-    TProductsResponse,
     TUpdateProductRequest,
 } from '../types';
 
@@ -14,23 +12,30 @@ type TUpdateProductArgs = {
     data: TUpdateProductRequest;
 };
 
-type TProductWishlistArgs = {
-    productId: string;
-    data: TProductWishlistRequest;
-};
-
 export const productApi = createApi({
     reducerPath: 'productApi',
-    baseQuery: fetchBaseQuery({baseUrl: `${getApiBaseUrl()}/api/v1`}),
+    baseQuery: fetchBaseQuery({
+        baseUrl: `${getApiBaseUrl()}/api/v1`,
+        prepareHeaders: (headers) => {
+            const token = localStorage.getItem('token');
+            if (token) {
+                headers.set('Authorization', `Bearer ${token}`);
+            }
+            return headers;
+        },
+    }),
     endpoints: (builder) => ({
-        getProducts: builder.query<TProductsResponse, TProductListRequest>({
-            query: (params) => ({url: '/products', params}),
+        getProducts: builder.query<TProduct[], TProductListRequest | void>({
+            query: (params) => ({
+                url: '/products',
+                ...(params ? {params} : {}),
+            }),
+        }),
+        searchProducts: builder.query<TProduct[], { q: string; category_id?: string }>({
+            query: (params) => ({url: '/products/search', params}),
         }),
         getProduct: builder.query<TProduct, string>({
             query: (productId) => `/products/${productId}`,
-        }),
-        getProductRecommendations: builder.query<TProduct[], string>({
-            query: (productId) => `/products/${productId}/recommendations`,
         }),
         createProduct: builder.mutation<TProduct, TCreateProductRequest>({
             query: (body) => ({url: '/products', method: 'POST', body}),
@@ -42,25 +47,21 @@ export const productApi = createApi({
                 body: data,
             }),
         }),
-        archiveProduct: builder.mutation<TProduct, string>({
-            query: (productId) => ({url: `/products/${productId}/archive`, method: 'POST'}),
+        deleteProduct: builder.mutation<void, string>({
+            query: (productId) => ({url: `/products/${productId}`, method: 'DELETE'}),
         }),
-        updateProductWishlist: builder.mutation<TProduct, TProductWishlistArgs>({
-            query: ({productId, data}) => ({
-                url: `/products/${productId}/wishlist`,
-                method: 'PUT',
-                body: data,
-            }),
+        getProductsByCustomer: builder.query<TProduct[], string>({
+            query: (customerId) => `/products/by-customer/${customerId}`,
         }),
     }),
 });
 
 export const {
     useGetProductsQuery,
+    useSearchProductsQuery,
     useGetProductQuery,
-    useGetProductRecommendationsQuery,
     useCreateProductMutation,
     useUpdateProductMutation,
-    useArchiveProductMutation,
-    useUpdateProductWishlistMutation,
+    useDeleteProductMutation,
+    useGetProductsByCustomerQuery,
 } = productApi;

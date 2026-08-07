@@ -7,7 +7,7 @@ import {useEffect, useState} from "react";
 type TProductCardProps = {
     title: string;
     img?: string;
-    price: number;
+    price?: number;
     location?: string;
     onClick?: () => void;
 }
@@ -43,7 +43,7 @@ export const ProductCard = ({
     }, [img]);
 
     return (
-        <article className={Styles['product-card']}>
+        <article className={Styles['product-card']} onClick={onClick}>
             <div className={Styles['image-container']}>
                 {isImageAvailable ? (
                     <img src={img} alt={title}/>
@@ -54,7 +54,9 @@ export const ProductCard = ({
 
             <div className={Styles['desc-container']}>
                 <h4 className={Styles.title}>{title}</h4>
-                <p className={Styles.amount}>{formatAmount(price)}</p>
+                {price !== undefined && (
+                    <p className={Styles.amount}>{formatAmount(price)}</p>
+                )}
 
                 {location && (
                     <div className={Styles['location-block']}>
