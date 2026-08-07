@@ -3,17 +3,31 @@ package search
 import (
 	"context"
 	"errors"
-	"trade-chain/internal/repository"
+	"trade-chain/internal/domain"
+	"trade-chain/internal/service"
 )
 
 type SearchService struct {
-	productRepo repository.ProductRepository
+	productService  service.ProductService
+	categoryService service.CategoryService
+}
+
+type ProductSearchResult struct {
+	Products []domain.Product
+	Length   int
+}
+
+type CategorySearchResult struct {
+	Categories []domain.Category
+	Length     int
 }
 
 func NewSearchService(
-	productRepo repository.ProductRepository) *SearchService {
+	productService service.ProductService,
+	categoryService service.CategoryService) *SearchService {
 	return &SearchService{
-		productRepo: productRepo,
+		productService:  productService,
+		categoryService: categoryService,
 	}
 }
 
@@ -22,14 +36,14 @@ func (s *SearchService) FindChain(
 	customerID string,
 	targetProductID string,
 	maxDepth int,
-) (*ChainResult, error) {
+) (*ProductSearchResult, error) {
 
-	target, err := s.productRepo.GetByID(ctx, targetProductID)
+	target, err := s.productService.GetByID(ctx, targetProductID)
 	if err != nil {
 		return nil, err
 	}
 
-	myProducts, err := s.productRepo.GetByCustomerID(ctx, customerID)
+	myProducts, err := s.productService.GetByCustomerID(ctx, customerID)
 	if err != nil {
 		return nil, err
 	}
@@ -40,9 +54,42 @@ func (s *SearchService) FindChain(
 
 	return findChainBFS(
 		ctx,
-		s.productRepo,
+		s.productService,
 		*target,
 		myProducts,
 		maxDepth,
 	)
+}
+
+func (s *SearchService) FindProduct(
+	ctx context.Context,
+	searchQuery string,
+) (*ProductSearchResult, error) {
+	target, err := s.productService.Search(ctx, searchQuery, nil)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &ProductSearchResult{
+		Products: target,
+		Length:   len(target),
+	}, nil
+
+}
+
+func (s *SearchService) FindCategory(
+	ctx context.Context,
+	categoryQuery string,
+) (*CategorySearchResult, error) {
+	target, err := s.categoryService.Search(ctx, categoryQuery)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &CategorySearchResult{
+		Categories: target,
+		Length:     len(target),
+	}, nil
 }

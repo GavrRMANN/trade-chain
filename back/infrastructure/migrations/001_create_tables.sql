@@ -1,3 +1,5 @@
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+
 -- Таблица пользователей
 CREATE TABLE IF NOT EXISTS customers (
     customer_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -77,6 +79,7 @@ CREATE INDEX IF NOT EXISTS  idx_chains_to_product_id ON chains(to_product_id);
 CREATE INDEX IF NOT EXISTS  idx_chains_status ON chains(status);
 CREATE INDEX IF NOT EXISTS  idx_reviews_to_customer_id ON reviews(to_customer_id);
 CREATE INDEX IF NOT EXISTS  idx_reviews_from_customer_id ON reviews(from_customer_id);
+CREATE INDEX IF NOT EXISTS  categories_name_trgm_idx ON categories USING GIN(name gin_trgm_ops);
 
 -- Триггер для обновления updated_at
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -86,6 +89,13 @@ BEGIN
     RETURN NEW;
 END;
 $$ language 'plpgsql';
+
+-- Добавляем поля для цепочки: кто инициировал, сообщение
+ALTER TABLE chains ADD COLUMN initiator_id UUID REFERENCES customers(customer_id) ON DELETE CASCADE;
+ALTER TABLE chains ADD COLUMN message TEXT;
+
+-- Индекс для быстрого поиска по инициатору
+CREATE INDEX idx_chains_initiator_id ON chains(initiator_id);
 
 CREATE OR REPLACE TRIGGER update_customers_updated_at BEFORE UPDATE ON customers FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE OR REPLACE TRIGGER update_products_updated_at BEFORE UPDATE ON products FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
