@@ -1,0 +1,5 @@
+import{r as l,j as s}from"./iframe-BCyKHs7D.js";import"./preload-helper-PPVm8Dsz.js";const n="_pageTitle_1ewdq_1",c="_title_1ewdq_7",d="_subtitle_1ewdq_16",r={pageTitle:n,title:c,subtitle:d},a=l.memo(({title:o,subTitle:i})=>s.jsxs("div",{className:r.pageTitle,children:[s.jsx("h1",{className:r.title,children:o}),i&&s.jsx("h3",{className:r.subtitle,children:i})]}));a.__docgenInfo={description:"",methods:[],displayName:"PageTitle",props:{title:{required:!0,tsType:{name:"string"},description:""},subTitle:{required:!1,tsType:{name:"string"},description:""}}};const u={title:"Shared/PageTitle",component:a,args:{title:"Мои объявления",subTitle:"Управляйте опубликованными товарами"}},e={},t={args:{subTitle:void 0}};e.parameters={...e.parameters,docs:{...e.parameters?.docs,source:{originalSource:"{}",...e.parameters?.docs?.source}}};t.parameters={...t.parameters,docs:{...t.parameters?.docs,source:{originalSource:`{
+  args: {
+    subTitle: undefined
+  }
+}`,...t.parameters?.docs?.source}}};const g=["WithSubtitle","TitleOnly"];export{t as TitleOnly,e as WithSubtitle,g as __namedExportsOrder,u as default};
