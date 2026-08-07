@@ -4,6 +4,7 @@ import {ProductCard} from '@shared/ui/productCard';
 import {useGetProductsQuery} from '@entities/product';
 import {usePageTitle} from "@app/providers/pageTitle";
 import {useLayoutEffect} from "react";
+import {Preloader} from "@shared/ui/preloader";
 
 export const CatalogPage = () => {
     const {setTitle} = usePageTitle();
@@ -22,7 +23,7 @@ export const CatalogPage = () => {
     }, [setTitle]);
 
     if (isLoading) {
-        return <p>Загрузка товаров...</p>;
+        return <Preloader/>;
     }
 
     if (isError) {
