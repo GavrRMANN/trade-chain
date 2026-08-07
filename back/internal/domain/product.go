@@ -28,13 +28,14 @@ type Product struct {
 }
 
 type CreateProductDTO struct {
-	CustomerID  string  `json:"customer_id" validate:"required"`
-	CategoryID  *string `json:"category_id"`
-	Title       string  `json:"title" validate:"required"`
-	Description string  `json:"description"`
-	Image       string  `json:"image"`
-	Price       int     `json:"price"`
-	Location    string  `json:"location"`
+	CustomerID  string         `json:"customer_id" validate:"required"`
+	CategoryID  *string        `json:"category_id"`
+	Title       string         `json:"title" validate:"required"`
+	Description string         `json:"description"`
+	Image       string         `json:"image"`
+	Price       int            `json:"price"`
+	Location    string         `json:"location"`
+	Status      *ProductStatus `json:"status"`
 }
 
 type UpdateProductDTO struct {
