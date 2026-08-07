@@ -36,6 +36,11 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@postgres:5432/${DB_NAME:-trade_chain}?sslmode=disable
+      PORT: 8080
+    volumes:
+      - .:/app
 
     environment:
       DATABASE_URL: postgres://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@postgres:5432/${DB_NAME:-trade_chain}?sslmode=disable
