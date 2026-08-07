@@ -3,13 +3,8 @@ package search
 import (
 	"context"
 	"trade-chain/internal/domain"
-	"trade-chain/internal/repository"
+	"trade-chain/internal/service"
 )
-
-type ChainResult struct {
-	Products []domain.Product
-	Length   int
-}
 
 type queueNode struct {
 	Product domain.Product
@@ -18,11 +13,11 @@ type queueNode struct {
 
 func findChainBFS(
 	ctx context.Context,
-	repo repository.ProductRepository,
+	service service.ProductService,
 	target domain.Product,
 	userProducts []domain.Product,
 	maxDepth int,
-) (*ChainResult, error) {
+) (*ProductSearchResult, error) {
 
 	myProducts := make(map[string]domain.Product)
 
@@ -57,7 +52,7 @@ func findChainBFS(
 				productMap,
 			)
 
-			return &ChainResult{
+			return &ProductSearchResult{
 				Products: reverse(path),
 				Length:   len(path) - 1,
 			}, nil
@@ -67,7 +62,7 @@ func findChainBFS(
 			continue
 		}
 
-		neighbors, err := repo.GetExchangeCandidates(
+		neighbors, err := service.GetExchangeCandidates(
 			ctx,
 			current.Product.ProductID,
 		)

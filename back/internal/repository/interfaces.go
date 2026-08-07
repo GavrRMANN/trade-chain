@@ -30,6 +30,7 @@ type CategoryRepository interface {
 	GetByID(ctx context.Context, id string) (*domain.Category, error)
 	GetSubcategories(ctx context.Context, parentID string) ([]domain.Category, error)
 	Update(ctx context.Context, id string, category *domain.Category) (*domain.Category, error)
+	Search(ctx context.Context, search string) ([]domain.Category, error)
 	Delete(ctx context.Context, id string) error
 	List(ctx context.Context) ([]domain.Category, error)
 }
@@ -50,6 +51,7 @@ type ChainRepository interface {
 	GetByProductID(ctx context.Context, productID string) ([]domain.Chain, error)
 	GetFullChain(ctx context.Context, chainID string) ([]domain.Chain, error)
 	UpdateStatus(ctx context.Context, id string, status domain.ChainStatus) error
+	CompleteExchange(ctx context.Context, chainID string) error // добавить
 	Delete(ctx context.Context, id string) error
 }
 
