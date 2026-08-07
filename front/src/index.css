@@ -24,6 +24,7 @@
     --bg-primary: #f9fafb;
     --bg-secondary: #ffffff;
     --bg-disabled: #f3f4f6;
+    --bg-neutral: #ececec;
 
     /* Border / shadow */
     --bg-shadows: #e5e7eb;
@@ -104,7 +105,8 @@
     --space-40: 10rem;
 }
 
-#root {
+#root,
+#storybook-root {
     max-width: 1200px;
     margin: 0 auto;
 }
@@ -126,6 +128,13 @@ h3 {
 
 h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-heading), sans-serif;
+    margin: 0;
+    padding: 0;
+}
+
+p {
+    margin: 0;
+    padding: 0;
 }
 
 html,
@@ -139,7 +148,7 @@ body {
     font-size: var(--text-base-font-size);
     line-height: var(--text-base-line-height);
     color: var(--neutral-primary);
-    background: var(--bg-primary);
+    background: var(--bg-secondary);
 }
 
 a {
@@ -167,6 +176,10 @@ main {
 }
 
 @media (max-width: 768px) {
+    :root {
+        --header-height: 50px;
+    }
+
     h3 {
         font-size: var(--h3-mobile-font-size);
         line-height: var(--h3-mobile-line-height);
