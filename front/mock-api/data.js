@@ -173,4 +173,22 @@ const categories = [
     { category_id: 'console-games', name: 'Игры для приставок' },
 ];
 
+const mockNow = '2026-08-07T00:00:00Z';
+
+products.splice(0, products.length, ...products.map((product) => ({
+    product_id: product.product_id,
+    customer_id: product.customer_id,
+    ...(product.category_id ? { category_id: product.category_id } : {}),
+    name: product.name,
+    ...(product.description ? { description: product.description } : {}),
+    is_active: product.status === 'active',
+    created_at: product.created_at,
+    updated_at: product.updated_at,
+})));
+
+categories.forEach((category) => {
+    category.created_at = mockNow;
+    category.updated_at = mockNow;
+});
+
 export { categories, products };
