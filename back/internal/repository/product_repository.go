@@ -358,7 +358,6 @@ func (r *productRepository) GetExchangeCandidates(
 			&product.IsActive,
 			&product.CreatedAt,
 			&product.UpdatedAt,
-			&score,
 		)
 
 		if err != nil {
