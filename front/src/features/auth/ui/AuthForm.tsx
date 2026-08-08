@@ -1,5 +1,5 @@
-import { FormEvent, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { FormEvent, useCallback, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 import {
     useLoginUserMutation,
@@ -10,6 +10,7 @@ import { Input } from '@shared/ui/input';
 import { setAuthToken } from '@shared/api';
 
 import Styles from './auth-form.module.css';
+import { getBackgroundRoute } from '@shared/lib';
 
 type TMode = 'login' | 'register';
 type TField = 'email' | 'password' | 'confirmPassword';
@@ -49,6 +50,8 @@ const validate = (email: string, password: string, confirmPassword: string, mode
 
 export const AuthForm = () => {
     const navigate = useNavigate();
+    const location = useLocation();
+
     const [mode, setMode] = useState<TMode>('login');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -56,8 +59,10 @@ export const AuthForm = () => {
     const [errors, setErrors] = useState<TErrors>({});
     const [requestError, setRequestError] = useState<string>();
     const [successMessage, setSuccessMessage] = useState<string>();
+
     const [loginUser, { isLoading: isLoginLoading }] = useLoginUserMutation();
     const [registerUser, { isLoading: isRegisterLoading }] = useRegisterUserMutation();
+
     const isLoading = isLoginLoading || isRegisterLoading;
 
     const switchMode = () => {
@@ -67,6 +72,10 @@ export const AuthForm = () => {
         setSuccessMessage(undefined);
         setConfirmPassword('');
     };
+
+    const getBackgroundRouteCallback = useCallback(() => {
+        return getBackgroundRoute(location);
+    }, [location.state]);
 
     const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
@@ -86,7 +95,7 @@ export const AuthForm = () => {
                 const response = await loginUser({email: email.trim(), password}).unwrap();
 
                 setAuthToken(response.token);
-                navigate('/', {replace: true});
+                navigate(getBackgroundRouteCallback(), { replace: true });
 
                 return;
             }
@@ -94,7 +103,7 @@ export const AuthForm = () => {
             const response = await registerUser({email: email.trim(), password}).unwrap();
 
             setAuthToken(response.token);
-            navigate('/', {replace: true});
+            navigate(getBackgroundRouteCallback(), { replace: true });
         } catch (error) {
             setRequestError(getErrorMessage(error));
         }

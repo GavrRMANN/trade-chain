@@ -1,10 +1,11 @@
 import Styles from './catalog-page.module.css';
-import {MainSection} from '@shared/ui/mainSection';
-import {ProductCard} from '@shared/ui/productCard';
-import {Preloader} from "@shared/ui/preloader";
-import {WhiteBox} from "@shared/ui/whiteBox";
-import {Button} from "@shared/ui/button";
-import {useCatalog} from '../lib';
+import { MainSection } from '@shared/ui/mainSection';
+import { ProductCard } from '@shared/ui/productCard';
+import { Preloader } from '@shared/ui/preloader';
+import { WhiteBox } from '@shared/ui/whiteBox';
+import { Button } from '@shared/ui/button';
+import { useCatalog } from '../lib';
+import { PageError } from '@shared/ui/pageError';
 
 export const CatalogPage = () => {
     const {
@@ -24,11 +25,11 @@ export const CatalogPage = () => {
     } = useCatalog();
 
     if (isCategoriesLoading) {
-        return <Preloader/>;
+        return <Preloader message={'Загрузка...'} />;
     }
 
     if (isCategoriesError) {
-        return <p>Не удалось загрузить категории</p>;
+        return <PageError message={'Не удалось загрузить категории'} />;
     }
 
     return (
@@ -45,18 +46,27 @@ export const CatalogPage = () => {
                 ))}
             </div>
             <h1 className={Styles.title}>
-                {searchQuery ? `Результаты поиска: ${searchQuery}` : categoryQuery ? 'Объявления категории' : 'Вещи в обороте'}
+                {searchQuery
+                    ? `Результаты поиска: ${searchQuery}`
+                    : categoryQuery
+                      ? 'Объявления категории'
+                      : 'Вещи в обороте'}
             </h1>
             <div className={Styles['catalog-page']}>
                 {(isLoading || isFetching) && (
                     <div className={Styles['catalog-state']}>
-                        <Preloader/>
+                        <Preloader />
                     </div>
                 )}
+
                 {!isLoading && !isFetching && isError && (
                     <p className={Styles['catalog-state']}>Не удалось загрузить товары</p>
                 )}
-                {!isLoading && !isFetching && !isError && products?.map((product) => (
+
+                {!isLoading &&
+                    !isFetching &&
+                    !isError &&
+                    products?.map((product) => (
                         <ProductCard
                             key={product.product_id}
                             title={product.title}
@@ -66,6 +76,7 @@ export const CatalogPage = () => {
                             onClick={() => openProduct(product.product_id)}
                         />
                     ))}
+
                 {!isLoading && !isFetching && !isError && products?.length === 0 && (
                     <div className={Styles.emptyState}>
                         <h2>В этой категории пока ничего нет</h2>

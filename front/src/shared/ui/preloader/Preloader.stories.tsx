@@ -5,3 +5,8 @@ const meta = { title: 'Shared/Preloader', component: Preloader } satisfies Meta<
 export default meta;
 type Story = StoryObj<typeof meta>;
 export const Default: Story = {};
+export const Message: Story = {
+    args: {
+        message: 'Загружаем профиль…',
+    },
+};

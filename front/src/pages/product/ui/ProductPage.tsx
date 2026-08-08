@@ -13,6 +13,7 @@ import { formatAmount } from '@shared/lib';
 import { useProductPageData } from '../lib';
 
 import Styles from './product-page.module.css';
+import { PageError } from '@shared/ui/pageError';
 
 const statusLabels = {
     active: 'Товар активен',
@@ -25,8 +26,17 @@ export const ProductPage = () => {
     const { productId } = useParams<{ productId: string }>();
     const navigate = useNavigate();
     const { setTitle } = usePageTitle();
-    const { product, customer, wishlist, wishlistOptions, matchingProducts, reviews, isLoading, isError } =
-        useProductPageData(productId);
+
+    const {
+        product,
+        customer,
+        wishlist,
+        wishlistOptions,
+        matchingProducts,
+        reviews,
+        isLoading,
+        isError
+    } = useProductPageData(productId);
 
     useLayoutEffect(() => {
         setTitle('');
@@ -38,13 +48,7 @@ export const ProductPage = () => {
 
     if (isError || !product) {
         return (
-            <MainSection>
-                <div className={Styles.placeholder}>
-                    <h1>Не удалось загрузить товар</h1>
-                    <p>Попробуйте вернуться в каталог и открыть объявление ещё раз.</p>
-                    <Button variant="text" onClick={() => navigate('/')}>Вернуться в каталог</Button>
-                </div>
-            </MainSection>
+            <PageError message={'Не удалось загрузить товар'}/>
         );
     }
 
@@ -79,6 +83,7 @@ export const ProductPage = () => {
                                 <p className={Styles.muted}>Владелец пока не указал, что хочет получить.</p>
                             )}
                         </section>
+
                         <section className={Styles.recommendations} aria-label="Подходящие вещи">
                             <h2>Ваши подходящие вещи</h2>
                             {matchingProducts.length ? (
