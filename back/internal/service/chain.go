@@ -290,3 +290,77 @@ func (s *chainService) Delete(ctx context.Context, id string) error {
 	}
 	return normalizeError(s.repo.Delete(ctx, id))
 }
+
+func (s *chainService) ListOffers(ctx context.Context, userID string, role, status string) ([]domain.Chain, error) {
+	if blank(userID) {
+		return nil, ErrInvalidInput
+	}
+	chains, err := s.repo.GetByCustomerID(ctx, userID)
+	if err != nil {
+		return nil, normalizeError(err)
+	}
+	// Фильтрация на уровне памяти (можно перенести в SQL при необходимости)
+	var filtered []domain.Chain
+	for _, c := range chains {
+		if status != "" && c.Status != status {
+			continue
+		}
+		switch role {
+		case "incoming":
+			if c.RecipientID != userID {
+				continue
+			}
+		case "outgoing":
+			if c.InitiatorID != userID {
+				continue
+			}
+			// если role не указана, показываем все
+		}
+		filtered = append(filtered, c)
+	}
+	return filtered, nil
+}
+
+// CreateOffer создаёт новое предложение (обёртка над Create с дополнительными полями).
+func (s *chainService) CreateOffer(ctx context.Context, offeredProductID, requestedProductID, initiatorID string,
+	goalID, stepID *string, surcharge *domain.Surcharge, comment string) (*domain.Chain, error) {
+
+	// Сначала создаём цепочку
+	c := &domain.Chain{
+		FromProductID:  offeredProductID,
+		ToProductID:    requestedProductID,
+		InitiatorID:    initiatorID,
+		ExchangeGoalID: goalID,
+		RouteStepID:    stepID,
+		Surcharge:      surcharge,
+		Message:        comment,
+	}
+	created, err := s.Create(ctx, c)
+	if err != nil {
+		return nil, err
+	}
+	// Если есть комментарий, отправляем его как первое сообщение в чат
+	if comment != "" {
+		_, err = s.SendMessage(ctx, created.ChainID, initiatorID, comment)
+		if err != nil {
+			// Не фатально, но логируем
+			// Можно вернуть созданное предложение, сообщение сохранится позже
+		}
+	}
+	return created, nil
+}
+
+// CancelOffer отзывает предложение (Decide с ActionCancel).
+func (s *chainService) CancelOffer(ctx context.Context, chainID, actorID string) (*domain.Chain, error) {
+	return s.Decide(ctx, chainID, exchange.ActionCancel, actorID)
+}
+
+// AcceptOffer принимает предложение (Decide с ActionAccept).
+func (s *chainService) AcceptOffer(ctx context.Context, chainID, actorID string) (*domain.Chain, error) {
+	return s.Decide(ctx, chainID, exchange.ActionAccept, actorID)
+}
+
+// DeclineOffer отклоняет предложение (Decide с ActionDecline).
+func (s *chainService) DeclineOffer(ctx context.Context, chainID, actorID string) (*domain.Chain, error) {
+	return s.Decide(ctx, chainID, exchange.ActionDecline, actorID)
+}

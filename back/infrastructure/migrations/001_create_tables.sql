@@ -63,6 +63,11 @@ CREATE TABLE IF NOT EXISTS chains (
     UNIQUE(chain_id, previous_chain_id, next_chain_id)
 );
 
+ALTER TABLE chains
+    ADD COLUMN IF NOT EXISTS exchange_goal_id UUID,
+    ADD COLUMN IF NOT EXISTS route_step_id   UUID,
+    ADD COLUMN IF NOT EXISTS surcharge       JSONB;
+    
 -- Таблица отзывов
 CREATE TABLE IF NOT EXISTS reviews (
     review_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

@@ -38,6 +38,11 @@ type ChainService interface {
 	SendMessage(ctx context.Context, chainID, actorID, body string) (*domain.ChainMessage, error)
 	CanReview(ctx context.Context, chainID, actorID string) (string, error)
 	Delete(context.Context, string) error
+	ListOffers(ctx context.Context, userID string, role, status string) ([]domain.Chain, error)
+	CreateOffer(ctx context.Context, offeredProductID, requestedProductID, initiatorID string, goalID, stepID *string, surcharge *domain.Surcharge, comment string) (*domain.Chain, error)
+	AcceptOffer(ctx context.Context, chainID, actorID string) (*domain.Chain, error)
+	DeclineOffer(ctx context.Context, chainID, actorID string) (*domain.Chain, error)
+	CancelOffer(ctx context.Context, chainID, actorID string) (*domain.Chain, error)
 }
 
 type ReviewService interface {

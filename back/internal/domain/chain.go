@@ -6,18 +6,21 @@ import (
 )
 
 type Chain struct {
-	ChainID         string    `json:"chain_id"`
-	FromProductID   string    `json:"from_product_id"`
-	ToProductID     string    `json:"to_product_id"`
-	InitiatorID     string    `json:"initiator_id"`
-	RecipientID     string    `json:"recipient_id"`
-	PreviousChainID *string   `json:"previous_chain_id,omitempty"`
-	NextChainID     *string   `json:"next_chain_id,omitempty"`
-	Status          string    `json:"status"`
-	Message         string    `json:"message,omitempty"`
-	ExpiresAt       time.Time `json:"expires_at"`
-	CreatedAt       time.Time `json:"created_at"`
-	UpdatedAt       time.Time `json:"updated_at"`
+	ChainID         string     `json:"chain_id"`
+	FromProductID   string     `json:"from_product_id"`
+	ToProductID     string     `json:"to_product_id"`
+	InitiatorID     string     `json:"initiator_id"`
+	RecipientID     string     `json:"recipient_id"`
+	PreviousChainID *string    `json:"previous_chain_id,omitempty"`
+	NextChainID     *string    `json:"next_chain_id,omitempty"`
+	Status          string     `json:"status"`
+	Message         string     `json:"message,omitempty"`
+	ExpiresAt       time.Time  `json:"expires_at"`
+	CreatedAt       time.Time  `json:"created_at"`
+	UpdatedAt       time.Time  `json:"updated_at"`
+	ExchangeGoalID  *string    `json:"exchange_goal_id,omitempty"`
+	RouteStepID     *string    `json:"route_step_id,omitempty"`
+	Surcharge       *Surcharge `json:"surcharge,omitempty"`
 }
 
 // ChainStatus — состояние звена обмена.
@@ -67,6 +70,12 @@ type ChainConfirmation struct {
 	CustomerID string    `json:"customer_id"`
 	Success    bool      `json:"success"`
 	CreatedAt  time.Time `json:"created_at"`
+}
+
+type Surcharge struct {
+	Amount   int     `json:"amount"`
+	Currency string  `json:"currency"`
+	Payer    *string `json:"payer,omitempty"` // "initiator" или "recipient", nil — нет
 }
 
 // Ошибки бизнес-правил обмена. Транспортный слой переводит их в коды ответа

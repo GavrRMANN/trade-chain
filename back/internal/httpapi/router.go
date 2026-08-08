@@ -83,6 +83,10 @@ func NewRouter(d Dependencies) http.Handler {
 			if d.Search != nil {
 				mountSearchRoutes(r, d.Search)
 			}
+			if d.Chains != nil && d.Products != nil {
+				mountExchangeOfferRoutes(r, d.Chains, d.Products)
+				mountExchangeRoutes(r, d.Chains)
+			}
 		})
 	})
 

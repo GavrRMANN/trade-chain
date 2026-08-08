@@ -3,8 +3,8 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
-	"time"
 	"trade-chain/internal/domain"
 
 	"github.com/jackc/pgx/v5"
@@ -22,7 +22,8 @@ func NewChainRepository(db *pgxpool.Pool) ChainRepository {
 // chainColumns перечислены один раз намеренно: список повторялся в четырёх
 // запросах, и добавление колонки требовало не забыть ни один из них.
 const chainColumns = `chain_id, from_product_id, to_product_id, initiator_id, recipient_id,
-	previous_chain_id, next_chain_id, status, message, expires_at, created_at, updated_at`
+	previous_chain_id, next_chain_id, status, message, expires_at, created_at, updated_at,
+	exchange_goal_id, route_step_id, surcharge`
 
 // rowScanner покрывает и одиночную строку, и строку выборки: у pgx.Row
 // и pgx.Rows одинаковый Scan, так что разбор звена пишется один раз.
@@ -32,6 +33,7 @@ type rowScanner interface {
 
 func scanChain(row rowScanner) (domain.Chain, error) {
 	var chain domain.Chain
+	var surchargeJSON *string
 	err := row.Scan(
 		&chain.ChainID,
 		&chain.FromProductID,
@@ -45,8 +47,20 @@ func scanChain(row rowScanner) (domain.Chain, error) {
 		&chain.ExpiresAt,
 		&chain.CreatedAt,
 		&chain.UpdatedAt,
+		&chain.ExchangeGoalID,
+		&chain.RouteStepID,
+		&surchargeJSON,
 	)
-	return chain, err
+	if err != nil {
+		return chain, err
+	}
+	if surchargeJSON != nil {
+		var s domain.Surcharge
+		if err := json.Unmarshal([]byte(*surchargeJSON), &s); err == nil {
+			chain.Surcharge = &s
+		}
+	}
+	return chain, nil
 }
 
 func (r *chainRepository) queryChains(ctx context.Context, query string, args ...any) ([]domain.Chain, error) {
@@ -71,17 +85,25 @@ func (r *chainRepository) queryChains(ctx context.Context, query string, args ..
 }
 
 func (r *chainRepository) Create(ctx context.Context, chain *domain.Chain) (*domain.Chain, error) {
-	query := `
-		INSERT INTO chains (from_product_id, to_product_id, initiator_id, recipient_id, previous_chain_id, next_chain_id, status, message, expires_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, COALESCE($9, CURRENT_TIMESTAMP + INTERVAL '72 hours'))
-		RETURNING ` + chainColumns
-
-	// Нулевое время означает «срок не задан» — базе передаётся NULL,
-	// и она подставляет свой срок по умолчанию.
-	var expiresAt *time.Time
-	if !chain.ExpiresAt.IsZero() {
-		expiresAt = &chain.ExpiresAt
+	var surchargeJSON *string
+	if chain.Surcharge != nil {
+		b, err := json.Marshal(chain.Surcharge)
+		if err != nil {
+			return nil, err
+		}
+		s := string(b)
+		surchargeJSON = &s
 	}
+
+	query := `
+		INSERT INTO chains (
+			from_product_id, to_product_id, initiator_id, recipient_id,
+			previous_chain_id, next_chain_id, status, message, expires_at,
+			exchange_goal_id, route_step_id, surcharge
+		)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, COALESCE($9, CURRENT_TIMESTAMP + INTERVAL '72 hours'),
+		        $10, $11, $12)
+		RETURNING ` + chainColumns
 
 	created, err := scanChain(r.db.QueryRow(ctx, query,
 		chain.FromProductID,
@@ -92,7 +114,10 @@ func (r *chainRepository) Create(ctx context.Context, chain *domain.Chain) (*dom
 		chain.NextChainID,
 		chain.Status,
 		chain.Message,
-		expiresAt,
+		chain.ExpiresAt,
+		chain.ExchangeGoalID,
+		chain.RouteStepID,
+		surchargeJSON,
 	))
 	if err != nil {
 		return nil, err
@@ -102,7 +127,6 @@ func (r *chainRepository) Create(ctx context.Context, chain *domain.Chain) (*dom
 
 func (r *chainRepository) GetByID(ctx context.Context, id string) (*domain.Chain, error) {
 	query := `SELECT ` + chainColumns + ` FROM chains WHERE chain_id = $1`
-
 	chain, err := scanChain(r.db.QueryRow(ctx, query, id))
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {

@@ -8,11 +8,6 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-// ConfirmRequest — решение стороны об итоге обмена.
-type ConfirmRequest struct {
-	Success bool `json:"success"`
-}
-
 // MessageRequest — реплика в переписке по сделке.
 type MessageRequest struct {
 	Body string `json:"body"`
@@ -35,44 +30,6 @@ func (h chainHandler) mine(w http.ResponseWriter, r *http.Request) {
 	}
 
 	v, err := h.s.GetByCustomerID(r.Context(), userID)
-	if err != nil {
-		writeError(w, err)
-		return
-	}
-	writeJSON(w, http.StatusOK, v)
-}
-
-// confirm godoc
-// @Summary Confirm exchange outcome
-// @Description Подтвердить итог обмена. Состоявшимся обмен считается только
-// @Description после подтверждения обеими сторонами; несостоявшимся — по
-// @Description заявлению одной.
-// @Tags chains
-// @Accept json
-// @Produce json
-// @Param id path string true "Chain ID"
-// @Param request body ConfirmRequest true "Итог встречи"
-// @Success 200 {object} domain.Chain
-// @Failure 400 {object} ErrorResponse
-// @Failure 403 {object} ErrorResponse
-// @Failure 404 {object} ErrorResponse
-// @Failure 409 {object} ErrorResponse
-// @Failure 500 {object} ErrorResponse
-// @Router /chains/{id}/confirm [post]
-func (h chainHandler) confirm(w http.ResponseWriter, r *http.Request) {
-	userID, ok := auth.UserIDFromContext(r.Context())
-	if !ok {
-		writeError(w, service.ErrForbidden)
-		return
-	}
-
-	var req ConfirmRequest
-	if decodeJSON(r, &req) != nil {
-		writeError(w, service.ErrInvalidInput)
-		return
-	}
-
-	v, err := h.s.Confirm(r.Context(), chi.URLParam(r, "id"), userID, req.Success)
 	if err != nil {
 		writeError(w, err)
 		return
