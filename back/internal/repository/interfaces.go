@@ -49,6 +49,7 @@ type ChainRepository interface {
 	Create(ctx context.Context, chain *domain.Chain) (*domain.Chain, error)
 	GetByID(ctx context.Context, id string) (*domain.Chain, error)
 	GetByProductID(ctx context.Context, productID string) ([]domain.Chain, error)
+	GetByCustomerID(ctx context.Context, customerID string) ([]domain.Chain, error)
 	GetFullChain(ctx context.Context, chainID string) ([]domain.Chain, error)
 	UpdateStatus(ctx context.Context, id string, status domain.ChainStatus) error
 	CompleteExchange(ctx context.Context, chainID string) error // добавить

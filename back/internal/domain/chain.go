@@ -14,6 +14,7 @@ type Chain struct {
 	NextChainID     *string   `json:"next_chain_id,omitempty"`
 	Status          string    `json:"status"`
 	Message         string    `json:"message,omitempty"`
+	ExpiresAt       time.Time `json:"expires_at"`
 	CreatedAt       time.Time `json:"created_at"`
 	UpdatedAt       time.Time `json:"updated_at"`
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"time"
 	"trade-chain/internal/domain"
 
 	"github.com/jackc/pgx/v5"
@@ -18,49 +19,20 @@ func NewChainRepository(db *pgxpool.Pool) ChainRepository {
 	return &chainRepository{db: db}
 }
 
-func (r *chainRepository) Create(ctx context.Context, chain *domain.Chain) (*domain.Chain, error) {
-	query := `
-		INSERT INTO chains (from_product_id, to_product_id, initiator_id, previous_chain_id, next_chain_id, status, message)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)
-		RETURNING chain_id, from_product_id, to_product_id, initiator_id, previous_chain_id, next_chain_id, status, message, created_at, updated_at
-	`
+// chainColumns перечислены один раз намеренно: список повторялся в четырёх
+// запросах, и добавление колонки требовало не забыть ни один из них.
+const chainColumns = `chain_id, from_product_id, to_product_id, initiator_id,
+	previous_chain_id, next_chain_id, status, message, expires_at, created_at, updated_at`
 
-	var created domain.Chain
-	err := r.db.QueryRow(ctx, query,
-		chain.FromProductID,
-		chain.ToProductID,
-		chain.InitiatorID,
-		chain.PreviousChainID,
-		chain.NextChainID,
-		chain.Status,
-		chain.Message,
-	).Scan(
-		&created.ChainID,
-		&created.FromProductID,
-		&created.ToProductID,
-		&created.InitiatorID,
-		&created.PreviousChainID,
-		&created.NextChainID,
-		&created.Status,
-		&created.Message,
-		&created.CreatedAt,
-		&created.UpdatedAt,
-	)
-	if err != nil {
-		return nil, err
-	}
-	return &created, nil
+// rowScanner покрывает и одиночную строку, и строку выборки: у pgx.Row
+// и pgx.Rows одинаковый Scan, так что разбор звена пишется один раз.
+type rowScanner interface {
+	Scan(dest ...any) error
 }
 
-func (r *chainRepository) GetByID(ctx context.Context, id string) (*domain.Chain, error) {
-	query := `
-		SELECT chain_id, from_product_id, to_product_id, initiator_id, previous_chain_id, next_chain_id, status, message, created_at, updated_at
-		FROM chains
-		WHERE chain_id = $1
-	`
-
+func scanChain(row rowScanner) (domain.Chain, error) {
 	var chain domain.Chain
-	err := r.db.QueryRow(ctx, query, id).Scan(
+	err := row.Scan(
 		&chain.ChainID,
 		&chain.FromProductID,
 		&chain.ToProductID,
@@ -69,9 +41,67 @@ func (r *chainRepository) GetByID(ctx context.Context, id string) (*domain.Chain
 		&chain.NextChainID,
 		&chain.Status,
 		&chain.Message,
+		&chain.ExpiresAt,
 		&chain.CreatedAt,
 		&chain.UpdatedAt,
 	)
+	return chain, err
+}
+
+func (r *chainRepository) queryChains(ctx context.Context, query string, args ...any) ([]domain.Chain, error) {
+	rows, err := r.db.Query(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	chains := make([]domain.Chain, 0)
+	for rows.Next() {
+		chain, err := scanChain(rows)
+		if err != nil {
+			return nil, err
+		}
+		chains = append(chains, chain)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return chains, nil
+}
+
+func (r *chainRepository) Create(ctx context.Context, chain *domain.Chain) (*domain.Chain, error) {
+	query := `
+		INSERT INTO chains (from_product_id, to_product_id, initiator_id, previous_chain_id, next_chain_id, status, message, expires_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, COALESCE($8, CURRENT_TIMESTAMP + INTERVAL '72 hours'))
+		RETURNING ` + chainColumns
+
+	// Нулевое время означает «срок не задан» — базе передаётся NULL,
+	// и она подставляет свой срок по умолчанию.
+	var expiresAt *time.Time
+	if !chain.ExpiresAt.IsZero() {
+		expiresAt = &chain.ExpiresAt
+	}
+
+	created, err := scanChain(r.db.QueryRow(ctx, query,
+		chain.FromProductID,
+		chain.ToProductID,
+		chain.InitiatorID,
+		chain.PreviousChainID,
+		chain.NextChainID,
+		chain.Status,
+		chain.Message,
+		expiresAt,
+	))
+	if err != nil {
+		return nil, err
+	}
+	return &created, nil
+}
+
+func (r *chainRepository) GetByID(ctx context.Context, id string) (*domain.Chain, error) {
+	query := `SELECT ` + chainColumns + ` FROM chains WHERE chain_id = $1`
+
+	chain, err := scanChain(r.db.QueryRow(ctx, query, id))
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, sql.ErrNoRows
@@ -83,84 +113,45 @@ func (r *chainRepository) GetByID(ctx context.Context, id string) (*domain.Chain
 
 func (r *chainRepository) GetByProductID(ctx context.Context, productID string) ([]domain.Chain, error) {
 	query := `
-		SELECT chain_id, from_product_id, to_product_id, initiator_id, previous_chain_id, next_chain_id, status, message, created_at, updated_at
+		SELECT ` + chainColumns + `
 		FROM chains
 		WHERE from_product_id = $1 OR to_product_id = $1
 		ORDER BY created_at DESC
 	`
+	return r.queryChains(ctx, query, productID)
+}
 
-	rows, err := r.db.Query(ctx, query, productID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var chains []domain.Chain
-	for rows.Next() {
-		var chain domain.Chain
-		err := rows.Scan(
-			&chain.ChainID,
-			&chain.FromProductID,
-			&chain.ToProductID,
-			&chain.InitiatorID,
-			&chain.PreviousChainID,
-			&chain.NextChainID,
-			&chain.Status,
-			&chain.Message,
-			&chain.CreatedAt,
-			&chain.UpdatedAt,
-		)
-		if err != nil {
-			return nil, err
-		}
-		chains = append(chains, chain)
-	}
-	return chains, nil
+// GetByCustomerID отдаёт все сделки человека — и те, что он предложил сам,
+// и те, что предложили ему. Без этого запроса на фронте нет входящих:
+// пользователь узнаёт о предложении, только если знает его идентификатор.
+func (r *chainRepository) GetByCustomerID(ctx context.Context, customerID string) ([]domain.Chain, error) {
+	query := `
+		SELECT ` + chainColumns + `
+		FROM chains
+		WHERE initiator_id = $1
+		   OR to_product_id IN (SELECT product_id FROM products WHERE customer_id = $1)
+		ORDER BY created_at DESC
+	`
+	return r.queryChains(ctx, query, customerID)
 }
 
 func (r *chainRepository) GetFullChain(ctx context.Context, chainID string) ([]domain.Chain, error) {
 	query := `
 		WITH RECURSIVE chain_path AS (
-			SELECT chain_id, from_product_id, to_product_id, initiator_id, previous_chain_id, next_chain_id, status, message, created_at, updated_at
+			SELECT ` + chainColumns + `
 			FROM chains
 			WHERE chain_id = $1
 			UNION ALL
-			SELECT c.chain_id, c.from_product_id, c.to_product_id, c.initiator_id, c.previous_chain_id, c.next_chain_id, c.status, c.message, c.created_at, c.updated_at
+			SELECT c.chain_id, c.from_product_id, c.to_product_id, c.initiator_id,
+				c.previous_chain_id, c.next_chain_id, c.status, c.message, c.expires_at, c.created_at, c.updated_at
 			FROM chains c
 			INNER JOIN chain_path cp ON c.chain_id = cp.next_chain_id OR c.chain_id = cp.previous_chain_id
 		)
-		SELECT chain_id, from_product_id, to_product_id, initiator_id, previous_chain_id, next_chain_id, status, message, created_at, updated_at
+		SELECT ` + chainColumns + `
 		FROM chain_path
 		ORDER BY created_at
 	`
-
-	rows, err := r.db.Query(ctx, query, chainID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var chains []domain.Chain
-	for rows.Next() {
-		var chain domain.Chain
-		err := rows.Scan(
-			&chain.ChainID,
-			&chain.FromProductID,
-			&chain.ToProductID,
-			&chain.InitiatorID,
-			&chain.PreviousChainID,
-			&chain.NextChainID,
-			&chain.Status,
-			&chain.Message,
-			&chain.CreatedAt,
-			&chain.UpdatedAt,
-		)
-		if err != nil {
-			return nil, err
-		}
-		chains = append(chains, chain)
-	}
-	return chains, nil
+	return r.queryChains(ctx, query, chainID)
 }
 
 func (r *chainRepository) UpdateStatus(ctx context.Context, id string, status domain.ChainStatus) error {
