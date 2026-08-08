@@ -19,8 +19,8 @@ type ProductRepository interface {
 	GetByID(ctx context.Context, id string) (*domain.Product, error)
 	GetByCustomerID(ctx context.Context, customerID string) ([]domain.Product, error)
 	Update(ctx context.Context, id string, product *domain.UpdateProductDTO) (*domain.Product, error)
-	Delete(ctx context.Context, id string) error
-	List(ctx context.Context, q string, categoryID *string, page int, limit int) ([]domain.Product, error)
+	Delete(ctx context.Context, id string, customerID string) error
+	List(ctx context.Context, customerID *string, q string, categoryID *string, page int, limit int) ([]domain.Product, error)
 	GetExchangeCandidates(ctx context.Context, productID string) ([]domain.Product, error)
 }
 
@@ -38,6 +38,7 @@ type WishlistRepository interface {
 	Create(ctx context.Context, wishlist *domain.Wishlist) (*domain.Wishlist, error)
 	GetByID(ctx context.Context, id string) (*domain.Wishlist, error)
 	GetByProductID(ctx context.Context, productID string) (*domain.Wishlist, error)
+	UpdateByProductID(ctx context.Context, productID string, name string, categoryIDs []string) (*domain.Wishlist, error)
 	AddCategoryOption(ctx context.Context, wishlistID, categoryID string) error
 	RemoveCategoryOption(ctx context.Context, wishlistID, categoryID string) error
 	GetOptions(ctx context.Context, wishlistID string) ([]domain.Category, error)

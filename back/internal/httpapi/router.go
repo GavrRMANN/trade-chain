@@ -11,6 +11,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/cors"
 	httpSwagger "github.com/swaggo/http-swagger"
 )
 
@@ -26,6 +27,26 @@ type Dependencies struct {
 
 func NewRouter(d Dependencies) http.Handler {
 	r := chi.NewRouter()
+
+	r.Use(cors.Handler(cors.Options{
+		AllowedOrigins: []string{
+			"http://localhost:3000",
+			"http://localhost:5173",
+		},
+		AllowedMethods: []string{
+			"GET",
+			"POST",
+			"PUT",
+			"PATCH",
+			"DELETE",
+			"OPTIONS",
+		},
+		AllowedHeaders: []string{
+			"Accept",
+			"Authorization",
+			"Content-Type",
+		},
+	}))
 
 	// Middleware
 	r.Use(middleware.RequestID)
@@ -47,40 +68,30 @@ func NewRouter(d Dependencies) http.Handler {
 	// Создаём обработчик для аутентификации
 	authHandler := NewAuthHandler(d.Customers)
 
-	// Публичные маршруты (без аутентификации)
+	// Все маршруты. Верификацию делаю внутри маунтов
 	r.Route("/api/v1", func(r chi.Router) {
-		// Публичные маршруты авторизации
-		authHandler.MountPublic(r) // /auth/login, /auth/register
 
-		// Защищённые маршруты
-		r.Group(func(r chi.Router) {
-			//r.Use(auth.AuthMiddleware)
+		authHandler.mountAuth(r) // /auth/login, /auth/register
 
-			// Защищённый эндпоинт /auth/me
-			r.Get("/auth/me", authHandler.me)
+		if d.Customers != nil {
+			mountCustomerRoutes(r, d.Customers)
+		}
+		if d.Products != nil {
+			mountProductRoutes(r, d.Products, d.Wishlists, d.Search)
+		}
+		if d.Chains != nil {
+			mountChainRoutes(r, d.Chains)
+		}
+		if d.Reviews != nil {
+			mountReviewRoutes(r, d.Reviews)
+		}
+		if d.Categories != nil {
+			mountCategoryRoutes(r, d.Categories)
+		}
+		if d.Wishlists != nil {
+			mountWishlistRoutes(r, d.Wishlists)
+		}
 
-			if d.Customers != nil {
-				mountCustomerRoutes(r, d.Customers)
-			}
-			if d.Products != nil {
-				mountProductRoutes(r, d.Products)
-			}
-			if d.Chains != nil {
-				mountChainRoutes(r, d.Chains)
-			}
-			if d.Reviews != nil {
-				mountReviewRoutes(r, d.Reviews)
-			}
-			if d.Categories != nil {
-				mountCategoryRoutes(r, d.Categories)
-			}
-			if d.Wishlists != nil {
-				mountWishlistRoutes(r, d.Wishlists)
-			}
-			if d.Search != nil {
-				mountSearchRoutes(r, d.Search)
-			}
-		})
 	})
 
 	chi.Walk(r, func(

@@ -5,19 +5,25 @@ import (
 	"strings"
 	"trade-chain/internal/auth"
 	"trade-chain/internal/domain"
+	"trade-chain/internal/search"
 	"trade-chain/internal/service"
 
 	"github.com/go-chi/chi/v5"
 )
 
-type productHandler struct{ s service.ProductService }
+type productHandler struct {
+	s        service.ProductService
+	wishlist service.WishlistService
+	search   *search.SearchService
+}
 
-func mountProductRoutes(r chi.Router, s service.ProductService) {
-	h := productHandler{s}
+func mountProductRoutes(r chi.Router, s service.ProductService, w service.WishlistService, ss *search.SearchService) {
+	h := productHandler{s, w, ss}
 
 	r.Route("/products", func(r chi.Router) {
 		// Публичные маршруты
 		r.Get("/", h.list)
+		r.Get("/by-customer/{customerID}", h.byCustomer)
 		r.Get("/{productID}", h.get)
 
 		// Защищенные маршруты
@@ -31,13 +37,13 @@ func mountProductRoutes(r chi.Router, s service.ProductService) {
 			r.Patch("/{productID}", h.update)
 
 			// Снять товар с обмена
-			//r.Post("/{productID}/archive", h.archive)
+			r.Post("/{productID}/archive", h.delete)
 
 			// Задать, что владелец хочет получить
-			//r.Put("/{productID}/wishlist", h.updateWishlist)
+			r.Put("/{productID}/wishlist", h.updateWishlist)
 
 			// Подходящие прямые товары
-			//r.Get("/{productID}/recommendations", h.recommendations)
+			r.Get("/{productID}/recommendations", h.recommendations)
 		})
 	})
 }
@@ -54,17 +60,53 @@ func mountProductRoutes(r chi.Router, s service.ProductService) {
 // @Failure 500 {object} ErrorResponse
 // @Router /products [post]
 func (h productHandler) create(w http.ResponseWriter, r *http.Request) {
-	var v domain.CreateProductDTO
+	var v domain.CreateProductRequest
+
 	if decodeJSON(r, &v) != nil {
 		writeError(w, service.ErrInvalidInput)
 		return
 	}
-	out, e := h.s.Create(r.Context(), &v)
-	if e != nil {
-		writeError(w, e)
+
+	product, err := h.s.Create(
+		r.Context(),
+		&v.CreateProductDTO,
+	)
+	if err != nil {
+		writeError(w, err)
 		return
 	}
-	writeJSON(w, http.StatusCreated, out)
+
+	if v.Wishlist == nil {
+		writeJSON(w, http.StatusCreated, product)
+		return
+	}
+
+	wishlist := &domain.Wishlist{
+		ProductID: product.ProductID,
+		Name:      v.Wishlist.Name,
+	}
+
+	createdWishlist, err := h.wishlist.Create(
+		r.Context(),
+		wishlist,
+	)
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+
+	for _, categoryID := range v.Wishlist.CategoryIDs {
+		if err := h.wishlist.AddCategoryOption(
+			r.Context(),
+			createdWishlist.WishlistID,
+			categoryID,
+		); err != nil {
+			writeError(w, err)
+			return
+		}
+	}
+
+	writeJSON(w, http.StatusCreated, product)
 }
 
 // get godoc
@@ -121,17 +163,27 @@ func (h productHandler) update(w http.ResponseWriter, r *http.Request) {
 // @Tags products
 // @Accept json
 // @Produce json
-// @Param id path string true "Product ID"
+// @Param productID path string true "Product ID"
 // @Success 204 "No content"
 // @Failure 400 {object} ErrorResponse
+// @Failure 403 {object} ErrorResponse
 // @Failure 404 {object} ErrorResponse
 // @Failure 500 {object} ErrorResponse
-// @Router /products/{id} [delete]
+// @Router /products/{productID} [delete]
 func (h productHandler) delete(w http.ResponseWriter, r *http.Request) {
-	if e := h.s.Delete(r.Context(), chi.URLParam(r, "productID")); e != nil {
-		writeError(w, e)
+	productID := chi.URLParam(r, "productID")
+
+	customerID, ok := auth.UserIDFromContext(r.Context())
+	if !ok {
+		writeError(w, service.ErrForbidden)
 		return
 	}
+
+	if err := h.s.Delete(r.Context(), productID, customerID); err != nil {
+		writeError(w, err)
+		return
+	}
+
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -166,9 +218,19 @@ func (h productHandler) list(w http.ResponseWriter, r *http.Request) {
 	if categoryID != "" {
 		category = &categoryID
 	}
+	userID, ok := auth.UserIDFromContext(r.Context())
+
+	var userIDptr *string
+
+	if ok {
+		userIDptr = &userID
+	} else {
+		userIDptr = nil
+	}
 
 	products, err := h.s.List(
 		r.Context(),
+		userIDptr,
 		q,
 		category,
 		page,
@@ -200,4 +262,98 @@ func (h productHandler) byCustomer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, v)
+}
+
+// recommendations godoc
+// @Summary Get product recommendations
+// @Description Get products that are direct exchange candidates
+// @Tags products
+// @Accept json
+// @Produce json
+// @Param productID path string true "Product ID"
+// @Success 200 {array} domain.Product
+// @Failure 400 {object} ErrorResponse
+// @Failure 404 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /products/{productID}/recommendations [get]
+func (h productHandler) recommendations(w http.ResponseWriter, r *http.Request) {
+	productID := chi.URLParam(r, "productID")
+
+	if productID == "" {
+		writeError(w, service.ErrInvalidInput)
+		return
+	}
+
+	customerID, ok := auth.UserIDFromContext(r.Context())
+	if !ok {
+		writeError(w, service.ErrForbidden)
+		return
+	}
+
+	result, err := h.search.FindChain(
+		r.Context(),
+		customerID,
+		productID,
+		5,
+	)
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+
+	writeJSON(w, http.StatusOK, result)
+}
+
+// updateWishlist godoc
+// @Summary Update product wishlist
+// @Description Replace the wishlist of a product
+// @Tags products
+// @Accept json
+// @Produce json
+// @Param productID path string true "Product ID"
+// @Param request body domain.CreateWishlistDTO true "Wishlist data"
+// @Success 200 {object} domain.Wishlist
+// @Failure 400 {object} ErrorResponse
+// @Failure 403 {object} ErrorResponse
+// @Failure 404 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /products/{productID}/wishlist [put]
+func (h productHandler) updateWishlist(w http.ResponseWriter, r *http.Request) {
+	productID := chi.URLParam(r, "productID")
+
+	customerID, ok := auth.UserIDFromContext(r.Context())
+	if !ok {
+		writeError(w, service.ErrForbidden)
+		return
+	}
+
+	// Проверяем, что товар принадлежит текущему пользователю.
+	product, err := h.s.GetByID(r.Context(), productID)
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+
+	if product.CustomerID != customerID {
+		writeError(w, service.ErrForbidden)
+		return
+	}
+
+	var v domain.CreateWishlistDTO
+	if decodeJSON(r, &v) != nil {
+		writeError(w, service.ErrInvalidInput)
+		return
+	}
+
+	wishlist, err := h.wishlist.UpdateByProductID(
+		r.Context(),
+		productID,
+		&v,
+	)
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+
+	writeJSON(w, http.StatusOK, wishlist)
 }

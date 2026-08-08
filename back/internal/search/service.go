@@ -60,37 +60,3 @@ func (s *SearchService) FindChain(
 		maxDepth,
 	)
 }
-
-// func (s *SearchService) FindProduct(
-// 	ctx context.Context,
-// 	searchQuery string,
-// 	category string,
-// ) (*ProductSearchResult, error) {
-// 	target, err := s.productService.Search(ctx, searchQuery, &category)
-
-// 	if err != nil {
-// 		return nil, err
-// 	}
-
-// 	return &ProductSearchResult{
-// 		Products: target,
-// 		Length:   len(target),
-// 	}, nil
-
-// }
-
-func (s *SearchService) FindCategory(
-	ctx context.Context,
-	categoryQuery string,
-) (*CategorySearchResult, error) {
-	target, err := s.categoryService.Search(ctx, categoryQuery)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return &CategorySearchResult{
-		Categories: target,
-		Length:     len(target),
-	}, nil
-}

@@ -18,10 +18,15 @@ func NewAuthHandler(cs service.CustomerService) *authHandler {
 	return &authHandler{customerService: cs}
 }
 
-func (h *authHandler) MountPublic(r chi.Router) {
+func (h *authHandler) mountAuth(r chi.Router) {
 	r.Route("/auth", func(r chi.Router) {
 		r.Post("/login", h.login)
 		r.Post("/register", h.register)
+
+		r.Group(func(r chi.Router) {
+			r.Use(auth.AuthMiddleware)
+			r.Get("/me", h.me)
+		})
 	})
 }
 

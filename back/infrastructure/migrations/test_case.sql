@@ -125,7 +125,7 @@ BEGIN
     -- ========================================================
 
     INSERT INTO customers(email, password_hash)
-    VALUES ('user1@test.com', '1')
+    VALUES ('user1@test.com', '$2a$10$m.NfG.SFSyf7.nrMZ9x4bu/1d5xHThLC59PLM1Xrk9fvqmUmIEKLu')
     RETURNING customer_id INTO cust1;
 
     INSERT INTO customers(email, password_hash)

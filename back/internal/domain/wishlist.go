@@ -4,6 +4,10 @@ import (
 	"time"
 )
 
+type CreateWishlistDTO struct {
+	Name        string   `json:"name"`
+	CategoryIDs []string `json:"category_ids"`
+}
 type Wishlist struct {
 	WishlistID string    `json:"wishlist_id"`
 	ProductID  string    `json:"product_id"`

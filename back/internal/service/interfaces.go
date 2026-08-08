@@ -20,8 +20,8 @@ type ProductService interface {
 	GetByID(context.Context, string) (*domain.Product, error)
 	GetByCustomerID(context.Context, string) ([]domain.Product, error)
 	Update(context.Context, string, *domain.UpdateProductDTO) (*domain.Product, error)
-	Delete(context.Context, string) error
-	List(context.Context, string, *string, int, int) ([]domain.Product, error)
+	Delete(context.Context, string, string) error
+	List(context.Context, *string, string, *string, int, int) ([]domain.Product, error)
 	GetExchangeCandidates(context.Context, string) ([]domain.Product, error)
 }
 
@@ -66,4 +66,5 @@ type WishlistService interface {
 	RemoveCategoryOption(context.Context, string, string) error
 	GetOptions(context.Context, string) ([]domain.Category, error)
 	Delete(context.Context, string) error
+	UpdateByProductID(ctx context.Context, productID string, dto *domain.CreateWishlistDTO) (*domain.Wishlist, error)
 }

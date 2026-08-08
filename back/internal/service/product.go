@@ -119,11 +119,11 @@ func (s *productService) Update(ctx context.Context, id string, dto *domain.Upda
 }
 
 // Delete – мягкое удаление (устанавливает статус archived)
-func (s *productService) Delete(ctx context.Context, id string) error {
+func (s *productService) Delete(ctx context.Context, id string, customerID string) error {
 	if blank(id) {
 		return ErrInvalidInput
 	}
-	if err := s.repo.Delete(ctx, id); err != nil {
+	if err := s.repo.Delete(ctx, id, customerID); err != nil {
 		return normalizeError(err)
 	}
 	return nil
@@ -132,6 +132,7 @@ func (s *productService) Delete(ctx context.Context, id string) error {
 // List – список продуктов с пагинацией
 func (s *productService) List(
 	ctx context.Context,
+	customerID *string,
 	q string,
 	categoryID *string,
 	page int,
@@ -151,6 +152,7 @@ func (s *productService) List(
 
 	products, err := s.repo.List(
 		ctx,
+		customerID,
 		q,
 		categoryID,
 		page,
@@ -162,22 +164,6 @@ func (s *productService) List(
 
 	return products, nil
 }
-
-// Search – полнотекстовый поиск
-// func (s *productService) Search(ctx context.Context, q string, categoryID *string) ([]domain.Product, error) {
-// 	q = strings.TrimSpace(q)
-// 	if q == "" && (categoryID == nil || *categoryID == "") {
-// 		return nil, ErrInvalidInput
-// 	}
-// 	if categoryID != nil && *categoryID == "" {
-// 		categoryID = nil
-// 	}
-// 	products, err := s.repo.Search(ctx, q, categoryID)
-// 	if err != nil {
-// 		return nil, normalizeError(err)
-// 	}
-// 	return products, nil
-// }
 
 // GetExchangeCandidates – кандидаты для обмена
 func (s *productService) GetExchangeCandidates(ctx context.Context, productID string) ([]domain.Product, error) {

@@ -18,12 +18,12 @@ func mountWishlistRoutes(r chi.Router, s service.WishlistService) {
 	h := wishlistHandler{s}
 	r.Route("/wishlists", func(r chi.Router) {
 		r.Post("/", h.create)
+		r.Get("/by-product/{productID}", h.byProduct)
 		r.Get("/{id}", h.get)
 		r.Delete("/{id}", h.delete)
 		r.Get("/{id}/options", h.options)
 		r.Post("/{id}/options", h.addOption)
 		r.Delete("/{id}/options/{categoryID}", h.removeOption)
-		r.Get("/by-product/{productID}", h.byProduct)
 	})
 }
 
