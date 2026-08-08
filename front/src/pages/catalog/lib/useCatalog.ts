@@ -15,8 +15,10 @@ export const useCatalog = () => {
     const {setTitle} = usePageTitle();
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
+
     const searchQuery = searchParams.get('q')?.trim() ?? '';
     const categoryQuery = searchParams.get('category_id')?.trim() ?? '';
+
     const {data: categories = [], isLoading: isCategoriesLoading, isError: isCategoriesError} = useGetCategoriesQuery();
 
     const categoryFilters = useMemo<TCatalogCategory[]>(() => [

@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react';
 
 import { useGetProductsByCustomerQuery } from '@entities/product';
-import type { TProduct, TProductStatus } from '@entities/product';
 import { useGetCustomerRatingQuery, useGetReviewsByCustomerQuery } from '@entities/review';
 import type { TUser } from '@entities/user';
 import type { TProfileTab } from '@shared/ui/profileContent';
@@ -36,7 +35,3 @@ export const useProfile = (user?: TUser) => {
         isError: productsQuery.isError,
     };
 };
-
-export const isActiveProduct = (status: TProductStatus) => status !== 'archived';
-
-export type TProfileProduct = TProduct;

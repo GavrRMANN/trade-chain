@@ -2,7 +2,7 @@ import { lazy, Suspense, type ReactElement } from 'react';
 import { Route, Routes, useLocation } from 'react-router-dom';
 
 import { App } from '@app/App';
-import { AuthModal, AuthPage } from '@pages/auth';
+import { AuthModal } from '@pages/auth';
 import { CatalogPage } from '@pages/catalog';
 import { ProductPage } from '@pages/product';
 import { ProfilePage } from '@pages/profile';
@@ -26,7 +26,6 @@ export const AppRouter = () => {
                 <Route element={<App />}>
                     <Route index element={<CatalogPage />} />
                     <Route path="product/:productId" element={<ProductPage />} />
-                    <Route path="auth" element={<AuthPage />} />
                     <Route path="profile" element={<ProfilePage />} />
                     <Route path="profile/:customerId" element={<ProfilePage />} />
                     <Route path="*" element={withSuspense(<NotFoundPageLazy />)} />
