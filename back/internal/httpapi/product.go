@@ -2,6 +2,8 @@ package httpapi
 
 import (
 	"net/http"
+	"strings"
+	"trade-chain/internal/auth"
 	"trade-chain/internal/domain"
 	"trade-chain/internal/service"
 
@@ -12,14 +14,31 @@ type productHandler struct{ s service.ProductService }
 
 func mountProductRoutes(r chi.Router, s service.ProductService) {
 	h := productHandler{s}
+
 	r.Route("/products", func(r chi.Router) {
-		r.Post("/", h.create)
+		// Публичные маршруты
 		r.Get("/", h.list)
-		r.Get("/search", h.search)
-		r.Get("/{id}", h.get)
-		r.Patch("/{id}", h.update)
-		r.Delete("/{id}", h.delete)
-		r.Get("/by-customer/{customerID}", h.byCustomer)
+		r.Get("/{productID}", h.get)
+
+		// Защищенные маршруты
+		r.Group(func(r chi.Router) {
+			r.Use(auth.AuthMiddleware)
+
+			// Создать объявление
+			r.Post("/", h.create)
+
+			// Изменить своё объявление
+			r.Patch("/{productID}", h.update)
+
+			// Снять товар с обмена
+			//r.Post("/{productID}/archive", h.archive)
+
+			// Задать, что владелец хочет получить
+			//r.Put("/{productID}/wishlist", h.updateWishlist)
+
+			// Подходящие прямые товары
+			//r.Get("/{productID}/recommendations", h.recommendations)
+		})
 	})
 }
 
@@ -117,11 +136,13 @@ func (h productHandler) delete(w http.ResponseWriter, r *http.Request) {
 }
 
 // list godoc
-// @Summary List products
-// @Description List products with pagination
+// @Summary List and search products
+// @Description Get product catalog with pagination and optional text/category search
 // @Tags products
 // @Accept json
 // @Produce json
+// @Param q query string false "Search query"
+// @Param category_id query string false "Category ID"
 // @Param offset query int false "Offset" default(0)
 // @Param limit query int false "Limit" default(20) maximum(100)
 // @Success 200 {array} domain.Product
@@ -129,17 +150,48 @@ func (h productHandler) delete(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} ErrorResponse
 // @Router /products [get]
 func (h productHandler) list(w http.ResponseWriter, r *http.Request) {
-	o, l, e := pagination(r)
-	if e != nil {
-		writeError(w, e)
+	offset, limit, err := pagination(r)
+	if err != nil {
+		writeError(w, err)
 		return
 	}
-	v, e := h.s.List(r.Context(), o, l)
-	if e != nil {
-		writeError(w, e)
+
+	q := strings.TrimSpace(r.URL.Query().Get("q"))
+	categoryID := strings.TrimSpace(r.URL.Query().Get("category_id"))
+
+	var products []domain.Product
+
+	if q != "" || categoryID != "" {
+		var category *string
+		if categoryID != "" {
+			category = &categoryID
+		}
+
+		products, err = h.s.Search(r.Context(), q, category)
+	} else {
+		// Обычный каталог.
+		products, err = h.s.List(r.Context(), offset, limit)
+	}
+
+	if err != nil {
+		writeError(w, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, v)
+
+	if q != "" || categoryID != "" {
+		if offset >= len(products) {
+			products = []domain.Product{}
+		} else {
+			end := offset + limit
+			if end > len(products) {
+				end = len(products)
+			}
+
+			products = products[offset:end]
+		}
+	}
+
+	writeJSON(w, http.StatusOK, products)
 }
 
 // search godoc

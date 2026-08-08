@@ -64,8 +64,9 @@ func (s *SearchService) FindChain(
 func (s *SearchService) FindProduct(
 	ctx context.Context,
 	searchQuery string,
+	category string,
 ) (*ProductSearchResult, error) {
-	target, err := s.productService.Search(ctx, searchQuery, nil)
+	target, err := s.productService.Search(ctx, searchQuery, &category)
 
 	if err != nil {
 		return nil, err
