@@ -55,6 +55,15 @@ type ChainRepository interface {
 	Delete(ctx context.Context, id string) error
 }
 
+// NegotiationRepository хранит то, чем звено обрастает в переговорах:
+// переписку сторон и их решения об итоге обмена.
+type NegotiationRepository interface {
+	AddMessage(ctx context.Context, message *domain.ChainMessage) (*domain.ChainMessage, error)
+	ListMessages(ctx context.Context, chainID string) ([]domain.ChainMessage, error)
+	Confirm(ctx context.Context, confirmation *domain.ChainConfirmation) error
+	ListConfirmations(ctx context.Context, chainID string) ([]domain.ChainConfirmation, error)
+}
+
 type ReviewRepository interface {
 	Create(ctx context.Context, review *domain.Review) (*domain.Review, error)
 	GetByID(ctx context.Context, id string) (*domain.Review, error)
