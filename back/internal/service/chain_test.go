@@ -6,6 +6,7 @@ import (
 	"testing"
 	"trade-chain/internal/domain"
 	"trade-chain/internal/exchange"
+	"trade-chain/internal/repository"
 )
 
 // Подставные репозитории держат состояние в памяти: правила согласования
@@ -112,8 +113,42 @@ func (f *fakeChainRepo) CompleteExchange(_ context.Context, id string) error {
 func (f *fakeChainRepo) GetByProductID(context.Context, string) ([]domain.Chain, error) {
 	return nil, nil
 }
-func (f *fakeChainRepo) GetByCustomerID(context.Context, string) ([]domain.Chain, error) {
-	return nil, nil
+func (f *fakeChainRepo) GetByCustomerID(ctx context.Context, customerID string) ([]domain.Chain, error) {
+	return f.List(ctx, repository.ChainFilter{CustomerID: customerID})
+}
+
+func (f *fakeChainRepo) List(_ context.Context, filter repository.ChainFilter) ([]domain.Chain, error) {
+	found := make([]domain.Chain, 0, len(f.chains))
+	for _, c := range f.chains {
+		if !matchesRole(c, filter) || !matchesStatus(c, filter.Statuses) {
+			continue
+		}
+		found = append(found, c)
+	}
+	return found, nil
+}
+
+func matchesRole(c domain.Chain, filter repository.ChainFilter) bool {
+	switch filter.Role {
+	case domain.RoleIncoming:
+		return c.RecipientID == filter.CustomerID
+	case domain.RoleOutgoing:
+		return c.InitiatorID == filter.CustomerID
+	default:
+		return c.InitiatorID == filter.CustomerID || c.RecipientID == filter.CustomerID
+	}
+}
+
+func matchesStatus(c domain.Chain, statuses []domain.ChainStatus) bool {
+	if len(statuses) == 0 {
+		return true
+	}
+	for _, status := range statuses {
+		if c.Status == string(status) {
+			return true
+		}
+	}
+	return false
 }
 func (f *fakeChainRepo) GetFullChain(context.Context, string) ([]domain.Chain, error) {
 	return nil, nil

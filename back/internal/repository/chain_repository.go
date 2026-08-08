@@ -8,8 +8,12 @@ import (
 	"trade-chain/internal/domain"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
+
+// uniqueViolationCode — код ошибки Postgres при нарушении уникального индекса.
+const uniqueViolationCode = "23505"
 
 type chainRepository struct {
 	db *pgxpool.Pool
@@ -22,7 +26,8 @@ func NewChainRepository(db *pgxpool.Pool) ChainRepository {
 // chainColumns перечислены один раз намеренно: список повторялся в четырёх
 // запросах, и добавление колонки требовало не забыть ни один из них.
 const chainColumns = `chain_id, from_product_id, to_product_id, initiator_id, recipient_id,
-	previous_chain_id, next_chain_id, status, message, expires_at, created_at, updated_at`
+	previous_chain_id, next_chain_id, status, message, exchange_goal_id, route_step_id,
+	surcharge_amount, surcharge_currency, surcharge_payer, expires_at, created_at, updated_at`
 
 // rowScanner покрывает и одиночную строку, и строку выборки: у pgx.Row
 // и pgx.Rows одинаковый Scan, так что разбор звена пишется один раз.
@@ -42,6 +47,11 @@ func scanChain(row rowScanner) (domain.Chain, error) {
 		&chain.NextChainID,
 		&chain.Status,
 		&chain.Message,
+		&chain.ExchangeGoalID,
+		&chain.RouteStepID,
+		&chain.Surcharge.Amount,
+		&chain.Surcharge.Currency,
+		&chain.Surcharge.Payer,
 		&chain.ExpiresAt,
 		&chain.CreatedAt,
 		&chain.UpdatedAt,
@@ -72,8 +82,9 @@ func (r *chainRepository) queryChains(ctx context.Context, query string, args ..
 
 func (r *chainRepository) Create(ctx context.Context, chain *domain.Chain) (*domain.Chain, error) {
 	query := `
-		INSERT INTO chains (from_product_id, to_product_id, initiator_id, recipient_id, previous_chain_id, next_chain_id, status, message, expires_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, COALESCE($9, CURRENT_TIMESTAMP + INTERVAL '72 hours'))
+		INSERT INTO chains (from_product_id, to_product_id, initiator_id, recipient_id, previous_chain_id, next_chain_id, status, message,
+			exchange_goal_id, route_step_id, surcharge_amount, surcharge_currency, surcharge_payer, expires_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, COALESCE($14, CURRENT_TIMESTAMP + INTERVAL '72 hours'))
 		RETURNING ` + chainColumns
 
 	// Нулевое время означает «срок не задан» — базе передаётся NULL,
@@ -92,12 +103,29 @@ func (r *chainRepository) Create(ctx context.Context, chain *domain.Chain) (*dom
 		chain.NextChainID,
 		chain.Status,
 		chain.Message,
+		chain.ExchangeGoalID,
+		chain.RouteStepID,
+		chain.Surcharge.Amount,
+		chain.Surcharge.Currency,
+		chain.Surcharge.Payer,
 		expiresAt,
 	))
 	if err != nil {
+		// Второе предложение по той же паре товаров отсекается уникальным
+		// индексом. Ошибка базы здесь ожидаемая, а не поломка: человек просто
+		// нажал кнопку дважды, и ему нужен понятный ответ, а не 500.
+		if isUniqueViolation(err) {
+			return nil, domain.ErrOfferDuplicate
+		}
 		return nil, err
 	}
 	return &created, nil
+}
+
+// isUniqueViolation отличает нарушение уникальности от прочих ошибок базы.
+func isUniqueViolation(err error) bool {
+	var pgErr *pgconn.PgError
+	return errors.As(err, &pgErr) && pgErr.Code == uniqueViolationCode
 }
 
 func (r *chainRepository) GetByID(ctx context.Context, id string) (*domain.Chain, error) {
@@ -127,13 +155,33 @@ func (r *chainRepository) GetByProductID(ctx context.Context, productID string) 
 // и те, что предложили ему. Без этого запроса на фронте нет входящих:
 // пользователь узнаёт о предложении, только если знает его идентификатор.
 func (r *chainRepository) GetByCustomerID(ctx context.Context, customerID string) ([]domain.Chain, error) {
+	return r.List(ctx, ChainFilter{CustomerID: customerID})
+}
+
+// List отбирает сделки человека по стороне и состоянию.
+//
+// Отбор делает база, а не Go: списки входящих и исходящих открывают на каждом
+// заходе в приложение, и вычитывать ради них всю историю пользователя, чтобы
+// отфильтровать в памяти, — лишний трафик, который растёт вместе с историей.
+func (r *chainRepository) List(ctx context.Context, filter ChainFilter) ([]domain.Chain, error) {
+	// Пустая роль означает «любая сторона»: у списка «мои обмены» разделения
+	// на входящие и исходящие нет.
+	asInitiator := filter.Role == domain.RoleAny || filter.Role == domain.RoleOutgoing
+	asRecipient := filter.Role == domain.RoleAny || filter.Role == domain.RoleIncoming
+
+	statuses := make([]string, 0, len(filter.Statuses))
+	for _, status := range filter.Statuses {
+		statuses = append(statuses, string(status))
+	}
+
 	query := `
 		SELECT ` + chainColumns + `
 		FROM chains
-		WHERE initiator_id = $1 OR recipient_id = $1
+		WHERE (($2 AND initiator_id = $1) OR ($3 AND recipient_id = $1))
+		  AND (cardinality($4::text[]) = 0 OR status = ANY($4::text[]))
 		ORDER BY created_at DESC
 	`
-	return r.queryChains(ctx, query, customerID)
+	return r.queryChains(ctx, query, filter.CustomerID, asInitiator, asRecipient, statuses)
 }
 
 func (r *chainRepository) GetFullChain(ctx context.Context, chainID string) ([]domain.Chain, error) {
