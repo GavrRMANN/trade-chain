@@ -71,6 +71,60 @@ func OfferStatusOf(deal Deal, now time.Time) OfferStatus {
 	return OfferPending
 }
 
+// chainStatuses — обратный перевод: какие состояния звена скрываются за
+// статусом предложения из запроса клиента.
+//
+// pending попадает и в expired: истёкшие предложения так и лежат в базе
+// в ожидании ответа, а expired им проставляет чтение, а не фоновой процесс.
+var chainStatuses = map[OfferStatus][]domain.ChainStatus{
+	OfferPending:   {domain.ChainPending},
+	OfferAccepted:  {domain.ChainActive},
+	OfferDeclined:  {domain.ChainRejected, domain.ChainCountered},
+	OfferCancelled: {domain.ChainCancelled},
+	OfferExpired:   {domain.ChainExpired, domain.ChainPending},
+	OfferCompleted: {domain.ChainCompleted},
+	OfferFailed:    {domain.ChainFailed},
+}
+
+// ChainStatusesFor переводит запрошенные статусы предложений в состояния
+// звена, по которым выбирает база. Пустой ответ означает «без отбора».
+func ChainStatusesFor(statuses []OfferStatus) []domain.ChainStatus {
+	if len(statuses) == 0 {
+		return nil
+	}
+
+	seen := make(map[domain.ChainStatus]bool, len(statuses))
+	found := make([]domain.ChainStatus, 0, len(statuses))
+	for _, status := range statuses {
+		for _, chainStatus := range chainStatuses[status] {
+			if seen[chainStatus] {
+				continue
+			}
+			seen[chainStatus] = true
+			found = append(found, chainStatus)
+		}
+	}
+	return found
+}
+
+// ParseOfferStatus разбирает статус предложения из запроса.
+func ParseOfferStatus(value string) (OfferStatus, bool) {
+	status := OfferStatus(value)
+	_, known := chainStatuses[status]
+	return status, known
+}
+
+// ParseRole разбирает сторону, с которой запрошен список предложений.
+func ParseRole(value string) (domain.OfferRole, bool) {
+	role := domain.OfferRole(value)
+	switch role {
+	case domain.RoleAny, domain.RoleIncoming, domain.RoleOutgoing:
+		return role, true
+	default:
+		return domain.RoleAny, false
+	}
+}
+
 // ExchangeStatusOf собирает состояние обмена из подтверждений сторон.
 //
 // Второе возвращаемое значение сообщает, есть ли обмен вообще: пока

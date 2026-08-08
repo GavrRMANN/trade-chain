@@ -40,6 +40,21 @@ type ChainService interface {
 	Delete(context.Context, string) error
 }
 
+// OfferService — экран предложений: отправить, ответить, довести до итога.
+//
+// Отдельный интерфейс от ChainService нужен транспорту: маршруты
+// /exchange-offers работают в терминах предложения и обмена, а не звена,
+// и не должны иметь доступа к операциям вроде удаления цепочки.
+type OfferService interface {
+	Create(ctx context.Context, in CreateOfferInput) (*Offer, error)
+	List(ctx context.Context, actorID string, role domain.OfferRole, statuses []exchange.OfferStatus) ([]Offer, error)
+	Details(ctx context.Context, offerID, actorID string) (*OfferDetails, error)
+	Accept(ctx context.Context, offerID, actorID string) (*Offer, error)
+	Decline(ctx context.Context, offerID, actorID string) (*Offer, error)
+	Cancel(ctx context.Context, offerID, actorID string) (*Offer, error)
+	Confirm(ctx context.Context, exchangeID, actorID string, success bool, reason string) (*Offer, error)
+}
+
 type ReviewService interface {
 	Create(context.Context, *domain.Review) (*domain.Review, error)
 	GetByID(context.Context, string) (*domain.Review, error)
