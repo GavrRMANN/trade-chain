@@ -4,6 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
+	"log"
 	"trade-chain/internal/domain"
 
 	"github.com/jackc/pgx/v5"
@@ -22,8 +24,18 @@ func (r *productRepository) Create(ctx context.Context, dto *domain.CreateProduc
 	query := `
 		INSERT INTO products (customer_id, category_id, title, description, image, price, location, status)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-		RETURNING product_id, customer_id, category_id, title, description, image, price, location, status, created_at, updated_at
-	`
+		RETURNING
+			product_id,
+			customer_id,
+			COALESCE(category_id::text, ''),
+			title,
+			COALESCE(description, ''),
+			COALESCE(image, ''),
+			price,
+			COALESCE(location, ''),
+			status,
+			created_at,
+			updated_at	`
 
 	var created domain.Product
 	err := r.db.QueryRow(ctx, query,
@@ -56,7 +68,18 @@ func (r *productRepository) Create(ctx context.Context, dto *domain.CreateProduc
 
 func (r *productRepository) GetByID(ctx context.Context, id string) (*domain.Product, error) {
 	query := `
-		SELECT product_id, customer_id, category_id, title, description, image, price, location, status, created_at, updated_at
+		SELECT
+			product_id,
+			customer_id,
+			COALESCE(category_id::text, ''),
+			title,
+			COALESCE(description, ''),
+			COALESCE(image, ''),
+			price,
+			COALESCE(location, ''),
+			status,
+			created_at,
+			updated_at
 		FROM products
 		WHERE product_id = $1 AND status != 'archived'
 	`
@@ -86,7 +109,18 @@ func (r *productRepository) GetByID(ctx context.Context, id string) (*domain.Pro
 
 func (r *productRepository) GetByCustomerID(ctx context.Context, customerID string) ([]domain.Product, error) {
 	query := `
-		SELECT product_id, customer_id, category_id, title, description, image, price, location, status, created_at, updated_at
+		SELECT
+			product_id,
+			customer_id,
+			COALESCE(category_id::text, ''),
+			title,
+			COALESCE(description, ''),
+			COALESCE(image, ''),
+			price,
+			COALESCE(location, ''),
+			status,
+			created_at,
+			updated_at
 		FROM products
 		WHERE customer_id = $1 AND status != 'archived'
 		ORDER BY created_at DESC
@@ -133,8 +167,18 @@ func (r *productRepository) Update(ctx context.Context, id string, dto *domain.U
 			location = COALESCE($6, location),
 			status = COALESCE($7, status)
 		WHERE product_id = $8
-		RETURNING product_id, customer_id, category_id, title, description, image, price, location, status, created_at, updated_at
-	`
+		RETURNING
+			product_id,
+			customer_id,
+			COALESCE(category_id::text, ''),
+			title,
+			COALESCE(description, ''),
+			COALESCE(image, ''),
+			price,
+			COALESCE(location, ''),
+			status,
+			created_at,
+			updated_at	`
 
 	var updated domain.Product
 	err := r.db.QueryRow(ctx, query,
@@ -180,81 +224,95 @@ func (r *productRepository) Delete(ctx context.Context, id string) error {
 	return nil
 }
 
-func (r *productRepository) List(ctx context.Context, offset, limit int) ([]domain.Product, error) {
-	query := `
-		SELECT product_id, customer_id, category_id, title, description, image, price, location, status, created_at, updated_at
-		FROM products
-		WHERE status != 'archived'
-		ORDER BY created_at DESC
-		LIMIT $1 OFFSET $2
-	`
+func (r *productRepository) List(
+	ctx context.Context,
+	q string,
+	categoryID *string,
+	page int,
+	limit int,
+) ([]domain.Product, error) {
+	offset := (page - 1) * limit
 
-	rows, err := r.db.Query(ctx, query, limit, offset)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var products []domain.Product
-	for rows.Next() {
-		var p domain.Product
-		if err := rows.Scan(
-			&p.ProductID,
-			&p.CustomerID,
-			&p.CategoryID,
-			&p.Title,
-			&p.Description,
-			&p.Image,
-			&p.Price,
-			&p.Location,
-			&p.Status,
-			&p.CreatedAt,
-			&p.UpdatedAt,
-		); err != nil {
-			return nil, err
-		}
-		products = append(products, p)
-	}
-	return products, rows.Err()
-}
-
-// Search – аналогично, но в SELECT и WHERE теперь используются title/status
-func (r *productRepository) Search(ctx context.Context, search string, categoryID *string) ([]domain.Product, error) {
 	query := `
 		SELECT
-			product_id, customer_id, category_id, title, description, image, price, location, status, created_at, updated_at,
-			(
-				0.60 * ts_rank_cd(search_vector, websearch_to_tsquery('simple', $1)) +
-				0.25 * similarity(title, $1) +
-				0.15 * similarity(description, $1)
-			) AS score
+			product_id,
+			customer_id,
+			COALESCE(category_id::text, ''),
+			title,
+			COALESCE(description, ''),
+			COALESCE(image, ''),
+			price,
+			COALESCE(location, ''),
+			status,
+			created_at,
+			updated_at
 		FROM products
-		WHERE
-			status != 'archived'
-			AND (
-				search_vector @@ websearch_to_tsquery('simple', $1)
-				OR title % $1
-				OR description % $1
-			)
+		WHERE status != 'archived'
 	`
 
-	args := []interface{}{search}
-	if categoryID != nil {
-		query += ` AND category_id = $2`
-		args = append(args, *categoryID)
+	args := []interface{}{}
+	argIndex := 1
+
+	if q != "" {
+		query += fmt.Sprintf(`
+			AND (
+				COALESCE(search_vector, ''::tsvector)
+					@@ websearch_to_tsquery('simple', $%d)
+				OR title %% $%d
+				OR COALESCE(description, '') %% $%d
+			)
+		`, argIndex, argIndex, argIndex)
+
+		args = append(args, q)
+		argIndex++
 	}
-	query += ` ORDER BY score DESC, created_at DESC LIMIT 100`
+
+	if categoryID != nil {
+		query += fmt.Sprintf(`
+			AND category_id = $%d
+		`, argIndex)
+
+		args = append(args, *categoryID)
+		argIndex++
+	}
+
+	if q != "" {
+		query += fmt.Sprintf(`
+			ORDER BY
+				(
+					0.60 * ts_rank_cd(
+						COALESCE(search_vector, ''::tsvector),
+						websearch_to_tsquery('simple', $1)
+					) +
+					0.25 * similarity(title, $1) +
+					0.15 * similarity(COALESCE(description, ''), $1)
+				) DESC,
+				created_at DESC
+		`)
+	} else {
+		query += `
+			ORDER BY created_at DESC
+		`
+	}
+
+	query += fmt.Sprintf(`
+		LIMIT $%d OFFSET $%d
+	`, argIndex, argIndex+1)
+
+	args = append(args, limit, offset)
 
 	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {
+		log.Printf("PRODUCT LIST QUERY ERROR: %v", err)
 		return nil, err
 	}
 	defer rows.Close()
 
 	var products []domain.Product
+
 	for rows.Next() {
 		var p domain.Product
-		var score float64
+
 		if err := rows.Scan(
 			&p.ProductID,
 			&p.CustomerID,
@@ -267,24 +325,52 @@ func (r *productRepository) Search(ctx context.Context, search string, categoryI
 			&p.Status,
 			&p.CreatedAt,
 			&p.UpdatedAt,
-			&score,
 		); err != nil {
+			log.Printf("PRODUCT LIST SCAN ERROR: %v", err)
 			return nil, err
 		}
+
 		products = append(products, p)
 	}
-	return products, rows.Err()
+
+	if err := rows.Err(); err != nil {
+		log.Printf("PRODUCT LIST ROWS ERROR: %v", err)
+		return nil, err
+	}
+
+	log.Printf(
+		"PRODUCT LIST SUCCESS: q=%q category=%v page=%d limit=%d got=%d",
+		q,
+		categoryID,
+		page,
+		limit,
+		len(products),
+	)
+
+	return products, nil
 }
 
 func (r *productRepository) GetExchangeCandidates(ctx context.Context, productID string) ([]domain.Product, error) {
 	query := `
 		SELECT DISTINCT
-			p.product_id, p.customer_id, p.category_id, p.title, p.description,
-			p.image, p.price, p.location, p.status, p.created_at, p.updated_at
+			p.product_id,
+			p.customer_id,
+			COALESCE(p.category_id::text, ''),
+			p.title,
+			COALESCE(p.description, ''),
+			COALESCE(p.image, ''),
+			p.price,
+			COALESCE(p.location, ''),
+			p.status,
+			p.created_at,
+			p.updated_at
 		FROM products source
-		JOIN wishlists w ON w.product_id = source.product_id
-		JOIN wishlist_options wo ON wo.wishlist_id = w.wishlist_id
-		JOIN products p ON p.category_id = wo.category_id
+		JOIN wishlists w
+			ON w.product_id = source.product_id
+		JOIN wishlist_options wo
+			ON wo.wishlist_id = w.wishlist_id
+		JOIN products p
+			ON p.category_id = wo.category_id
 		WHERE
 			source.product_id = $1
 			AND p.status != 'archived'

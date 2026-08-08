@@ -80,7 +80,7 @@ func (h productHandler) create(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} ErrorResponse
 // @Router /products/{id} [get]
 func (h productHandler) get(w http.ResponseWriter, r *http.Request) {
-	v, e := h.s.GetByID(r.Context(), chi.URLParam(r, "id"))
+	v, e := h.s.GetByID(r.Context(), chi.URLParam(r, "productID"))
 	if e != nil {
 		writeError(w, e)
 		return
@@ -107,7 +107,7 @@ func (h productHandler) update(w http.ResponseWriter, r *http.Request) {
 		writeError(w, service.ErrInvalidInput)
 		return
 	}
-	out, e := h.s.Update(r.Context(), chi.URLParam(r, "id"), &v)
+	out, e := h.s.Update(r.Context(), chi.URLParam(r, "productID"), &v)
 	if e != nil {
 		writeError(w, e)
 		return
@@ -128,7 +128,7 @@ func (h productHandler) update(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} ErrorResponse
 // @Router /products/{id} [delete]
 func (h productHandler) delete(w http.ResponseWriter, r *http.Request) {
-	if e := h.s.Delete(r.Context(), chi.URLParam(r, "id")); e != nil {
+	if e := h.s.Delete(r.Context(), chi.URLParam(r, "productID")); e != nil {
 		writeError(w, e)
 		return
 	}
@@ -143,81 +143,43 @@ func (h productHandler) delete(w http.ResponseWriter, r *http.Request) {
 // @Produce json
 // @Param q query string false "Search query"
 // @Param category_id query string false "Category ID"
-// @Param offset query int false "Offset" default(0)
-// @Param limit query int false "Limit" default(20) maximum(100)
+// @Param q query string false "Search query"
+// @Param category_id query string false "Category ID"
+// @Param page query int false "Page number" default(1)
+// @Param limit query int false "Items per page" default(20) maximum(100)
 // @Success 200 {array} domain.Product
 // @Failure 400 {object} ErrorResponse
 // @Failure 500 {object} ErrorResponse
 // @Router /products [get]
 func (h productHandler) list(w http.ResponseWriter, r *http.Request) {
-	offset, limit, err := pagination(r)
+	page, limit, err := pagination(r)
 	if err != nil {
 		writeError(w, err)
 		return
 	}
 
 	q := strings.TrimSpace(r.URL.Query().Get("q"))
+
 	categoryID := strings.TrimSpace(r.URL.Query().Get("category_id"))
 
-	var products []domain.Product
-
-	if q != "" || categoryID != "" {
-		var category *string
-		if categoryID != "" {
-			category = &categoryID
-		}
-
-		products, err = h.s.Search(r.Context(), q, category)
-	} else {
-		// Обычный каталог.
-		products, err = h.s.List(r.Context(), offset, limit)
+	var category *string
+	if categoryID != "" {
+		category = &categoryID
 	}
 
+	products, err := h.s.List(
+		r.Context(),
+		q,
+		category,
+		page,
+		limit,
+	)
 	if err != nil {
 		writeError(w, err)
 		return
 	}
 
-	if q != "" || categoryID != "" {
-		if offset >= len(products) {
-			products = []domain.Product{}
-		} else {
-			end := offset + limit
-			if end > len(products) {
-				end = len(products)
-			}
-
-			products = products[offset:end]
-		}
-	}
-
 	writeJSON(w, http.StatusOK, products)
-}
-
-// search godoc
-// @Summary Search products
-// @Description Search products by text query and optionally filter by category
-// @Tags products
-// @Accept json
-// @Produce json
-// @Param q query string true "Search query"
-// @Param category_id query string false "Category ID"
-// @Success 200 {array} domain.Product
-// @Failure 400 {object} ErrorResponse
-// @Failure 500 {object} ErrorResponse
-// @Router /products/search [get]
-func (h productHandler) search(w http.ResponseWriter, r *http.Request) {
-	q := r.URL.Query().Get("q")
-	var category *string
-	if v := r.URL.Query().Get("category_id"); v != "" {
-		category = &v
-	}
-	out, e := h.s.Search(r.Context(), q, category)
-	if e != nil {
-		writeError(w, e)
-		return
-	}
-	writeJSON(w, http.StatusOK, out)
 }
 
 // byCustomer godoc

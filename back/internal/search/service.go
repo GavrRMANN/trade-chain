@@ -61,23 +61,23 @@ func (s *SearchService) FindChain(
 	)
 }
 
-func (s *SearchService) FindProduct(
-	ctx context.Context,
-	searchQuery string,
-	category string,
-) (*ProductSearchResult, error) {
-	target, err := s.productService.Search(ctx, searchQuery, &category)
+// func (s *SearchService) FindProduct(
+// 	ctx context.Context,
+// 	searchQuery string,
+// 	category string,
+// ) (*ProductSearchResult, error) {
+// 	target, err := s.productService.Search(ctx, searchQuery, &category)
 
-	if err != nil {
-		return nil, err
-	}
+// 	if err != nil {
+// 		return nil, err
+// 	}
 
-	return &ProductSearchResult{
-		Products: target,
-		Length:   len(target),
-	}, nil
+// 	return &ProductSearchResult{
+// 		Products: target,
+// 		Length:   len(target),
+// 	}, nil
 
-}
+// }
 
 func (s *SearchService) FindCategory(
 	ctx context.Context,
