@@ -10,28 +10,50 @@ type reviewService struct {
 	repo      repository.ReviewRepository
 	customers repository.CustomerRepository
 	products  repository.ProductRepository
+	chains    ChainService
 }
 
-func NewReviewService(r repository.ReviewRepository, c repository.CustomerRepository, p repository.ProductRepository) ReviewService {
-	return &reviewService{r, c, p}
+func NewReviewService(
+	r repository.ReviewRepository,
+	c repository.CustomerRepository,
+	p repository.ProductRepository,
+	chains ChainService,
+) ReviewService {
+	return &reviewService{repo: r, customers: c, products: p, chains: chains}
 }
+
+// Create принимает отзыв по итогам конкретной сделки.
+//
+// Кого оценивают, сервис определяет сам — по звену обмена, а не по телу
+// запроса: раньше получателя оценки называл автор, и поставить единицу можно
+// было незнакомому человеку, с которым никогда не менялся.
 func (s *reviewService) Create(ctx context.Context, v *domain.Review) (*domain.Review, error) {
-	if v == nil || blank(v.FromCustomerID) || blank(v.ToCustomerID) || v.FromCustomerID == v.ToCustomerID || v.Rating < 1 || v.Rating > 5 {
+	if v == nil || blank(v.FromCustomerID) || v.Rating < 1 || v.Rating > 5 {
 		return nil, ErrInvalidInput
 	}
-	if _, e := s.customers.GetByID(ctx, v.FromCustomerID); e != nil {
-		return nil, normalizeError(e)
+	if v.ChainID == nil || blank(*v.ChainID) {
+		return nil, ErrInvalidInput
 	}
-	if _, e := s.customers.GetByID(ctx, v.ToCustomerID); e != nil {
-		return nil, normalizeError(e)
+
+	counterparty, err := s.chains.CanReview(ctx, *v.ChainID, v.FromCustomerID)
+	if err != nil {
+		return nil, err
 	}
+	v.ToCustomerID = counterparty
+
 	if v.ProductID != nil {
-		if _, e := s.products.GetByID(ctx, *v.ProductID); e != nil {
-			return nil, normalizeError(e)
+		if e := s.checkProduct(ctx, *v.ProductID); e != nil {
+			return nil, e
 		}
 	}
+
 	out, e := s.repo.Create(ctx, v)
 	return out, normalizeError(e)
+}
+
+func (s *reviewService) checkProduct(ctx context.Context, id string) error {
+	_, err := s.products.GetByID(ctx, id)
+	return normalizeError(err)
 }
 func (s *reviewService) GetByID(ctx context.Context, id string) (*domain.Review, error) {
 	if blank(id) {

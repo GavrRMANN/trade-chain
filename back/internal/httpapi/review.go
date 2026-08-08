@@ -2,6 +2,7 @@ package httpapi
 
 import (
 	"net/http"
+	"trade-chain/internal/auth"
 	"trade-chain/internal/domain"
 	"trade-chain/internal/service"
 
@@ -9,6 +10,17 @@ import (
 )
 
 type reviewHandler struct{ s service.ReviewService }
+
+// ReviewRequest — оценка второй стороны по итогам конкретного обмена.
+//
+// Ни автора, ни получателя оценки клиент не называет: первый берётся
+// из токена, второй — из звена обмена.
+type ReviewRequest struct {
+	ChainID   string  `json:"chain_id"`
+	Rating    int     `json:"rating"`
+	Comment   string  `json:"comment"`
+	ProductID *string `json:"product_id"`
+}
 
 func mountReviewRoutes(r chi.Router, s service.ReviewService) {
 	h := reviewHandler{s}
@@ -27,17 +39,37 @@ func mountReviewRoutes(r chi.Router, s service.ReviewService) {
 // @Tags reviews
 // @Accept json
 // @Produce json
-// @Param request body domain.Review true "Review data"
+// @Param request body ReviewRequest true "Оценка по итогам обмена"
 // @Success 201 {object} domain.Review
 // @Failure 400 {object} ErrorResponse
+// @Failure 403 {object} ErrorResponse
+// @Failure 409 {object} ErrorResponse
 // @Failure 500 {object} ErrorResponse
 // @Router /reviews [post]
 func (h reviewHandler) create(w http.ResponseWriter, r *http.Request) {
-	var v domain.Review
-	if decodeJSON(r, &v) != nil {
+	userID, ok := auth.UserIDFromContext(r.Context())
+	if !ok {
+		writeError(w, service.ErrForbidden)
+		return
+	}
+
+	var req ReviewRequest
+	if decodeJSON(r, &req) != nil {
 		writeError(w, service.ErrInvalidInput)
 		return
 	}
+
+	// Автор берётся из токена, а получателя оценки определяет сервис по звену
+	// обмена: из тела запроса ни того, ни другого принимать нельзя, иначе
+	// отзыв можно оставить от чужого имени и кому угодно.
+	v := domain.Review{
+		ChainID:        &req.ChainID,
+		FromCustomerID: userID,
+		ProductID:      req.ProductID,
+		Rating:         req.Rating,
+		Comment:        req.Comment,
+	}
+
 	out, e := h.s.Create(r.Context(), &v)
 	if e != nil {
 		writeError(w, e)

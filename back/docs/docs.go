@@ -522,6 +522,41 @@ const docTemplate = `{
                 }
             }
         },
+        "/chains/my": {
+            "get": {
+                "description": "Обмены пользователя: и предложенные им, и полученные",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "chains"
+                ],
+                "summary": "List my exchanges",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/domain.Chain"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/httpapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/httpapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/chains/{id}": {
             "get": {
                 "description": "Get chain details",
@@ -617,6 +652,77 @@ const docTemplate = `{
                 }
             }
         },
+        "/chains/{id}/confirm": {
+            "post": {
+                "description": "Подтвердить итог обмена. Состоявшимся обмен считается только\nпосле подтверждения обеими сторонами; несостоявшимся — по\nзаявлению одной.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "chains"
+                ],
+                "summary": "Confirm exchange outcome",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Chain ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Итог встречи",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/httpapi.ConfirmRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/domain.Chain"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/httpapi.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/httpapi.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/httpapi.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/httpapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/httpapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/chains/{id}/full": {
             "get": {
                 "description": "Get full chain details (all linked chains)",
@@ -651,6 +757,119 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/httpapi.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/httpapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/httpapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/chains/{id}/messages": {
+            "get": {
+                "description": "Переписка по сделке. Доступна только её участникам.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "chains"
+                ],
+                "summary": "Read exchange chat",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Chain ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/domain.ChainMessage"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/httpapi.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/httpapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/httpapi.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Написать второй стороне по этой сделке. По закрытой сделке\nпереписка недоступна.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "chains"
+                ],
+                "summary": "Write to exchange chat",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Chain ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Текст сообщения",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/httpapi.MessageRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ChainMessage"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/httpapi.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
                         "schema": {
                             "$ref": "#/definitions/httpapi.ErrorResponse"
                         }
@@ -991,7 +1210,7 @@ const docTemplate = `{
         },
         "/products": {
             "get": {
-                "description": "List products with pagination",
+                "description": "Get product catalog with pagination and optional text/category search",
                 "consumes": [
                     "application/json"
                 ],
@@ -1001,8 +1220,20 @@ const docTemplate = `{
                 "tags": [
                     "products"
                 ],
-                "summary": "List products",
+                "summary": "List and search products",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Search query",
+                        "name": "q",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Category ID",
+                        "name": "category_id",
+                        "in": "query"
+                    },
                     {
                         "type": "integer",
                         "default": 0,
@@ -1355,12 +1586,12 @@ const docTemplate = `{
                 "summary": "Create review",
                 "parameters": [
                     {
-                        "description": "Review data",
+                        "description": "Оценка по итогам обмена",
                         "name": "request",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/domain.Review"
+                            "$ref": "#/definitions/httpapi.ReviewRequest"
                         }
                     }
                 ],
@@ -1373,6 +1604,18 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/httpapi.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/httpapi.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
                         "schema": {
                             "$ref": "#/definitions/httpapi.ErrorResponse"
                         }
@@ -2005,6 +2248,9 @@ const docTemplate = `{
                 "created_at": {
                     "type": "string"
                 },
+                "expires_at": {
+                    "type": "string"
+                },
                 "from_product_id": {
                     "type": "string"
                 },
@@ -2020,6 +2266,9 @@ const docTemplate = `{
                 "previous_chain_id": {
                     "type": "string"
                 },
+                "recipient_id": {
+                    "type": "string"
+                },
                 "status": {
                     "type": "string"
                 },
@@ -2031,6 +2280,26 @@ const docTemplate = `{
                 }
             }
         },
+        "domain.ChainMessage": {
+            "type": "object",
+            "properties": {
+                "body": {
+                    "type": "string"
+                },
+                "chain_id": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "customer_id": {
+                    "type": "string"
+                },
+                "message_id": {
+                    "type": "string"
+                }
+            }
+        },
         "domain.ChainStatus": {
             "type": "string",
             "enum": [
@@ -2038,24 +2307,40 @@ const docTemplate = `{
                 "active",
                 "completed",
                 "cancelled",
-                "rejected"
+                "rejected",
+                "countered",
+                "failed",
+                "expired"
             ],
             "x-enum-comments": {
-                "ChainRejected": "дополнительный статус"
+                "ChainActive": "получатель согласился, стороны договариваются",
+                "ChainCancelled": "инициатор отозвал предложение",
+                "ChainCompleted": "обмен состоялся, подтвердили оба",
+                "ChainCountered": "получатель предложил свой вариант",
+                "ChainExpired": "ответа не дождались",
+                "ChainFailed": "договорились, но обмен не состоялся",
+                "ChainPending": "предложение отправлено, ответа нет",
+                "ChainRejected": "получатель отказался"
             },
             "x-enum-descriptions": [
-                "",
-                "",
-                "",
-                "",
-                "дополнительный статус"
+                "предложение отправлено, ответа нет",
+                "получатель согласился, стороны договариваются",
+                "обмен состоялся, подтвердили оба",
+                "инициатор отозвал предложение",
+                "получатель отказался",
+                "получатель предложил свой вариант",
+                "договорились, но обмен не состоялся",
+                "ответа не дождались"
             ],
             "x-enum-varnames": [
                 "ChainPending",
                 "ChainActive",
                 "ChainCompleted",
                 "ChainCancelled",
-                "ChainRejected"
+                "ChainRejected",
+                "ChainCountered",
+                "ChainFailed",
+                "ChainExpired"
             ]
         },
         "domain.CreateCustomerDTO": {
@@ -2180,6 +2465,10 @@ const docTemplate = `{
         "domain.Review": {
             "type": "object",
             "properties": {
+                "chain_id": {
+                    "description": "ChainID — сделка, по итогам которой оставлена оценка. Допускает NULL\nради отзывов, заведённых до появления привязки.",
+                    "type": "string"
+                },
                 "comment": {
                     "type": "string"
                 },
@@ -2283,6 +2572,14 @@ const docTemplate = `{
                 }
             }
         },
+        "httpapi.ConfirmRequest": {
+            "type": "object",
+            "properties": {
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        },
         "httpapi.ErrorResponse": {
             "type": "object",
             "properties": {
@@ -2302,11 +2599,36 @@ const docTemplate = `{
                 }
             }
         },
+        "httpapi.MessageRequest": {
+            "type": "object",
+            "properties": {
+                "body": {
+                    "type": "string"
+                }
+            }
+        },
         "httpapi.OptionRequest": {
             "type": "object",
             "properties": {
                 "category_id": {
                     "type": "string"
+                }
+            }
+        },
+        "httpapi.ReviewRequest": {
+            "type": "object",
+            "properties": {
+                "chain_id": {
+                    "type": "string"
+                },
+                "comment": {
+                    "type": "string"
+                },
+                "product_id": {
+                    "type": "string"
+                },
+                "rating": {
+                    "type": "integer"
                 }
             }
         }
