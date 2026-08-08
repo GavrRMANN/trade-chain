@@ -49,10 +49,15 @@ func (h searchHandler) findChain(w http.ResponseWriter, r *http.Request) {
 
 	maxDepthStr := r.URL.Query().Get("max_depth")
 	maxDepth := 10
+
 	if maxDepthStr != "" {
-		if d, err := strconv.Atoi(maxDepthStr); err == nil && d > 0 {
-			maxDepth = d
+		d, err := strconv.Atoi(maxDepthStr)
+		if err != nil || d < 1 {
+			writeError(w, service.ErrInvalidInput)
+			return
 		}
+
+		maxDepth = d
 	}
 
 	result, err := h.s.FindChain(r.Context(), userID, targetProductID, maxDepth)

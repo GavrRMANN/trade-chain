@@ -1,9 +1,9 @@
 package httpapi
 
 import (
+	"log"
 	"net/http"
 	"time"
-	"trade-chain/internal/auth"
 	"trade-chain/internal/search"
 	"trade-chain/internal/service"
 
@@ -51,7 +51,7 @@ func NewRouter(d Dependencies) http.Handler {
 
 		// Защищённые маршруты
 		r.Group(func(r chi.Router) {
-			r.Use(auth.AuthMiddleware)
+			//r.Use(auth.AuthMiddleware)
 
 			if d.Customers != nil {
 				mountCustomerRoutes(r, d.Customers)
@@ -77,5 +77,14 @@ func NewRouter(d Dependencies) http.Handler {
 		})
 	})
 
+	chi.Walk(r, func(
+		method string,
+		route string,
+		handler http.Handler,
+		middlewares ...func(http.Handler) http.Handler,
+	) error {
+		log.Printf("ROUTE %s %s middleware=%d", method, route, len(middlewares))
+		return nil
+	})
 	return r
 }
