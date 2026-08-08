@@ -1,5 +1,5 @@
-import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
-import { getApiBaseUrl } from '@shared/api';
+import { createApi } from '@reduxjs/toolkit/query/react';
+import { apiBaseQuery } from '@shared/api';
 import type {
     Category,
     TCreateCategoryRequest,
@@ -13,16 +13,7 @@ type TUpdateCategoryArgs = {
 
 export const categoryApi = createApi({
     reducerPath: 'categoryApi',
-    baseQuery: fetchBaseQuery({
-        baseUrl: `${getApiBaseUrl()}/api/v1`,
-        prepareHeaders: (headers) => {
-            const token = localStorage.getItem('token');
-            if (token) {
-                headers.set('Authorization', `Bearer ${token}`);
-            }
-            return headers;
-        },
-    }),
+    baseQuery: apiBaseQuery,
     endpoints: (builder) => ({
         getCategories: builder.query<Category[], void>({
             query: () => '/categories',

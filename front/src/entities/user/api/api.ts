@@ -1,21 +1,24 @@
-import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import { createApi } from '@reduxjs/toolkit/query/react';
 import type {
     TLoginPayload,
     TRegisterPayload,
     TUser,
     TAuthResponse,
 } from '../types';
-import { getApiBaseUrl } from '@/shared/api';
+import { apiBaseQuery } from '@/shared/api';
 
 export const userApi = createApi({
     reducerPath: 'userApi',
-    baseQuery: fetchBaseQuery({ baseUrl: `${getApiBaseUrl()}/api/v1` }),
+    baseQuery: apiBaseQuery,
     endpoints: (builder) => ({
         loginUser: builder.mutation<TAuthResponse, TLoginPayload>({
             query: (body) => ({url: '/auth/login', method: 'POST', body}),
         }),
-        registerUser: builder.mutation<TUser, TRegisterPayload>({
+        registerUser: builder.mutation<TAuthResponse, TRegisterPayload>({
             query: (body) => ({url: '/auth/register', method: 'POST', body}),
+        }),
+        getCurrentUser: builder.query<TUser, void>({
+            query: () => '/auth/me',
         }),
     }),
 });
@@ -23,4 +26,5 @@ export const userApi = createApi({
 export const {
     useLoginUserMutation,
     useRegisterUserMutation,
+    useGetCurrentUserQuery,
 } = userApi;

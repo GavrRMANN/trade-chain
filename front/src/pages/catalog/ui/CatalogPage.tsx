@@ -36,7 +36,10 @@ export const CatalogPage = () => {
                 {data?.map((product) => (
                     <ProductCard
                         key={product.product_id}
-                        title={product.name}
+                        title={product.title}
+                        img={product.image}
+                        price={product.price}
+                        location={product.location}
                     />
                 ))}
             </div>

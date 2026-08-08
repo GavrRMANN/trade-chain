@@ -1,5 +1,5 @@
-import {createApi, fetchBaseQuery} from '@reduxjs/toolkit/query/react';
-import {getApiBaseUrl} from '@shared/api';
+import {createApi} from '@reduxjs/toolkit/query/react';
+import {apiBaseQuery} from '@shared/api';
 import type {
     TCreateProductRequest,
     TProduct,
@@ -14,16 +14,7 @@ type TUpdateProductArgs = {
 
 export const productApi = createApi({
     reducerPath: 'productApi',
-    baseQuery: fetchBaseQuery({
-        baseUrl: `${getApiBaseUrl()}/api/v1`,
-        prepareHeaders: (headers) => {
-            const token = localStorage.getItem('token');
-            if (token) {
-                headers.set('Authorization', `Bearer ${token}`);
-            }
-            return headers;
-        },
-    }),
+    baseQuery: apiBaseQuery,
     endpoints: (builder) => ({
         getProducts: builder.query<TProduct[], TProductListRequest | void>({
             query: (params) => ({
@@ -32,7 +23,7 @@ export const productApi = createApi({
             }),
         }),
         searchProducts: builder.query<TProduct[], { q: string; category_id?: string }>({
-            query: (params) => ({url: '/products/search', params}),
+            query: (params) => ({ url: '/products/search', params }),
         }),
         getProduct: builder.query<TProduct, string>({
             query: (productId) => `/products/${productId}`,
@@ -48,7 +39,7 @@ export const productApi = createApi({
             }),
         }),
         deleteProduct: builder.mutation<void, string>({
-            query: (productId) => ({url: `/products/${productId}`, method: 'DELETE'}),
+            query: (productId) => ({ url: `/products/${productId}`, method: 'DELETE' }),
         }),
         getProductsByCustomer: builder.query<TProduct[], string>({
             query: (customerId) => `/products/by-customer/${customerId}`,
@@ -58,8 +49,8 @@ export const productApi = createApi({
 
 export const {
     useGetProductsQuery,
-    useSearchProductsQuery,
     useGetProductQuery,
+    useSearchProductsQuery,
     useCreateProductMutation,
     useUpdateProductMutation,
     useDeleteProductMutation,
