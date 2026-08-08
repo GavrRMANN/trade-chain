@@ -21,6 +21,7 @@ const server = createServer(async (request, response) => {
         if (url.pathname === '/health' && request.method === 'GET') return sendJson(response, 200, { status: 'ok' });
         if (url.pathname === '/api/v1/auth/login' && request.method === 'POST') return login(request, response);
         if (url.pathname === '/api/v1/auth/register' && request.method === 'POST') return register(request, response);
+        if (url.pathname === '/api/v1/auth/me' && request.method === 'GET') return currentUser(request, response);
 
         if (url.pathname.startsWith('/api/v1/products')) return handleProducts(request, response, url);
         if (url.pathname.startsWith('/api/v1/categories')) return handleCategories(request, response, url);
@@ -49,7 +50,17 @@ async function register(request, response) {
     if (customers.some((item) => item.email === body.email)) return sendError(response, 409, 'Пользователь уже существует');
     const customer = makeCustomer(body.email, body.password);
     customers.push(customer);
-    return sendJson(response, 201, publicCustomer(customer));
+    return sendJson(response, 201, {
+        token: `mock-token:${customer.customer_id}`,
+        user: publicCustomer(customer),
+    });
+}
+
+function currentUser(request, response) {
+    const token = request.headers.authorization?.replace(/^Bearer\s+/i, '');
+    const customerId = token?.startsWith('mock-token:') ? token.slice('mock-token:'.length) : '';
+    const customer = customers.find((item) => item.customer_id === customerId && item.is_active);
+    return customer ? sendJson(response, 200, publicCustomer(customer)) : sendError(response, 401, 'Требуется авторизация');
 }
 
 async function handleCustomers(request, response, url) {
@@ -80,42 +91,148 @@ async function handleProducts(request, response, url) {
     const parts = getResourceParts(url.pathname, '/api/v1/products');
     if (request.method === 'POST' && parts.length === 0) {
         const body = await readJson(request);
-        if (!body?.customer_id || !body?.name) return sendError(response, 400, 'Некорректное тело запроса');
+        if (!body?.customer_id || !body?.title) return sendError(response, 400, 'Некорректное тело запроса');
         const product = makeProduct(body); products.unshift(product);
         return sendJson(response, 201, product);
     }
+    if (request.method === 'GET' && parts[0] === 'search' && parts.length === 1) {
+        return searchProducts(response, url.searchParams, {requireQuery: true});
+    }
+    if (request.method === 'GET' && parts[0] === 'by-customer' && parts.length === 2) {
+        return sendJson(response, 200, products.filter((item) => item.customer_id === parts[1]).sort(sortByDateDesc));
+    }
     if (request.method === 'GET' && parts.length === 0) {
-        const categoryId = url.searchParams.get('category_id');
-        const list = activeProducts().filter((item) => !categoryId || item.category_id === categoryId);
+        const query = url.searchParams.get('q') || '';
+        const categoryId = url.searchParams.get('category_id') || '';
+        const hasSearch = query.trim() || categoryId.trim();
+        const list = hasSearch
+            ? findProducts(query, categoryId)
+            : activeProducts().sort(sortByDateDesc);
+
         return sendJson(response, 200, list.slice(...sliceBounds(url.searchParams)));
     }
-    if (request.method === 'GET' && parts[0] === 'search' && parts.length === 1) return sendProductSearch(response, url.searchParams);
-    if (request.method === 'GET' && parts[0] === 'by-customer' && parts.length === 2) return sendJson(response, 200, activeProducts().filter((item) => item.customer_id === parts[1]));
     if (parts.length !== 1) return sendError(response, 404, 'Товар не найден');
     const index = products.findIndex(({ product_id: id }) => id === parts[0]);
-    if (index < 0 || !products[index].is_active) return sendError(response, 404, 'Товар не найден');
+    if (index < 0 || products[index].status === 'archived') return sendError(response, 404, 'Товар не найден');
     if (request.method === 'GET') return sendJson(response, 200, products[index]);
     if (request.method === 'PATCH') {
         const body = await readJson(request);
         if (!body || typeof body !== 'object') return sendError(response, 400, 'Некорректное тело запроса');
-        products[index] = { ...products[index], ...pick(body, ['name', 'description', 'category_id', 'is_active']), updated_at: new Date().toISOString() };
+        products[index] = { ...products[index], ...pick(body, ['title', 'description', 'category_id', 'image', 'price', 'location', 'status']), updated_at: new Date().toISOString() };
         return sendJson(response, 200, products[index]);
-    }
-    if (request.method === 'DELETE') {
-        products[index].is_active = false; products[index].updated_at = new Date().toISOString();
-        response.writeHead(204); return response.end();
     }
     return sendError(response, 405, 'Метод не поддерживается');
 }
 
-function sendProductSearch(response, params) {
-    const query = (params.get('q') || '').trim().toLocaleLowerCase('ru-RU');
-    const categoryId = (params.get('category_id') || '').trim();
-    if (!query && !categoryId) return sendError(response, 400, 'Некорректный поисковый запрос');
-    return sendJson(response, 200, activeProducts().filter((product) => {
-        const textMatch = !query || [product.name, product.description].some((value) => value.toLocaleLowerCase('ru-RU').includes(query));
-        return textMatch && (!categoryId || product.category_id === categoryId);
-    }));
+/**
+ * Ищет объявления тем же контрактом, что и backend ProductService.Search.
+ * В mock используется детерминированный скоринг вместо PostgreSQL FTS и pg_trgm.
+ */
+function searchProducts(response, params, {requireQuery = false} = {}) {
+    const query = params.get('q') || '';
+    const categoryId = params.get('category_id') || '';
+
+    if (requireQuery && !query.trim()) {
+        return sendError(response, 400, 'Некорректный поисковый запрос');
+    }
+
+    const result = findProducts(query, categoryId).slice(0, 100);
+    return sendJson(response, 200, result);
+}
+
+function findProducts(query, categoryId) {
+    const normalizedQuery = normalizeSearchText(query);
+    const words = getSearchTerms(normalizedQuery);
+
+    return activeProducts()
+        .filter((product) => !categoryId || product.category_id === categoryId)
+        .map((product) => ({
+            product,
+            score: getSearchScore(product, normalizedQuery, words),
+        }))
+        .filter(({score}) => !normalizedQuery || score > 0)
+        .sort((left, right) => right.score - left.score || sortByDateDesc(left.product, right.product))
+        .map(({product}) => product);
+}
+
+function getSearchScore(product, query, words) {
+    if (!query) return 0;
+
+    const title = normalizeSearchText(product.title);
+    const description = normalizeSearchText(product.description);
+    const category = normalizeSearchText(
+        categories.find(({category_id: id}) => id === product.category_id)?.name,
+    );
+    const fullText = `${title} ${description} ${category}`;
+    const titleSimilarity = trigramSimilarity(title, query);
+    const descriptionSimilarity = trigramSimilarity(description, query);
+
+    // Аналог WHERE из product_repository.go:
+    // search_vector @@ tsquery OR title % query OR description % query.
+    const matchesSearchVector = words.length > 0 && words.every((word) => fullText.includes(word));
+    if (!matchesSearchVector && titleSimilarity < 0.3 && descriptionSimilarity < 0.3) return 0;
+
+    // Аналог SELECT score из backend:
+    // 0.60 * ts_rank_cd + 0.25 * similarity(title) + 0.15 * similarity(description).
+    const textRank = getTextRank(words, title, description, category);
+    const score = 0.60 * textRank
+        + 0.25 * titleSimilarity
+        + 0.15 * descriptionSimilarity;
+
+    return score;
+}
+
+function getSearchTerms(query) {
+    return query
+        .replace(/[-+&|!():*]/g, ' ')
+        .split(/\s+/)
+        .filter(Boolean);
+}
+
+function getTextRank(words, title, description, category) {
+    if (!words.length) return 0;
+
+    const weightedMatches = words.reduce((score, word) => {
+        if (title.includes(word)) return score + 1;
+        if (description.includes(word)) return score + 0.4;
+        if (category.includes(word)) return score + 0.1;
+        return score;
+    }, 0);
+
+    return weightedMatches / words.length;
+}
+
+function trigramSimilarity(left, right) {
+    if (!left || !right) return 0;
+
+    const leftTrigrams = getTrigrams(left);
+    const rightTrigrams = getTrigrams(right);
+    const shared = [...leftTrigrams].filter((trigram) => rightTrigrams.has(trigram)).length;
+
+    return shared / Math.max(leftTrigrams.size, rightTrigrams.size);
+}
+
+function getTrigrams(value) {
+    const normalized = `  ${value} `;
+    const trigrams = new Set();
+
+    for (let index = 0; index < normalized.length - 2; index += 1) {
+        trigrams.add(normalized.slice(index, index + 3));
+    }
+
+    return trigrams;
+}
+
+function normalizeSearchText(value) {
+    return String(value || '')
+        .toLocaleLowerCase('ru-RU')
+        .normalize('NFKC')
+        .trim();
+}
+
+function sortByDateDesc(left, right) {
+    return new Date(right.updated_at || right.created_at).getTime()
+        - new Date(left.updated_at || left.created_at).getTime();
 }
 
 async function handleCategories(request, response, url) {
@@ -223,7 +340,7 @@ function findChain(response, params) {
 
 function fullChain(chain) { return chains.filter((item) => item.chain_id === chain.chain_id || item.chain_id === chain.previous_chain_id || item.chain_id === chain.next_chain_id); }
 function makeCustomer(email, password) { const now = new Date().toISOString(); return { customer_id: randomUUID(), email, password, is_active: true, created_at: now, updated_at: now }; }
-function makeProduct(body) { const now = new Date().toISOString(); return { product_id: randomUUID(), customer_id: body.customer_id, ...(body.category_id ? { category_id: body.category_id } : {}), name: body.name, ...(body.description ? { description: body.description } : {}), is_active: true, created_at: now, updated_at: now }; }
+function makeProduct(body) { const now = new Date().toISOString(); return { product_id: randomUUID(), customer_id: body.customer_id, ...(body.category_id ? { category_id: body.category_id } : {}), title: body.title, ...(body.description ? { description: body.description } : {}), ...(body.image ? { image: body.image } : {}), ...(body.price !== undefined ? { price: body.price } : {}), ...(body.location ? { location: body.location } : {}), status: body.status || 'active', created_at: now, updated_at: now }; }
 function makeCategory(body) { const now = new Date().toISOString(); return { category_id: randomUUID(), name: body.name, ...(body.parent_id ? { parent_id: body.parent_id } : {}), created_at: now, updated_at: now }; }
 function makeChain(body) { const now = new Date().toISOString(); return { chain_id: randomUUID(), from_product_id: body.from_product_id, to_product_id: body.to_product_id, initiator_id: body.initiator_id || 'user-pskov-01', ...(body.message ? { message: body.message } : {}), status: body.status || 'pending', created_at: now, updated_at: now }; }
 function publicCustomer(customer) {
@@ -233,7 +350,7 @@ function publicCustomer(customer) {
     return result;
 }
 function activeCustomers() { return customers.filter((item) => item.is_active); }
-function activeProducts() { return products.filter((item) => item.is_active); }
+function activeProducts() { return products.filter((item) => item.status !== 'archived'); }
 function average(values) { return values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : 0; }
 function pick(value, keys) { return Object.fromEntries(keys.filter((key) => value[key] !== undefined).map((key) => [key, value[key]])); }
 function getResourceParts(pathname, prefix) { return pathname.slice(prefix.length).split('/').filter(Boolean); }
