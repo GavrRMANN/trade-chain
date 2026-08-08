@@ -46,12 +46,13 @@ func NewRouter(d Dependencies) http.Handler {
 
 	// Публичные маршруты (без аутентификации)
 	r.Route("/api/v1", func(r chi.Router) {
-		// Авторизация
 		mountAuthRoutes(r, d.Customers)
 
 		// Защищённые маршруты
 		r.Group(func(r chi.Router) {
 			r.Use(auth.AuthMiddleware)
+
+			mountAuthProtectedRoutes(r, d.Customers)
 
 			if d.Customers != nil {
 				mountCustomerRoutes(r, d.Customers)
