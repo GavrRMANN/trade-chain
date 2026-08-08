@@ -52,7 +52,7 @@ func main() {
 	categoryService := service.NewCategoryService(categoryRepo)
 	wishlistService := service.NewWishlistService(wishlistRepo, productRepo)
 	chainService := service.NewChainService(chainRepo, productRepo, negotiationRepo)
-	reviewService := service.NewReviewService(reviewRepo, customerRepo, productRepo)
+	reviewService := service.NewReviewService(reviewRepo, customerRepo, productRepo, chainService)
 	searchService := search.NewSearchService(productService, categoryService)
 
 	// HTTP роутер
