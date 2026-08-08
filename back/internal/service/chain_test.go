@@ -58,12 +58,24 @@ func (f *fakeProductRepo) GetExchangeCandidates(context.Context, string) ([]doma
 }
 
 type fakeChainRepo struct {
-	chains    map[string]domain.Chain
-	products  *fakeProductRepo
-	completed int // сколько раз обмен доводился до конца
+	chains           map[string]domain.Chain
+	products         *fakeProductRepo
+	completed        int  // сколько раз обмен доводился до конца
+	rejectDuplicates bool // повторяет уникальный индекс на предложениях в ожидании
 }
 
 func (f *fakeChainRepo) Create(_ context.Context, c *domain.Chain) (*domain.Chain, error) {
+	if f.rejectDuplicates {
+		for _, existing := range f.chains {
+			if existing.Status == string(domain.ChainPending) &&
+				existing.InitiatorID == c.InitiatorID &&
+				existing.FromProductID == c.FromProductID &&
+				existing.ToProductID == c.ToProductID {
+				return nil, domain.ErrOfferDuplicate
+			}
+		}
+	}
+
 	stored := *c
 	stored.ChainID = fmt.Sprintf("chain-%d", len(f.chains)+1)
 	f.chains[stored.ChainID] = stored
@@ -312,7 +324,7 @@ func TestCompletedRequiresBothConfirmations(t *testing.T) {
 		t.Fatalf("завершить обмен сменой статуса нельзя, получено: %v", err)
 	}
 
-	chain, err := f.service.Confirm(ctx, chainID, initiator, true)
+	chain, err := f.service.Confirm(ctx, chainID, initiator, true, "")
 	if err != nil {
 		t.Fatalf("неожиданная ошибка: %v", err)
 	}
@@ -323,7 +335,7 @@ func TestCompletedRequiresBothConfirmations(t *testing.T) {
 		t.Error("обмен проведён по одному подтверждению")
 	}
 
-	chain, err = f.service.Confirm(ctx, chainID, recipient, true)
+	chain, err = f.service.Confirm(ctx, chainID, recipient, true, "")
 	if err != nil {
 		t.Fatalf("неожиданная ошибка: %v", err)
 	}
@@ -350,10 +362,10 @@ func TestCompletionClosesCompetingOffers(t *testing.T) {
 		t.Fatalf("неожиданная ошибка: %v", err)
 	}
 
-	if _, err := f.service.Confirm(ctx, chainID, initiator, true); err != nil {
+	if _, err := f.service.Confirm(ctx, chainID, initiator, true, ""); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := f.service.Confirm(ctx, chainID, recipient, true); err != nil {
+	if _, err := f.service.Confirm(ctx, chainID, recipient, true, ""); err != nil {
 		t.Fatal(err)
 	}
 
@@ -366,7 +378,7 @@ func TestSingleNegativeConfirmationFailsExchange(t *testing.T) {
 	f := newFixture(domain.ChainActive)
 	ctx := context.Background()
 
-	if _, err := f.service.Confirm(ctx, chainID, initiator, false); err != nil {
+	if _, err := f.service.Confirm(ctx, chainID, initiator, false, ""); err != nil {
 		t.Fatalf("неожиданная ошибка: %v", err)
 	}
 
@@ -383,10 +395,10 @@ func TestSecondConfirmationFromSameSideIsConflict(t *testing.T) {
 	f := newFixture(domain.ChainActive)
 	ctx := context.Background()
 
-	if _, err := f.service.Confirm(ctx, chainID, initiator, true); err != nil {
+	if _, err := f.service.Confirm(ctx, chainID, initiator, true, ""); err != nil {
 		t.Fatalf("неожиданная ошибка: %v", err)
 	}
-	if _, err := f.service.Confirm(ctx, chainID, initiator, true); !errors.Is(err, ErrConflict) {
+	if _, err := f.service.Confirm(ctx, chainID, initiator, true, ""); !errors.Is(err, ErrConflict) {
 		t.Fatalf("ошибка %v, ожидалась ErrConflict", err)
 	}
 }
@@ -395,7 +407,7 @@ func TestStrangerCannotConfirmOrRead(t *testing.T) {
 	f := newFixture(domain.ChainActive)
 	ctx := context.Background()
 
-	if _, err := f.service.Confirm(ctx, chainID, stranger, true); !errors.Is(err, ErrForbidden) {
+	if _, err := f.service.Confirm(ctx, chainID, stranger, true, ""); !errors.Is(err, ErrForbidden) {
 		t.Fatalf("ошибка %v, ожидалась ErrForbidden", err)
 	}
 	if _, err := f.service.Messages(ctx, chainID, stranger); !errors.Is(err, ErrForbidden) {
@@ -431,10 +443,10 @@ func TestCanReviewAfterCompletedExchange(t *testing.T) {
 	f := newFixture(domain.ChainActive)
 	ctx := context.Background()
 
-	if _, err := f.service.Confirm(ctx, chainID, initiator, true); err != nil {
+	if _, err := f.service.Confirm(ctx, chainID, initiator, true, ""); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := f.service.Confirm(ctx, chainID, recipient, true); err != nil {
+	if _, err := f.service.Confirm(ctx, chainID, recipient, true, ""); err != nil {
 		t.Fatal(err)
 	}
 
