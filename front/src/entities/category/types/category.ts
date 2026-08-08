@@ -3,6 +3,8 @@ export interface Category {
     category_id: string;
     /** Название категории. */
     name: string;
+    /** Изображение категории, если его прислал backend. */
+    image?: string;
     /** Идентификатор родительской категории. */
     parent_id?: string;
     /** Дата создания категории в ISO 8601. */

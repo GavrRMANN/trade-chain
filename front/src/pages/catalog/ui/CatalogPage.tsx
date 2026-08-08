@@ -1,47 +1,78 @@
 import Styles from './catalog-page.module.css';
 import {MainSection} from '@shared/ui/mainSection';
 import {ProductCard} from '@shared/ui/productCard';
-import {useGetProductsQuery} from '@entities/product';
-import {usePageTitle} from "@app/providers/pageTitle";
-import {useLayoutEffect} from "react";
 import {Preloader} from "@shared/ui/preloader";
+import {WhiteBox} from "@shared/ui/whiteBox";
+import {Button} from "@shared/ui/button";
+import {useCatalog} from '../lib';
 
 export const CatalogPage = () => {
-    const {setTitle} = usePageTitle();
-
     const {
-        data,
+        categoryFilters,
+        selectedCategory,
+        searchQuery,
+        categoryQuery,
+        products,
         isLoading,
+        isFetching,
         isError,
-    } = useGetProductsQuery({
-        offset: 0,
-        limit: 20,
-    });
+        isCategoriesLoading,
+        isCategoriesError,
+        selectCategory,
+        openProduct,
+        openCreateProduct,
+    } = useCatalog();
 
-    useLayoutEffect(() => {
-        setTitle('Вещи в обороте');
-    }, [setTitle]);
-
-    if (isLoading) {
+    if (isCategoriesLoading) {
         return <Preloader/>;
     }
 
-    if (isError) {
-        return <p>Не удалось загрузить товары</p>;
+    if (isCategoriesError) {
+        return <p>Не удалось загрузить категории</p>;
     }
 
     return (
         <MainSection>
-            <div className={Styles['catalog-page']}>
-                {data?.map((product) => (
-                    <ProductCard
-                        key={product.product_id}
-                        title={product.title}
-                        img={product.image}
-                        price={product.price}
-                        location={product.location}
+            <div className={Styles.categories} aria-label="Быстрый фильтр по категориям">
+                {categoryFilters.map((category) => (
+                    <WhiteBox
+                        key={category.id}
+                        title={category.title}
+                        img={category.image}
+                        active={selectedCategory === category.id}
+                        onClick={() => selectCategory(category.id)}
                     />
                 ))}
+            </div>
+            <h1 className={Styles.title}>
+                {searchQuery ? `Результаты поиска: ${searchQuery}` : categoryQuery ? 'Объявления категории' : 'Вещи в обороте'}
+            </h1>
+            <div className={Styles['catalog-page']}>
+                {(isLoading || isFetching) && (
+                    <div className={Styles['catalog-state']}>
+                        <Preloader/>
+                    </div>
+                )}
+                {!isLoading && !isFetching && isError && (
+                    <p className={Styles['catalog-state']}>Не удалось загрузить товары</p>
+                )}
+                {!isLoading && !isFetching && !isError && products?.map((product) => (
+                        <ProductCard
+                            key={product.product_id}
+                            title={product.title}
+                            img={product.image}
+                            price={product.price}
+                            location={product.location}
+                            onClick={() => openProduct(product.product_id)}
+                        />
+                    ))}
+                {!isLoading && !isFetching && !isError && products?.length === 0 && (
+                    <div className={Styles.emptyState}>
+                        <h2>В этой категории пока ничего нет</h2>
+                        <p>Но вы можете добавить сюда первый товар.</p>
+                        <Button onClick={openCreateProduct}>Добавить товар</Button>
+                    </div>
+                )}
             </div>
         </MainSection>
     );
