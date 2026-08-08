@@ -45,6 +45,22 @@ END $$;
 
 -- ---------- защита от дублей ----------
 
+-- Близнецы, созданные до этого ограничения, закрываются: живым остаётся самое
+-- раннее предложение. Без этого уникальный индекс не создастся, и миграция
+-- упадёт на базе, в которой уже кто-то нажимал кнопку дважды.
+UPDATE chains c
+SET status = 'cancelled', updated_at = CURRENT_TIMESTAMP
+WHERE c.status = 'pending'
+  AND EXISTS (
+      SELECT 1
+      FROM chains earlier
+      WHERE earlier.status = 'pending'
+        AND earlier.initiator_id = c.initiator_id
+        AND earlier.from_product_id = c.from_product_id
+        AND earlier.to_product_id = c.to_product_id
+        AND (earlier.created_at, earlier.chain_id) < (c.created_at, c.chain_id)
+  );
+
 -- Повторное нажатие кнопки не должно превращаться во второе предложение по той
 -- же паре товаров: у получателя в списке появляются близнецы, и непонятно, на
 -- какой из них отвечать. Ограничение частичное — после отказа или отмены
