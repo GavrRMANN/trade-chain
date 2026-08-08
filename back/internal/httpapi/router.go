@@ -27,15 +27,16 @@ type Dependencies struct {
 func NewRouter(d Dependencies) http.Handler {
 	r := chi.NewRouter()
 
-	fs := http.FileServer(http.Dir("./uploads"))
-	r.Handle("/uploads/*", http.StripPrefix("/uploads/", fs))
-
-	// Middleware
+	// Middleware. Объявляются до первого маршрута: chi не разрешает добавлять
+	// их после и падает при старте, если раздача файлов встаёт выше.
 	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.Timeout(15 * time.Second))
+
+	fs := http.FileServer(http.Dir("./uploads"))
+	r.Handle("/uploads/*", http.StripPrefix("/uploads/", fs))
 
 	// Health check
 	r.Get("/health", func(w http.ResponseWriter, _ *http.Request) {
