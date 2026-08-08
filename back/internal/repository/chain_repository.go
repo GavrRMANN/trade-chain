@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"strings"
 	"time"
 	"trade-chain/internal/domain"
 
@@ -28,6 +29,19 @@ func NewChainRepository(db *pgxpool.Pool) ChainRepository {
 const chainColumns = `chain_id, from_product_id, to_product_id, initiator_id, recipient_id,
 	previous_chain_id, next_chain_id, status, message, exchange_goal_id, route_step_id,
 	surcharge_amount, surcharge_currency, surcharge_payer, expires_at, created_at, updated_at`
+
+// chainColumnsOf повторяет тот же список с именем таблицы.
+//
+// Обе ветки UNION в рекурсивном запросе обязаны совпадать по составу колонок,
+// а второй список, набранный руками, разъезжается с первым при первом же
+// добавленном поле — и запрос падает уже в базе.
+func chainColumnsOf(alias string) string {
+	columns := strings.Split(chainColumns, ",")
+	for i, column := range columns {
+		columns[i] = alias + "." + strings.TrimSpace(column)
+	}
+	return strings.Join(columns, ", ")
+}
 
 // rowScanner покрывает и одиночную строку, и строку выборки: у pgx.Row
 // и pgx.Rows одинаковый Scan, так что разбор звена пишется один раз.
@@ -191,8 +205,7 @@ func (r *chainRepository) GetFullChain(ctx context.Context, chainID string) ([]d
 			FROM chains
 			WHERE chain_id = $1
 			UNION ALL
-			SELECT c.chain_id, c.from_product_id, c.to_product_id, c.initiator_id, c.recipient_id,
-				c.previous_chain_id, c.next_chain_id, c.status, c.message, c.expires_at, c.created_at, c.updated_at
+			SELECT ` + chainColumnsOf("c") + `
 			FROM chains c
 			INNER JOIN chain_path cp ON c.chain_id = cp.next_chain_id OR c.chain_id = cp.previous_chain_id
 		)
