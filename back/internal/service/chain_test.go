@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 	"trade-chain/internal/domain"
 	"trade-chain/internal/exchange"
@@ -64,7 +65,7 @@ type fakeChainRepo struct {
 
 func (f *fakeChainRepo) Create(_ context.Context, c *domain.Chain) (*domain.Chain, error) {
 	stored := *c
-	stored.ChainID = chainID
+	stored.ChainID = fmt.Sprintf("chain-%d", len(f.chains)+1)
 	f.chains[stored.ChainID] = stored
 	return &stored, nil
 }
@@ -107,7 +108,29 @@ func (f *fakeChainRepo) CompleteExchange(_ context.Context, id string) error {
 	c.Status = string(domain.ChainCompleted)
 	f.chains[id] = c
 	f.completed++
+
+	// Настоящий репозиторий закрывает конкурирующие предложения по тем же
+	// товарам в этой же транзакции; фейк повторяет это, иначе правило негде
+	// проверить.
+	for otherID, other := range f.chains {
+		if otherID == id || other.Status != string(domain.ChainPending) {
+			continue
+		}
+		if touchesSameProducts(other, c) {
+			other.Status = string(domain.ChainCancelled)
+			f.chains[otherID] = other
+		}
+	}
 	return nil
+}
+
+func touchesSameProducts(a, b domain.Chain) bool {
+	for _, product := range []string{b.FromProductID, b.ToProductID} {
+		if a.FromProductID == product || a.ToProductID == product {
+			return true
+		}
+	}
+	return false
 }
 
 func (f *fakeChainRepo) GetByProductID(context.Context, string) ([]domain.Chain, error) {
@@ -309,6 +332,33 @@ func TestCompletedRequiresBothConfirmations(t *testing.T) {
 	}
 	if f.products.products[offeredID].CustomerID != recipient {
 		t.Error("товары не поменяли владельцев после завершения обмена")
+	}
+}
+
+// Состоявшийся обмен закрывает предложения по тем же вещам: принять их уже
+// нельзя, вещи у новых владельцев.
+func TestCompletionClosesCompetingOffers(t *testing.T) {
+	f := newFixture(domain.ChainActive)
+	ctx := context.Background()
+
+	competing, err := f.service.Create(ctx, &domain.Chain{
+		FromProductID: strangerID,
+		ToProductID:   requestedID,
+		InitiatorID:   stranger,
+	})
+	if err != nil {
+		t.Fatalf("неожиданная ошибка: %v", err)
+	}
+
+	if _, err := f.service.Confirm(ctx, chainID, initiator, true); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.service.Confirm(ctx, chainID, recipient, true); err != nil {
+		t.Fatal(err)
+	}
+
+	if got := f.chains.chains[competing.ChainID].Status; got != string(domain.ChainCancelled) {
+		t.Errorf("конкурирующее предложение в статусе %q, ожидался %q", got, domain.ChainCancelled)
 	}
 }
 

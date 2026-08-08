@@ -282,6 +282,25 @@ func (r *chainRepository) CompleteExchange(ctx context.Context, chainID string) 
 		return err
 	}
 
+	// 5. Закрыть конкурирующие предложения по тем же товарам.
+	//
+	// Вещи уже уехали к новым владельцам, и остальные предложения обещают то,
+	// чего у людей больше нет. Оставить их висеть — значит дать второй стороне
+	// принять предложение и приехать на встречу впустую.
+	// Всё в той же транзакции: иначе между сменой владельца и закрытием
+	// предложений существует момент, когда чужой оффер ещё можно принять.
+	_, err = tx.Exec(ctx, `
+		UPDATE chains
+		SET status = $1, updated_at = CURRENT_TIMESTAMP
+		WHERE chain_id <> $2
+		  AND status = $3
+		  AND (from_product_id = ANY($4) OR to_product_id = ANY($4))
+	`, string(domain.ChainCancelled), chainID, string(domain.ChainPending),
+		[]string{chain.FromProductID, chain.ToProductID})
+	if err != nil {
+		return err
+	}
+
 	return tx.Commit(ctx)
 }
 
