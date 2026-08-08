@@ -1,0 +1,218 @@
+.page {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(300px, 1fr);
+    gap: var(--space-12);
+    width: 100%;
+}
+
+.topbar {
+    display: grid;
+    grid-column: 1 / -1;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+    gap: var(--space-8);
+}
+
+.topbar h1 {
+    max-width: 760px;
+    font-size: var(--h1-font-size);
+    line-height: var(--h1-line-height);
+}
+
+.price {
+    color: var(--neutral-primary);
+    font-size: var(--h1-font-size);
+    font-weight: 700;
+    line-height: var(--h1-line-height);
+    white-space: nowrap;
+}
+
+.hero {
+    display: grid;
+    grid-column: 1 / -1;
+    grid-template-columns: minmax(0, 2fr) minmax(300px, 1fr);
+    gap: var(--space-12);
+    align-items: start;
+}
+
+.mediaColumn {
+    min-width: 0;
+}
+
+.productAside {
+    display: grid;
+    align-content: start;
+    gap: var(--space-8);
+    min-width: 0;
+}
+
+.status {
+    padding: var(--space-4);
+    border-radius: var(--radius-lg);
+    color: var(--neutral-secondary);
+    background: var(--bg-primary);
+    text-align: center;
+}
+
+.exchange,
+.recommendations {
+    display: grid;
+    gap: var(--space-4);
+}
+
+.exchange h2,
+.recommendations h2 {
+    font-size: var(--h2-font-size);
+    line-height: var(--h2-line-height);
+}
+
+.wishlist {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+}
+
+.wishlist span {
+    padding: var(--space-1-5) var(--space-3-5);
+    border-radius: var(--radius-lg);
+    color: var(--accent-secondary);
+    background: var(--bg-primary);
+}
+
+.muted,
+.characteristics dt {
+    color: var(--neutral-secondary);
+}
+
+.details {
+    grid-column: 1;
+    min-width: 0;
+}
+
+.details > section:first-child {
+    padding-top: 0;
+}
+
+.characteristics {
+    display: grid;
+    gap: var(--space-2);
+    margin: 0;
+}
+
+.characteristics div {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: var(--space-3);
+}
+
+.characteristics dd {
+    margin: 0;
+    color: var(--neutral-primary);
+}
+
+.strong {
+    font-size: var(--h2-font-size);
+    font-weight: 700;
+}
+
+.description,
+.emptyMatch p {
+    color: var(--neutral-primary);
+    font-size: var(--text-base-font-size);
+    line-height: var(--text-base-line-height);
+}
+
+.recommendations {
+    padding-top: var(--space-2);
+}
+
+.emptyMatch {
+    display: grid;
+    gap: var(--space-2);
+    padding: var(--space-6) var(--space-5);
+    border-radius: var(--radius-lg);
+    background: var(--bg-primary);
+    color: var(--neutral-secondary);
+}
+
+.emptyMatch h3 {
+    color: var(--neutral-primary);
+    font-size: var(--h3-font-size);
+    line-height: var(--h3-line-height);
+}
+
+.emptyMatch a {
+    color: inherit;
+    text-decoration: underline;
+}
+
+.emptyMatch button,
+.placeholder button {
+    justify-self: start;
+}
+
+.matches {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--main-gap);
+}
+
+.placeholder {
+    display: grid;
+    gap: var(--space-3);
+    max-width: 640px;
+    padding: var(--space-8);
+    border: 1px solid var(--bg-shadows);
+    border-radius: var(--radius-md);
+    background: var(--bg-secondary);
+}
+
+.placeholder p {
+    color: var(--neutral-secondary);
+}
+
+.placeholder a {
+    color: var(--accent-primary);
+    font-weight: 700;
+    text-decoration: none;
+}
+
+@media (max-width: 768px) {
+    .page,
+    .hero {
+        display: block;
+    }
+
+    .topbar {
+        align-items: start;
+        margin-bottom: var(--space-6);
+    }
+
+    .topbar h1 {
+        font-size: var(--h2-font-size);
+        line-height: var(--h2-line-height);
+    }
+
+    .price {
+        font-size: var(--h2-font-size);
+        line-height: var(--h2-line-height);
+    }
+
+    .productAside {
+        gap: var(--space-6);
+        margin-top: var(--space-6);
+    }
+
+    .details {
+        margin-top: var(--space-8);
+    }
+
+    .characteristics div {
+        grid-template-columns: 1fr;
+        gap: var(--space-0-5);
+    }
+
+    .matches {
+        grid-template-columns: 1fr 1fr;
+    }
+}
