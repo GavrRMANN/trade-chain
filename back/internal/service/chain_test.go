@@ -45,7 +45,7 @@ func (f *fakeProductRepo) Update(context.Context, string, *domain.UpdateProductD
 	return nil, nil
 }
 func (f *fakeProductRepo) Delete(context.Context, string) error { return nil }
-func (f *fakeProductRepo) List(context.Context, int, int) ([]domain.Product, error) {
+func (f *fakeProductRepo) List(ctx context.Context, q string, categoryID *string, page int, limit int) ([]domain.Product, error) {
 	return nil, nil
 }
 func (f *fakeProductRepo) Search(context.Context, string, *string) ([]domain.Product, error) {
@@ -181,8 +181,11 @@ func newFixture(status domain.ChainStatus) *fixture {
 	}
 	negotiations := &fakeNegotiationRepo{}
 
+	// Создаём реальный сервис с фиктивными репозиториями
+	service := NewChainService(chains, products, negotiations)
+
 	return &fixture{
-		service:      nil, //NewChainService(chains, products, negotiations),
+		service:      service,
 		chains:       chains,
 		products:     products,
 		negotiations: negotiations,
