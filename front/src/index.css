@@ -106,10 +106,7 @@
 }
 
 #root,
-#storybook-root {
-    max-width: 1200px;
-    margin: 0 auto;
-}
+#storybook-root { min-height: 100%; }
 
 h1 {
     font-size: var(--h1-font-size);

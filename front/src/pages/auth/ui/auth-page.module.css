@@ -1,40 +1,100 @@
 .page {
+    position: relative;
     display: flex;
+    flex: 1;
     justify-content: center;
+    align-items: center;
     width: 100%;
-    padding: var(--space-8) var(--space-5);
+    min-height: 100%;
+    padding: 48px 24px 64px;
+    overflow: hidden;
 }
 
 .card {
+    position: relative;
+    z-index: 1;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: var(--space-5);
-    width: min(100%, 480px);
-    padding: var(--space-8);
-    border: 1px solid var(--bg-shadows);
-    border-radius: var(--radius-lg);
-    background: var(--bg-secondary);
-    box-shadow: 0 12px 32px rgba(31, 41, 55, 0.08);
+    gap: 20px;
+    width: min(100%, 460px);
+    padding: 36px 40px 30px;
+    border: 1px solid color-mix(in srgb, var(--neutral-primary) 8%, transparent);
+    border-radius: 24px;
+    background: color-mix(in srgb, var(--bg-secondary) 94%, transparent);
+    box-shadow: 0 18px 50px color-mix(in srgb, var(--neutral-primary) 10%, transparent);
+    backdrop-filter: blur(12px);
+}
+
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin-bottom: 2px;
+}
+
+.brand img:first-child {
+    width: 34px;
+    height: 34px;
+}
+
+.brand img:last-child {
+    width: 82px;
+    height: auto;
+}
+
+.heading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.eyebrow {
+    color: var(--neutral-secondary);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
 }
 
 .card h1 {
     text-align: center;
-    font-size: var(--h2-font-size);
+    color: var(--neutral-primary);
+    font-size: clamp(28px, 4vw, 34px);
+    font-weight: 700;
+    letter-spacing: -0.03em;
 }
 
 .description {
-    max-width: 340px;
+    max-width: 330px;
     color: var(--neutral-secondary);
+    text-align: center;
+    font-size: 15px;
+    line-height: 1.5;
+}
+
+.legal {
+    max-width: 310px;
+    color: var(--neutral-disable);
+    font-size: 12px;
+    line-height: 1.45;
     text-align: center;
 }
 
 @media (max-width: 768px) {
     .page {
-        padding: var(--space-5);
+        align-items: flex-start;
+        padding: 28px 16px 40px;
     }
 
     .card {
-        padding: var(--space-6) var(--space-5);
+        gap: 18px;
+        padding: 28px 20px 24px;
+        border-radius: 20px;
+    }
+
+    .card h1 {
+        font-size: 28px;
     }
 }

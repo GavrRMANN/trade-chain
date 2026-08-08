@@ -1,12 +1,12 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { ConfigProvider } from 'antd';
-import { RouterProvider } from 'react-router-dom';
+import { BrowserRouter } from 'react-router-dom';
 import 'antd/dist/reset.css';
 import './index.css';
 
 import { StoreProvider } from '@app/providers';
-import { browserRouting } from '@app/router';
+import { AppRouter } from '@app/router';
 import {PageTitleProvider} from "@app/providers/pageTitle";
 
 createRoot(document.getElementById('root')!).render(
@@ -21,7 +21,9 @@ createRoot(document.getElementById('root')!).render(
                 }}
             >
                 <PageTitleProvider>
-                    <RouterProvider router={browserRouting} />
+                    <BrowserRouter>
+                        <AppRouter />
+                    </BrowserRouter>
                 </PageTitleProvider>
             </ConfigProvider>
         </StoreProvider>

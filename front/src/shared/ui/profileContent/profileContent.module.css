@@ -1,0 +1,9 @@
+.layout { width: 100%; padding: var(--space-7) 0 var(--space-20); display: flex; align-items: flex-start; gap: 78px; }
+.content { min-width: 0; flex: 1; }
+.listingsSection { margin-top: 0; }
+.headingRow { display: flex; align-items: center; justify-content: space-between; gap: var(--space-5); }
+.headingRow h2 { font-size: 40px; line-height: 1; color: var(--neutral-primary); }
+.state { padding: var(--space-14) var(--space-6); text-align: center; color: var(--neutral-secondary); }
+@media (max-width: 1100px) { .layout { gap: 40px; } .headingRow h2 { font-size: 32px; } }
+@media (max-width: 900px) { .layout { display: block; padding-top: 20px; } .listingsSection { margin-top: 30px; } }
+@media (max-width: 600px) { .headingRow { align-items: flex-start; flex-direction: column; } .headingRow h2 { font-size: var(--h2-font-size); } }

@@ -1,4 +1,5 @@
 import type { TUserProfile } from '../types';
+import { removeAuthToken } from '@/shared/api';
 
 export const getUserLocalStorage = () => {
     const userFromStorage = localStorage.getItem('user');
@@ -25,5 +26,5 @@ export const setUserLocalStorage = (userData: TUserProfile) => {
 
 export const removeUserLocalStorage = () => {
     localStorage.removeItem('user');
-    localStorage.removeItem('token');
+    removeAuthToken();
 };

@@ -1,14 +1,14 @@
 .form {
     display: flex;
     flex-direction: column;
-    gap: var(--space-5);
+    gap: 18px;
     width: min(100%, 360px);
 }
 
 .fields {
     display: flex;
     flex-direction: column;
-    gap: var(--space-4);
+    gap: 14px;
 }
 
 .error,
@@ -17,10 +17,18 @@
     line-height: var(--text-sm-line-height);
 }
 
+.error,
+.success {
+    padding: 10px 12px;
+    border-radius: 10px;
+}
+
 .error {
     color: var(--accent-danger);
+    background: color-mix(in srgb, var(--accent-danger) 8%, transparent);
 }
 
 .success {
     color: var(--accent-success);
+    background: color-mix(in srgb, var(--accent-success) 8%, transparent);
 }

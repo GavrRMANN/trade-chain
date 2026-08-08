@@ -1,16 +1,16 @@
 .text {
-    color: var(--neutral-primary, #1F2937);
+    color: var(--neutral-primary);
 
     /* text-sm */
     font-family: Inter, sans-serif;
-    font-size: 14px;
+    font-size: 13px;
     font-style: normal;
-    font-weight: 400;
-    line-height: 20px; /* 142.857% */
+    font-weight: 600;
+    line-height: 1.35;
 }
 
 .text--disabled {
-    color: var(--neutral-disable, #9CA3AF);
+    color: var(--neutral-disable);
 
     cursor: not-allowed;
 }

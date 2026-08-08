@@ -9,6 +9,8 @@ type TProductCardProps = {
     img?: string;
     price?: number;
     location?: string;
+    description?: string;
+    variant?: 'vertical' | 'horizontal';
     onClick?: () => void;
 }
 
@@ -17,6 +19,8 @@ export const ProductCard = ({
                                 img,
                                 price,
                                 location,
+                                description,
+                                variant = 'vertical',
                                 onClick,
                             }: TProductCardProps) => {
     const [isImageAvailable, setIsImageAvailable] = useState(false);
@@ -43,7 +47,13 @@ export const ProductCard = ({
     }, [img]);
 
     return (
-        <article className={Styles['product-card']} onClick={onClick}>
+        <article
+            className={`${Styles['product-card']} ${Styles[`product-card--${variant}`]} ${onClick ? Styles['product-card--clickable'] : ''}`}
+            onClick={onClick}
+            role={onClick ? 'link' : undefined}
+            tabIndex={onClick ? 0 : undefined}
+            onKeyDown={onClick ? (event) => event.key === 'Enter' && onClick() : undefined}
+        >
             <div className={Styles['image-container']}>
                 {isImageAvailable ? (
                     <img src={img} alt={title}/>
@@ -54,16 +64,19 @@ export const ProductCard = ({
 
             <div className={Styles['desc-container']}>
                 <h4 className={Styles.title}>{title}</h4>
-                {price !== undefined && (
-                    <p className={Styles.amount}>{formatAmount(price)}</p>
-                )}
+                {description && <p className={Styles.description}>{description}</p>}
+                <div className={Styles['info']}>
+                    {price !== undefined && (
+                        <p className={Styles.amount}>{formatAmount(price)}</p>
+                    )}
 
-                {location && (
-                    <div className={Styles['location-block']}>
-                        <img src={GeoSVG} alt="Геометка"/>
-                        <p className={Styles['location']}>{location}</p>
-                    </div>
-                )}
+                    {location && (
+                        <div className={Styles['location-block']}>
+                            <img src={GeoSVG} alt="Геометка"/>
+                            <p className={Styles['location']}>{location}</p>
+                        </div>
+                    )}
+                </div>
             </div>
         </article>
     );
