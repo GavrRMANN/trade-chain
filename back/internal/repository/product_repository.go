@@ -277,7 +277,7 @@ func (r *productRepository) List(
 	}
 
 	if q != "" {
-		query += fmt.Sprintf(`
+		query += `
 			ORDER BY
 				(
 					0.60 * ts_rank_cd(
@@ -288,7 +288,7 @@ func (r *productRepository) List(
 					0.15 * similarity(COALESCE(description, ''), $1)
 				) DESC,
 				created_at DESC
-		`)
+		`
 	} else {
 		query += `
 			ORDER BY created_at DESC
