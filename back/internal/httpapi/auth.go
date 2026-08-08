@@ -14,20 +14,14 @@ type authHandler struct {
 	customerService service.CustomerService
 }
 
-// Публичные маршруты: login, register
-func mountAuthRoutes(r chi.Router, cs service.CustomerService) {
-	h := authHandler{cs}
+func NewAuthHandler(cs service.CustomerService) *authHandler {
+	return &authHandler{customerService: cs}
+}
+
+func (h *authHandler) MountPublic(r chi.Router) {
 	r.Route("/auth", func(r chi.Router) {
 		r.Post("/login", h.login)
 		r.Post("/register", h.register)
-	})
-}
-
-// Защищённые маршруты: me
-func mountAuthProtectedRoutes(r chi.Router, cs service.CustomerService) {
-	h := authHandler{cs}
-	r.Route("/auth", func(r chi.Router) {
-		r.Get("/me", h.me)
 	})
 }
 
@@ -52,7 +46,7 @@ type AuthResponse struct {
 // @Failure 400 {object} ErrorResponse
 // @Failure 500 {object} ErrorResponse
 // @Router /auth/login [post]
-func (h authHandler) login(w http.ResponseWriter, r *http.Request) {
+func (h *authHandler) login(w http.ResponseWriter, r *http.Request) {
 	var req LoginRequest
 	if decodeJSON(r, &req) != nil {
 		writeError(w, service.ErrInvalidInput)
@@ -87,7 +81,7 @@ func (h authHandler) login(w http.ResponseWriter, r *http.Request) {
 // @Failure 409 {object} ErrorResponse
 // @Failure 500 {object} ErrorResponse
 // @Router /auth/register [post]
-func (h authHandler) register(w http.ResponseWriter, r *http.Request) {
+func (h *authHandler) register(w http.ResponseWriter, r *http.Request) {
 	var req domain.CreateCustomerDTO
 	if err := decodeJSON(r, &req); err != nil {
 		writeError(w, service.ErrInvalidInput)
@@ -116,7 +110,7 @@ func (h authHandler) register(w http.ResponseWriter, r *http.Request) {
 // @Failure 401 {object} ErrorResponse
 // @Failure 500 {object} ErrorResponse
 // @Router /auth/me [get]
-func (h authHandler) me(w http.ResponseWriter, r *http.Request) {
+func (h *authHandler) me(w http.ResponseWriter, r *http.Request) {
 	userID, ok := auth.UserIDFromContext(r.Context())
 	if !ok {
 		writeError(w, service.ErrForbidden)
