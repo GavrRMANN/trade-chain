@@ -13,12 +13,17 @@ type customerHandler struct{ s service.CustomerService }
 func mountCustomerRoutes(r chi.Router, s service.CustomerService) {
 	h := customerHandler{s}
 	r.Route("/customers", func(r chi.Router) {
-		r.Post("/", h.create)
 		r.Get("/", h.list)
 		r.Get("/{id}", h.get)
 		r.Patch("/{id}", h.update)
 		r.Delete("/{id}", h.delete)
 	})
+}
+
+// mountCustomerRegistrationRoute регистрирует пользователя без JWT.
+func mountCustomerRegistrationRoute(r chi.Router, s service.CustomerService) {
+	h := customerHandler{s}
+	r.Post("/customers/", h.create)
 }
 
 // create godoc

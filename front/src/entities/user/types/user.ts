@@ -1,20 +1,22 @@
 export type TUser = {
-    id: string;
+    customer_id: string;
     email: string;
-    accountName: string;
-    createdAt: string;
+    created_at: string;
+    updated_at: string;
 };
 
-export type TUserProfile = TUser & {
-    password?: string;
-};
+export type TUserProfile = TUser;
 
 export type TRegisterPayload = {
-    accountName: string;
+    email: string;
     password: string;
 };
 
 export type TLoginPayload = {
-    accountName: string;
+    email: string;
     password: string;
+};
+
+export type TAuthResponse = {
+    token: string;
 };

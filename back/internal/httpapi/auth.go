@@ -3,6 +3,7 @@ package httpapi
 import (
 	"net/http"
 	"trade-chain/internal/auth"
+	"trade-chain/internal/domain"
 	"trade-chain/internal/service"
 
 	"github.com/go-chi/chi/v5"
@@ -17,12 +18,40 @@ func mountAuthRoutes(r chi.Router, cs service.CustomerService) {
 	h := authHandler{cs}
 	r.Route("/auth", func(r chi.Router) {
 		r.Post("/login", h.login)
+		r.Post("/register", h.register)
 	})
 }
 
 type LoginRequest struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
+}
+
+// register godoc
+// @Summary Register user
+// @Description Register a new customer
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param request body domain.CreateCustomerDTO true "Registration data"
+// @Success 201 {object} domain.Customer
+// @Failure 400 {object} ErrorResponse
+// @Failure 409 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /auth/register [post]
+func (h authHandler) register(w http.ResponseWriter, r *http.Request) {
+	var req domain.CreateCustomerDTO
+	if decodeJSON(r, &req) != nil {
+		writeError(w, service.ErrInvalidInput)
+		return
+	}
+
+	customer, err := h.customerService.Create(r.Context(), &req)
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusCreated, customer)
 }
 
 // login godoc
