@@ -10,7 +10,8 @@ import (
 	"trade-chain/internal/auth"
 	"trade-chain/internal/domain"
 	"trade-chain/internal/service"
-	"uuid"
+
+	"github.com/google/uuid"
 
 	"github.com/go-chi/chi/v5"
 )
