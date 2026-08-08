@@ -255,10 +255,10 @@ func (r *chainRepository) CompleteExchange(ctx context.Context, chainID string) 
 	rows, err := tx.Query(ctx, `
 		SELECT product_id, customer_id
 		FROM products
-		WHERE product_id = ANY($1)
+		WHERE product_id IN ($1, $2)
 		ORDER BY product_id
 		FOR UPDATE
-	`, []string{chain.FromProductID, chain.ToProductID})
+	`, chain.FromProductID, chain.ToProductID)
 	if err != nil {
 		return err
 	}
@@ -318,9 +318,9 @@ func (r *chainRepository) CompleteExchange(ctx context.Context, chainID string) 
 		SET status = $1, updated_at = CURRENT_TIMESTAMP
 		WHERE chain_id <> $2
 		  AND status = $3
-		  AND (from_product_id = ANY($4) OR to_product_id = ANY($4))
+		  AND (from_product_id IN ($4, $5) OR to_product_id IN ($4, $5))
 	`, string(domain.ChainCancelled), chainID, string(domain.ChainPending),
-		[]string{chain.FromProductID, chain.ToProductID})
+		chain.FromProductID, chain.ToProductID)
 	if err != nil {
 		return err
 	}
