@@ -41,22 +41,106 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "token",
+                        "description": "OK",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/httpapi.AuthResponse"
                         }
                     },
                     "400": {
-                        "description": "Invalid input",
+                        "description": "Bad Request",
                         "schema": {
                             "$ref": "#/definitions/httpapi.ErrorResponse"
                         }
                     },
                     "500": {
-                        "description": "Internal server error",
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/httpapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/me": {
+            "get": {
+                "description": "Get information about the authenticated user (validates token)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Get current user info",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/domain.Customer"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/httpapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/httpapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/register": {
+            "post": {
+                "description": "Register a new user and return JWT token",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Register user",
+                "parameters": [
+                    {
+                        "description": "Registration data",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.CreateCustomerDTO"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/httpapi.AuthResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/httpapi.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/httpapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/httpapi.ErrorResponse"
                         }
@@ -1154,7 +1238,7 @@ const docTemplate = `{
                 }
             },
             "delete": {
-                "description": "Soft delete product (set is_active=false)",
+                "description": "Soft delete product (set status to archived)",
                 "consumes": [
                     "application/json"
                 ],
@@ -1994,7 +2078,7 @@ const docTemplate = `{
             "type": "object",
             "required": [
                 "customer_id",
-                "name"
+                "title"
             ],
             "properties": {
                 "category_id": {
@@ -2006,7 +2090,19 @@ const docTemplate = `{
                 "description": {
                     "type": "string"
                 },
-                "name": {
+                "image": {
+                    "type": "string"
+                },
+                "location": {
+                    "type": "string"
+                },
+                "price": {
+                    "type": "integer"
+                },
+                "status": {
+                    "$ref": "#/definitions/domain.ProductStatus"
+                },
+                "title": {
                     "type": "string"
                 }
             }
@@ -2043,19 +2139,43 @@ const docTemplate = `{
                 "description": {
                     "type": "string"
                 },
-                "is_active": {
-                    "type": "boolean"
-                },
-                "name": {
+                "image": {
                     "type": "string"
                 },
+                "location": {
+                    "type": "string"
+                },
+                "price": {
+                    "type": "integer"
+                },
                 "product_id": {
+                    "type": "string"
+                },
+                "status": {
+                    "$ref": "#/definitions/domain.ProductStatus"
+                },
+                "title": {
                     "type": "string"
                 },
                 "updated_at": {
                     "type": "string"
                 }
             }
+        },
+        "domain.ProductStatus": {
+            "type": "string",
+            "enum": [
+                "active",
+                "reserved",
+                "exchanged",
+                "archived"
+            ],
+            "x-enum-varnames": [
+                "ProductActive",
+                "ProductReserved",
+                "ProductExchanged",
+                "ProductArchived"
+            ]
         },
         "domain.Review": {
             "type": "object",
@@ -2107,10 +2227,19 @@ const docTemplate = `{
                 "description": {
                     "type": "string"
                 },
-                "is_active": {
-                    "type": "boolean"
+                "image": {
+                    "type": "string"
                 },
-                "name": {
+                "location": {
+                    "type": "string"
+                },
+                "price": {
+                    "type": "integer"
+                },
+                "status": {
+                    "$ref": "#/definitions/domain.ProductStatus"
+                },
+                "title": {
                     "type": "string"
                 }
             }
@@ -2132,6 +2261,17 @@ const docTemplate = `{
                 },
                 "wishlist_id": {
                     "type": "string"
+                }
+            }
+        },
+        "httpapi.AuthResponse": {
+            "type": "object",
+            "properties": {
+                "token": {
+                    "type": "string"
+                },
+                "user": {
+                    "$ref": "#/definitions/domain.Customer"
                 }
             }
         },

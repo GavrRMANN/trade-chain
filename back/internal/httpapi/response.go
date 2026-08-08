@@ -3,6 +3,7 @@ package httpapi
 import (
 	"encoding/json"
 	"errors"
+	"log"
 	"net/http"
 	"trade-chain/internal/service"
 )
@@ -18,6 +19,7 @@ func writeJSON(w http.ResponseWriter, status int, v any) {
 }
 
 func writeError(w http.ResponseWriter, err error) {
+	log.Printf("ERROR: %v", err)
 	status := http.StatusInternalServerError
 	switch {
 	case errors.Is(err, service.ErrInvalidInput):

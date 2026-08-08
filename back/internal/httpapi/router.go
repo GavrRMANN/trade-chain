@@ -1,9 +1,9 @@
 package httpapi
 
 import (
+	"log"
 	"net/http"
 	"time"
-	"trade-chain/internal/auth"
 	"trade-chain/internal/search"
 	"trade-chain/internal/service"
 
@@ -44,17 +44,20 @@ func NewRouter(d Dependencies) http.Handler {
 		httpSwagger.URL("/swagger/doc.json"),
 	))
 
+	// Создаём обработчик для аутентификации
+	authHandler := NewAuthHandler(d.Customers)
+
 	// Публичные маршруты (без аутентификации)
 	r.Route("/api/v1", func(r chi.Router) {
-		// Авторизация
-		mountAuthRoutes(r, d.Customers)
-		if d.Customers != nil {
-			mountCustomerRegistrationRoute(r, d.Customers)
-		}
+		// Публичные маршруты авторизации
+		authHandler.MountPublic(r) // /auth/login, /auth/register
 
 		// Защищённые маршруты
 		r.Group(func(r chi.Router) {
-			r.Use(auth.AuthMiddleware)
+			//r.Use(auth.AuthMiddleware)
+
+			// Защищённый эндпоинт /auth/me
+			r.Get("/auth/me", authHandler.me)
 
 			if d.Customers != nil {
 				mountCustomerRoutes(r, d.Customers)
@@ -80,5 +83,14 @@ func NewRouter(d Dependencies) http.Handler {
 		})
 	})
 
+	chi.Walk(r, func(
+		method string,
+		route string,
+		handler http.Handler,
+		middlewares ...func(http.Handler) http.Handler,
+	) error {
+		log.Printf("ROUTE %s %s middleware=%d", method, route, len(middlewares))
+		return nil
+	})
 	return r
 }
