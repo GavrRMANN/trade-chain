@@ -21,7 +21,7 @@ func NewChainRepository(db *pgxpool.Pool) ChainRepository {
 
 // chainColumns перечислены один раз намеренно: список повторялся в четырёх
 // запросах, и добавление колонки требовало не забыть ни один из них.
-const chainColumns = `chain_id, from_product_id, to_product_id, initiator_id,
+const chainColumns = `chain_id, from_product_id, to_product_id, initiator_id, recipient_id,
 	previous_chain_id, next_chain_id, status, message, expires_at, created_at, updated_at`
 
 // rowScanner покрывает и одиночную строку, и строку выборки: у pgx.Row
@@ -37,6 +37,7 @@ func scanChain(row rowScanner) (domain.Chain, error) {
 		&chain.FromProductID,
 		&chain.ToProductID,
 		&chain.InitiatorID,
+		&chain.RecipientID,
 		&chain.PreviousChainID,
 		&chain.NextChainID,
 		&chain.Status,
@@ -71,8 +72,8 @@ func (r *chainRepository) queryChains(ctx context.Context, query string, args ..
 
 func (r *chainRepository) Create(ctx context.Context, chain *domain.Chain) (*domain.Chain, error) {
 	query := `
-		INSERT INTO chains (from_product_id, to_product_id, initiator_id, previous_chain_id, next_chain_id, status, message, expires_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, COALESCE($8, CURRENT_TIMESTAMP + INTERVAL '72 hours'))
+		INSERT INTO chains (from_product_id, to_product_id, initiator_id, recipient_id, previous_chain_id, next_chain_id, status, message, expires_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, COALESCE($9, CURRENT_TIMESTAMP + INTERVAL '72 hours'))
 		RETURNING ` + chainColumns
 
 	// Нулевое время означает «срок не задан» — базе передаётся NULL,
@@ -86,6 +87,7 @@ func (r *chainRepository) Create(ctx context.Context, chain *domain.Chain) (*dom
 		chain.FromProductID,
 		chain.ToProductID,
 		chain.InitiatorID,
+		chain.RecipientID,
 		chain.PreviousChainID,
 		chain.NextChainID,
 		chain.Status,
@@ -128,8 +130,7 @@ func (r *chainRepository) GetByCustomerID(ctx context.Context, customerID string
 	query := `
 		SELECT ` + chainColumns + `
 		FROM chains
-		WHERE initiator_id = $1
-		   OR to_product_id IN (SELECT product_id FROM products WHERE customer_id = $1)
+		WHERE initiator_id = $1 OR recipient_id = $1
 		ORDER BY created_at DESC
 	`
 	return r.queryChains(ctx, query, customerID)
@@ -142,7 +143,7 @@ func (r *chainRepository) GetFullChain(ctx context.Context, chainID string) ([]d
 			FROM chains
 			WHERE chain_id = $1
 			UNION ALL
-			SELECT c.chain_id, c.from_product_id, c.to_product_id, c.initiator_id,
+			SELECT c.chain_id, c.from_product_id, c.to_product_id, c.initiator_id, c.recipient_id,
 				c.previous_chain_id, c.next_chain_id, c.status, c.message, c.expires_at, c.created_at, c.updated_at
 			FROM chains c
 			INNER JOIN chain_path cp ON c.chain_id = cp.next_chain_id OR c.chain_id = cp.previous_chain_id

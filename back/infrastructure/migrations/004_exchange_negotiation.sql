@@ -7,6 +7,26 @@
 --
 -- Миграцию безопасно прогнать повторно.
 
+-- ---------- chains: вторая сторона ----------
+
+-- Кто отвечает на предложение, до сих пор вычислялось на лету — через
+-- владельца запрошенного товара. После успешного обмена владельцы меняются
+-- местами, и то же вычисление начинает указывать на инициатора: сделка
+-- «схлопывается» в одного человека, и отзыв оставить уже некому.
+-- Поэтому вторая сторона фиксируется в момент создания предложения.
+ALTER TABLE chains
+    ADD COLUMN IF NOT EXISTS recipient_id UUID REFERENCES customers(customer_id) ON DELETE CASCADE;
+
+UPDATE chains c
+SET recipient_id = p.customer_id
+FROM products p
+WHERE p.product_id = c.to_product_id
+  AND c.recipient_id IS NULL;
+
+ALTER TABLE chains ALTER COLUMN recipient_id SET NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_chains_recipient_id ON chains(recipient_id);
+
 -- ---------- chains: срок ответа и недостающие состояния ----------
 
 -- Предложение без срока висит вечно и занимает внимание обеих сторон:

@@ -10,6 +10,7 @@ type Chain struct {
 	FromProductID   string    `json:"from_product_id"`
 	ToProductID     string    `json:"to_product_id"`
 	InitiatorID     string    `json:"initiator_id"`
+	RecipientID     string    `json:"recipient_id"`
 	PreviousChainID *string   `json:"previous_chain_id,omitempty"`
 	NextChainID     *string   `json:"next_chain_id,omitempty"`
 	Status          string    `json:"status"`
