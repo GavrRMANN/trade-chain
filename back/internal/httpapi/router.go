@@ -27,6 +27,9 @@ type Dependencies struct {
 func NewRouter(d Dependencies) http.Handler {
 	r := chi.NewRouter()
 
+	fs := http.FileServer(http.Dir("./uploads"))
+	r.Handle("/uploads/*", http.StripPrefix("/uploads/", fs))
+
 	// Middleware
 	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)

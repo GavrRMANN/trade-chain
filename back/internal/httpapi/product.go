@@ -1,11 +1,17 @@
 package httpapi
 
 import (
+	"io"
 	"net/http"
+	"os"
+	"path"
+	"path/filepath"
 	"strings"
 	"trade-chain/internal/auth"
 	"trade-chain/internal/domain"
 	"trade-chain/internal/service"
+
+	"github.com/google/uuid"
 
 	"github.com/go-chi/chi/v5"
 )
@@ -29,6 +35,8 @@ func mountProductRoutes(r chi.Router, s service.ProductService) {
 
 			// Изменить своё объявление
 			r.Patch("/{productID}", h.update)
+
+			r.Post("/{productID}/image", h.uploadImage)
 
 			// Снять товар с обмена
 			//r.Post("/{productID}/archive", h.archive)
@@ -200,4 +208,122 @@ func (h productHandler) byCustomer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, v)
+}
+
+// uploadImage godoc
+// @Summary Upload image for product
+// @Description Upload an image for a specific product
+// @Tags products
+// @Accept multipart/form-data
+// @Produce json
+// @Param productID path string true "Product ID"
+// @Param image formData file true "Image file"
+// @Success 200 {object} domain.Product
+// @Failure 400 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /products/{productID}/images [post]
+func (h productHandler) uploadImage(w http.ResponseWriter, r *http.Request) {
+	// 1. Получаем ID пользователя из контекста (уже есть auth)
+	userID, ok := auth.UserIDFromContext(r.Context())
+	if !ok {
+		writeError(w, service.ErrForbidden)
+		return
+	}
+
+	productID := chi.URLParam(r, "productID")
+	if productID == "" {
+		writeError(w, service.ErrInvalidInput)
+		return
+	}
+
+	// 2. Получаем продукт, чтобы проверить владельца
+	product, err := h.s.GetByID(r.Context(), productID)
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+	if product.CustomerID != userID {
+		writeError(w, service.ErrForbidden)
+		return
+	}
+
+	// 3. Читаем файл из запроса (максимум 5 МБ)
+	err = r.ParseMultipartForm(10 << 20) // 5 MB
+	if err != nil {
+		writeError(w, service.ErrInvalidInput)
+		return
+	}
+	file, header, err := r.FormFile("image") // имя поля должно быть "image"
+	if err != nil {
+		writeError(w, service.ErrInvalidInput)
+		return
+	}
+	defer file.Close()
+
+	// 4. Проверяем тип файла (MIME)
+	buffer := make([]byte, 512)
+	_, err = file.Read(buffer)
+	if err != nil {
+		writeError(w, service.ErrInvalidInput)
+		return
+	}
+	mimeType := http.DetectContentType(buffer)
+	// Разрешаем только изображения
+	if !strings.HasPrefix(mimeType, "image/") {
+		writeError(w, service.ErrInvalidInput)
+		return
+	}
+	// Возвращаем указатель в начало файла
+	_, err = file.Seek(0, io.SeekStart)
+	if err != nil {
+		writeError(w, service.ErrInternal)
+		return
+	}
+
+	// 5. Генерируем уникальное имя файла
+	ext := path.Ext(header.Filename)
+	if ext == "" {
+		// Если расширения нет, можно по MIME определить
+		switch mimeType {
+		case "image/jpeg":
+			ext = ".jpg"
+		case "image/png":
+			ext = ".png"
+		case "image/gif":
+			ext = ".gif"
+		default:
+			ext = ".bin"
+		}
+	}
+	newFileName := uuid.New().String() + ext
+	savePath := filepath.Join("./uploads", newFileName)
+
+	// 6. Сохраняем файл
+	outFile, err := os.Create(savePath)
+	if err != nil {
+		writeError(w, service.ErrInternal)
+		return
+	}
+	defer outFile.Close()
+	_, err = io.Copy(outFile, file)
+	if err != nil {
+		writeError(w, service.ErrInternal)
+		return
+	}
+
+	// 7. Обновляем продукт: записываем относительный путь
+	imageURL := "/uploads/" + newFileName
+	updateDTO := &domain.UpdateProductDTO{
+		Image: &imageURL,
+	}
+	updated, err := h.s.Update(r.Context(), productID, updateDTO)
+	if err != nil {
+		// Если обновление не удалось, можно удалить загруженный файл (опционально)
+		os.Remove(savePath)
+		writeError(w, err)
+		return
+	}
+
+	// 8. Возвращаем обновлённый продукт
+	writeJSON(w, http.StatusOK, updated)
 }
