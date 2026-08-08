@@ -34,6 +34,7 @@ export const ProductPage = () => {
         wishlistOptions,
         matchingProducts,
         reviews,
+        isOwner,
         isLoading,
         isError
     } = useProductPageData(productId);
@@ -67,9 +68,31 @@ export const ProductPage = () => {
                 <div className={Styles.hero}>
                     <div className={Styles.mediaColumn}>
                         <ProductImage src={product.image} alt={product.title} title={product.title} />
+                        <div className={Styles.details}>
+                            <ProductSection title="Характеристики">
+                                <dl className={Styles.characteristics}>
+                                    <div><dt>Статус</dt><dd>{statusLabel}</dd></div>
+                                    <div><dt>Город</dt><dd>{product.location || 'Не указан'}</dd></div>
+                                    <div><dt>Цена</dt><dd className={Styles.strong}>{product.price !== undefined ? formatAmount(product.price) : 'Не указана'}</dd></div>
+                                </dl>
+                            </ProductSection>
+
+                            <ProductSection title="Описание">
+                                <p className={Styles.description}>{product.description || 'Описание не указано.'}</p>
+                            </ProductSection>
+                        </div>
                     </div>
                     <aside className={Styles.productAside}>
-                        <div className={Styles.status}>{statusLabel}</div>
+                        {isOwner ? (
+                            <Button
+                                variant="secondary"
+                                onClick={() => navigate(`/product/${product.product_id}/edit`)}
+                            >
+                                Редактировать
+                            </Button>
+                        ) : (
+                            <div className={Styles.status}>{statusLabel}</div>
+                        )}
                         <SellerInfo name={sellerName} meta={ratingText} profileId={product.customer_id} />
                         <section className={Styles.exchange}>
                             <h2>Что хочет взамен</h2>
@@ -101,20 +124,6 @@ export const ProductPage = () => {
                             )}
                         </section>
                     </aside>
-                </div>
-
-                <div className={Styles.details}>
-                    <ProductSection title="Характеристики">
-                        <dl className={Styles.characteristics}>
-                            <div><dt>Статус</dt><dd>{statusLabel}</dd></div>
-                            <div><dt>Город</dt><dd>{product.location || 'Не указан'}</dd></div>
-                            <div><dt>Цена</dt><dd className={Styles.strong}>{product.price !== undefined ? formatAmount(product.price) : 'Не указана'}</dd></div>
-                        </dl>
-                    </ProductSection>
-
-                    <ProductSection title="Описание">
-                        <p className={Styles.description}>{product.description || 'Описание не указано.'}</p>
-                    </ProductSection>
                 </div>
 
             </div>

@@ -2,12 +2,12 @@ import Styles from "./mobileHeaderMenu.module.css";
 
 import LogoSVG from "@shared/assets/logo/logo.svg";
 import UserSVG from "@shared/assets/icons/User.svg";
+import PlusSVG from "@shared/assets/icons/Plus.svg?react";
 
 import {SearchBox} from "@widgets/headerMenu/ui/searchBox";
-import {NavLink} from "react-router-dom";
+import {NavLink, useNavigate} from "react-router-dom";
 import {useOpenModalRoute} from "@shared/lib";
 import {getAuthToken} from "@shared/api";
-import {useNavigate} from "react-router-dom";
 
 type TMobileHeaderMenuProps = {
     value: string;
@@ -29,6 +29,14 @@ export const MobileHeaderMenu = ({value, setValue, search, isLoading, isError, s
                 <img src={LogoSVG} alt={'Логотип'}/>
             </NavLink>
             <SearchBox value={value} setValue={setValue} search={search} isLoading={isLoading} isError={isError} suggestions={suggestions} selectSuggestion={selectSuggestion}/>
+            <button
+                className={Styles['header__action']}
+                type="button"
+                aria-label="Разместить объявление"
+                onClick={() => getAuthToken() ? navigate('/create') : openModal('auth')}
+            >
+                <PlusSVG/>
+            </button>
             <button
                 className={Styles['header__profile']}
                 type="button"

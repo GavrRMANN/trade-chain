@@ -1,12 +1,12 @@
 import Styles from "./desktopHeaderMenu.module.css";
-import {NavLink} from "react-router-dom";
+import {NavLink, useNavigate} from "react-router-dom";
 import LogoSVG from "@shared/assets/logo/logo.svg";
 import LogoNameSVG from "@shared/assets/logo/name.svg";
+import PlusSVG from "@shared/assets/icons/Plus.svg?react";
 import {SearchBox} from "@widgets/headerMenu/ui/searchBox";
 import {Button} from "@shared/ui/button";
 import {useOpenModalRoute} from "@shared/lib";
 import {getAuthToken} from "@shared/api";
-import {useNavigate} from "react-router-dom";
 
 type TDesktopHeaderMenuProps = {
     value: string;
@@ -29,6 +29,13 @@ export const DesktopHeaderMenu = ({value, setValue, search, isLoading, isError, 
                 <img src={LogoNameSVG} alt={'Авито'}/>
             </NavLink>
             <SearchBox value={value} setValue={setValue} search={search} isLoading={isLoading} isError={isError} suggestions={suggestions} selectSuggestion={selectSuggestion}/>
+            <Button
+                variant={'default'}
+                icon={<span className={Styles['header__plus-icon']}><PlusSVG/></span>}
+                onClick={() => getAuthToken() ? navigate('/create') : openModal('auth')}
+            >
+                Разместить
+            </Button>
             <Button variant={'default'} onClick={() => getAuthToken() ? navigate('/profile') : openModal('auth')}>
                 Профиль
             </Button>
