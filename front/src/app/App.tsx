@@ -5,6 +5,7 @@ import {Layout} from "antd";
 import Styles from "./app.module.css";
 import {usePageTitle} from "@app/providers/pageTitle";
 import {PageTitle} from "@shared/ui/pageTitle";
+import {MainLayout} from "@shared/ui/layout";
 
 const {Content} = Layout;
 
@@ -18,8 +19,10 @@ export const App = () => {
                 <Content
                     className={Styles.content}
                 >
-                    <PageTitle title={title}/>
-                    <Outlet/>
+                    <MainLayout>
+                        <PageTitle title={title}/>
+                        <Outlet/>
+                    </MainLayout>
                 </Content>
             </Layout>
         </Layout>

@@ -1,9 +1,16 @@
+import type { ReactNode } from 'react';
 import { Outlet } from 'react-router-dom';
 
-export function MainLayout() {
+import Styles from './main-layout.module.css';
+
+type MainLayoutProps = {
+  children?: ReactNode;
+};
+
+export function MainLayout({ children }: MainLayoutProps) {
   return (
-    <main style={{ maxWidth: 960, margin: '0 auto', padding: 16 }}>
-      <Outlet />
+    <main className={Styles.layout}>
+      {children ?? <Outlet />}
     </main>
   );
 }
