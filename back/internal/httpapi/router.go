@@ -18,6 +18,7 @@ type Dependencies struct {
 	Customers  service.CustomerService
 	Products   service.ProductService
 	Chains     service.ChainService
+	Offers     service.OfferService
 	Reviews    service.ReviewService
 	Categories service.CategoryService
 	Wishlists  service.WishlistService
@@ -71,6 +72,9 @@ func NewRouter(d Dependencies) http.Handler {
 			}
 			if d.Chains != nil {
 				mountChainRoutes(r, d.Chains)
+			}
+			if d.Offers != nil {
+				mountExchangeOfferRoutes(r, d.Offers)
 			}
 			if d.Reviews != nil {
 				mountReviewRoutes(r, d.Reviews)
