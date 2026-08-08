@@ -245,19 +245,43 @@ func (r *chainRepository) CompleteExchange(ctx context.Context, chainID string) 
 		return errors.New("chain must be active to complete")
 	}
 
-	// 2. Получить текущих владельцев
-	var fromOwner, toOwner string
-	err = tx.QueryRow(ctx, `
-		SELECT customer_id FROM products WHERE product_id = $1
-	`, chain.FromProductID).Scan(&fromOwner)
+	// 2. Заблокировать товары и прочитать текущих владельцев.
+	//
+	// Без блокировки два обмена, завершающихся одновременно, читают одного и
+	// того же владельца и записывают результат поверх друг друга: вещь уезжает
+	// дважды. Порядок фиксирован по product_id — иначе обмены с общим товаром
+	// берут блокировки крест-накрест и встают в дедлок.
+	owners := make(map[string]string, 2)
+	rows, err := tx.Query(ctx, `
+		SELECT product_id, customer_id
+		FROM products
+		WHERE product_id = ANY($1)
+		ORDER BY product_id
+		FOR UPDATE
+	`, []string{chain.FromProductID, chain.ToProductID})
 	if err != nil {
 		return err
 	}
-	err = tx.QueryRow(ctx, `
-		SELECT customer_id FROM products WHERE product_id = $1
-	`, chain.ToProductID).Scan(&toOwner)
-	if err != nil {
+	for rows.Next() {
+		var productID, ownerID string
+		if err := rows.Scan(&productID, &ownerID); err != nil {
+			rows.Close()
+			return err
+		}
+		owners[productID] = ownerID
+	}
+	rows.Close()
+	if err := rows.Err(); err != nil {
 		return err
+	}
+
+	fromOwner, ok := owners[chain.FromProductID]
+	if !ok {
+		return sql.ErrNoRows
+	}
+	toOwner, ok := owners[chain.ToProductID]
+	if !ok {
+		return sql.ErrNoRows
 	}
 
 	// 3. Обменять владельцев
