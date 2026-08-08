@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"trade-chain/internal/domain"
+	"trade-chain/internal/exchange"
 )
 
 type CustomerService interface {
@@ -29,8 +30,14 @@ type ChainService interface {
 	Create(context.Context, *domain.Chain) (*domain.Chain, error)
 	GetByID(context.Context, string) (*domain.Chain, error)
 	GetByProductID(context.Context, string) ([]domain.Chain, error)
+	GetByCustomerID(context.Context, string) ([]domain.Chain, error)
 	GetFullChain(context.Context, string) ([]domain.Chain, error)
 	UpdateStatus(context.Context, string, domain.ChainStatus, string) error // добавили userID
+	Decide(context.Context, string, exchange.Action, string) (*domain.Chain, error)
+	Confirm(ctx context.Context, chainID, actorID string, success bool) (*domain.Chain, error)
+	Messages(ctx context.Context, chainID, actorID string) ([]domain.ChainMessage, error)
+	SendMessage(ctx context.Context, chainID, actorID, body string) (*domain.ChainMessage, error)
+	CanReview(ctx context.Context, chainID, actorID string) (string, error)
 	Delete(context.Context, string) error
 }
 

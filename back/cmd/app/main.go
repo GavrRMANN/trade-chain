@@ -37,6 +37,7 @@ func main() {
 	categoryRepo := repository.NewCategoryRepository(pool) // нужно создать, если нет
 	wishlistRepo := repository.NewWishlistRepository(pool) // нужно создать
 	chainRepo := repository.NewChainRepository(pool)
+	negotiationRepo := repository.NewNegotiationRepository(pool)
 	reviewRepo := repository.NewReviewRepository(pool)
 
 	// Сервисы
@@ -44,8 +45,8 @@ func main() {
 	productService := service.NewProductService(productRepo, customerRepo)
 	categoryService := service.NewCategoryService(categoryRepo)
 	wishlistService := service.NewWishlistService(wishlistRepo, productRepo)
-	chainService := service.NewChainService(chainRepo, productRepo)
-	reviewService := service.NewReviewService(reviewRepo, customerRepo, productRepo)
+	chainService := service.NewChainService(chainRepo, productRepo, negotiationRepo)
+	reviewService := service.NewReviewService(reviewRepo, customerRepo, productRepo, chainService)
 
 	// Сервис поиска
 	searchService := search.NewSearchService(productService, categoryService)

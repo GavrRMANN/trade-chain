@@ -18,28 +18,40 @@ func NewReviewRepository(db *pgxpool.Pool) ReviewRepository {
 	return &reviewRepository{db: db}
 }
 
+// reviewColumns держит список в одном месте: comment уже был в доменной
+// модели, но ни в одном запросе — текст отзыва молча терялся.
+const reviewColumns = `review_id, chain_id, from_customer_id, to_customer_id, product_id, rating, comment, created_at, updated_at`
+
+func scanReview(row rowScanner) (domain.Review, error) {
+	var review domain.Review
+	err := row.Scan(
+		&review.ReviewID,
+		&review.ChainID,
+		&review.FromCustomerID,
+		&review.ToCustomerID,
+		&review.ProductID,
+		&review.Rating,
+		&review.Comment,
+		&review.CreatedAt,
+		&review.UpdatedAt,
+	)
+	return review, err
+}
+
 func (r *reviewRepository) Create(ctx context.Context, review *domain.Review) (*domain.Review, error) {
 	query := `
-		INSERT INTO reviews (from_customer_id, to_customer_id, product_id, rating)
-		VALUES ($1, $2, $3, $4)
-		RETURNING review_id, from_customer_id, to_customer_id, product_id, rating, created_at, updated_at
-	`
+		INSERT INTO reviews (chain_id, from_customer_id, to_customer_id, product_id, rating, comment)
+		VALUES ($1, $2, $3, $4, $5, $6)
+		RETURNING ` + reviewColumns
 
-	var created domain.Review
-	err := r.db.QueryRow(ctx, query,
+	created, err := scanReview(r.db.QueryRow(ctx, query,
+		review.ChainID,
 		review.FromCustomerID,
 		review.ToCustomerID,
 		review.ProductID,
 		review.Rating,
-	).Scan(
-		&created.ReviewID,
-		&created.FromCustomerID,
-		&created.ToCustomerID,
-		&created.ProductID,
-		&created.Rating,
-		&created.CreatedAt,
-		&created.UpdatedAt,
-	)
+		review.Comment,
+	))
 	if err != nil {
 		return nil, err
 	}
@@ -48,22 +60,9 @@ func (r *reviewRepository) Create(ctx context.Context, review *domain.Review) (*
 }
 
 func (r *reviewRepository) GetByID(ctx context.Context, id string) (*domain.Review, error) {
-	query := `
-		SELECT review_id, from_customer_id, to_customer_id, product_id, rating, created_at, updated_at
-		FROM reviews
-		WHERE review_id = $1
-	`
+	query := `SELECT ` + reviewColumns + ` FROM reviews WHERE review_id = $1`
 
-	var review domain.Review
-	err := r.db.QueryRow(ctx, query, id).Scan(
-		&review.ReviewID,
-		&review.FromCustomerID,
-		&review.ToCustomerID,
-		&review.ProductID,
-		&review.Rating,
-		&review.CreatedAt,
-		&review.UpdatedAt,
-	)
+	review, err := scanReview(r.db.QueryRow(ctx, query, id))
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, sql.ErrNoRows
@@ -76,7 +75,7 @@ func (r *reviewRepository) GetByID(ctx context.Context, id string) (*domain.Revi
 
 func (r *reviewRepository) GetByCustomerID(ctx context.Context, customerID string) ([]domain.Review, error) {
 	query := `
-		SELECT review_id, from_customer_id, to_customer_id, product_id, rating, created_at, updated_at
+		SELECT ` + reviewColumns + `
 		FROM reviews
 		WHERE to_customer_id = $1
 		ORDER BY created_at DESC
@@ -88,22 +87,16 @@ func (r *reviewRepository) GetByCustomerID(ctx context.Context, customerID strin
 	}
 	defer rows.Close()
 
-	var reviews []domain.Review
+	reviews := make([]domain.Review, 0)
 	for rows.Next() {
-		var review domain.Review
-		err := rows.Scan(
-			&review.ReviewID,
-			&review.FromCustomerID,
-			&review.ToCustomerID,
-			&review.ProductID,
-			&review.Rating,
-			&review.CreatedAt,
-			&review.UpdatedAt,
-		)
+		review, err := scanReview(rows)
 		if err != nil {
 			return nil, err
 		}
 		reviews = append(reviews, review)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 
 	return reviews, nil
