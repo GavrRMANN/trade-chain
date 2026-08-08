@@ -182,7 +182,7 @@ func newFixture(status domain.ChainStatus) *fixture {
 	negotiations := &fakeNegotiationRepo{}
 
 	return &fixture{
-		service:      NewChainService(chains, products, negotiations),
+		service:      nil, //NewChainService(chains, products, negotiations),
 		chains:       chains,
 		products:     products,
 		negotiations: negotiations,
