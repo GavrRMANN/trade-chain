@@ -44,17 +44,20 @@ func NewRouter(d Dependencies) http.Handler {
 		httpSwagger.URL("/swagger/doc.json"),
 	))
 
+	// Создаём обработчик для аутентификации
+	authHandler := NewAuthHandler(d.Customers)
+
 	// Публичные маршруты (без аутентификации)
 	r.Route("/api/v1", func(r chi.Router) {
-		// Авторизация
-		mountAuthRoutes(r, d.Customers)
-		if d.Customers != nil {
-			mountCustomerRegistrationRoute(r, d.Customers)
-		}
+		// Публичные маршруты авторизации
+		authHandler.MountPublic(r) // /auth/login, /auth/register
 
 		// Защищённые маршруты
 		r.Group(func(r chi.Router) {
 			r.Use(auth.AuthMiddleware)
+
+			// Защищённый эндпоинт /auth/me
+			r.Get("/auth/me", authHandler.me)
 
 			if d.Customers != nil {
 				mountCustomerRoutes(r, d.Customers)
