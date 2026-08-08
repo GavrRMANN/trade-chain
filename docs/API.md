@@ -1,238 +1,345 @@
-# API MVP: последовательные обмены
+# API бекенда
 
-Базовый путь API: `/api/v1`. Авторизованные запросы передают
-`Authorization: Bearer <access_token>`. Идентификаторы - UUID, даты - ISO 8601.
+Документ описывает текущую реализацию HTTP API в `back/internal/httpapi`.
 
-## Принцип работы
+## Общие сведения
 
-Маршрут обмена - персональная рекомендация, а не единая многосторонняя сделка.
-На каждом шаге пользователь отправляет отдельные двусторонние предложения
-владельцам рекомендованных товаров. Успешный обмен делает полученный товар
-текущим; сервер пересчитывает только оставшуюся часть маршрута. Отказ по одному
-из предложений не отменяет остальные и не блокирует чужие товары.
+- Базовый путь прикладных маршрутов: `/api/v1`.
+- Идентификаторы ресурсов — UUID в виде строк.
+- Формат тела запросов и ответов — JSON.
+- Даты возвращаются в формате ISO 8601.
+- Для маршрутов с JWT используется заголовок `Authorization: Bearer <token>`.
+- Пагинация списка товаров и пользователей: `offset` (по умолчанию `0`) и
+  `limit` (по умолчанию `20`).
 
-`Chain` из текущей модели следует трактовать как **ребро рекомендации** между
-товарами. Для пользовательского сценария нужны самостоятельные сущности:
+Сервис также предоставляет:
 
-- `exchange_goal` - цель конкретного пользователя и исходный товар;
-- `exchange_route` - выбранный рекомендованный маршрут;
-- `exchange_offer` - реальное двустороннее предложение и его жизненный цикл;
-- `exchange` - подтверждённый обмен.
+- `GET /health` — проверка состояния, ответ `{ "status": "ok" }`;
+- `GET /swagger/*` — Swagger UI;
+- `GET /swagger/doc.json` — OpenAPI-описание, сгенерированное из аннотаций.
 
-Так `Chain` не используется как сделка и не связывает участников, которые ещё
-ничего не подтвердили.
+## Авторизация
 
-## Статусы
+### `POST /api/v1/auth/register`
 
-| Ресурс | Значения |
-| --- | --- |
-| `product.status` | `active`, `reserved`, `exchanged`, `archived` |
-| `goal.status` | `active`, `achieved`, `stopped`, `no_candidates` |
-| `route.status` | `active`, `outdated`, `completed`, `cancelled` |
-| `route_step.status` | `current`, `planned`, `completed`, `skipped` |
-| `offer.status` | `pending`, `accepted`, `declined`, `cancelled`, `expired`, `completed` |
-| `exchange.status` | `awaiting_initiator`, `awaiting_recipient`, `completed`, `failed` |
-
-Переход в `completed` возможен только после двух подтверждений результата.
-После него оба товара получают `exchanged`; сервер создаёт их новые экземпляры
-у новых владельцев с `active` (или переносит владение, если так выбрана модель
-каталога), помечает шаг маршрута выполненным и пересчитывает рекомендации.
-
-## Общий формат ошибок
+Регистрация пользователя. Возвращает созданного пользователя и JWT.
 
 ```json
 {
-  "error": {
-    "code": "offer_already_resolved",
-    "message": "Предложение уже обработано"
-  }
+  "email": "anna@example.com",
+  "password": "secret123"
 }
 ```
 
-Коды: `validation_error` (400), `unauthorized` (401), `forbidden` (403),
-`not_found` (404), `conflict` (409), `offer_already_resolved` (409),
-`product_unavailable` (409).
-
-## Авторизация и профиль
-
-| Метод | URL | Назначение |
-| --- | --- | --- |
-| `POST` | `/auth/register` | Регистрация и выдача токенов |
-| `POST` | `/auth/login` | Вход |
-| `GET` | `/me` | Текущий профиль, рейтинг и счётчики |
-| `GET` | `/users/{userId}` | Публичный профиль и отзывы |
-
-`POST /auth/register`
-
-```json
-{ "email": "anna@example.com", "password": "secret123" }
-```
-
-## Товары, желания и поиск
-
-| Метод | URL | Назначение |
-| --- | --- | --- |
-| `GET` | `/products?q=&category_id=&page=&limit=` | Каталог и поиск |
-| `GET` | `/products/{productId}` | Карточка товара, владелец, wishlist и мини-цепочка |
-| `POST` | `/products` | Создать объявление |
-| `PATCH` | `/products/{productId}` | Изменить своё объявление |
-| `POST` | `/products/{productId}/archive` | Снять товар с обмена |
-| `PUT` | `/products/{productId}/wishlist` | Задать, что владелец хочет получить |
-| `GET` | `/products/{productId}/recommendations` | Подходящие прямые товары |
-
-`POST /products`
+Ответ `201`:
 
 ```json
 {
-  "category_id": "c6a4...",
-  "name": "Горный велосипед",
+  "user": {
+    "customer_id": "user-1",
+    "email": "anna@example.com",
+    "created_at": "2026-08-08T10:00:00Z",
+    "updated_at": "2026-08-08T10:00:00Z"
+  },
+  "token": "<jwt>"
+}
+```
+
+### `POST /api/v1/auth/login`
+
+Вход по email и паролю. Формат запроса такой же, как у регистрации. Ответ
+`200` имеет формат `AuthResponse`, приведённый выше.
+
+### `GET /api/v1/auth/me`
+
+Возвращает текущего пользователя (`Customer`). В штатном HTTP-потоке маршрут
+сейчас не подключён к `AuthMiddleware`; без user ID в контексте обработчик
+возвращает `403`.
+
+## Модель пользователя
+
+### `GET /api/v1/customers`
+
+Список пользователей. Поддерживает `offset` и `limit`.
+
+### `GET /api/v1/customers/{id}`
+
+Получение пользователя по ID.
+
+### `PATCH /api/v1/customers/{id}`
+
+Частичное изменение пользователя:
+
+```json
+{
+  "email": "new@example.com",
+  "password": "newsecret123"
+}
+```
+
+### `DELETE /api/v1/customers/{id}`
+
+Удаление пользователя. Ответ `204` без тела.
+
+Отдельный `POST /api/v1/customers` в текущем роутере не подключён; для
+регистрации используется `/auth/register`.
+
+## Товары
+
+### `GET /api/v1/products`
+
+Каталог товаров. Параметры запроса:
+
+- `q` — текстовый поиск;
+- `category_id` — фильтр по категории;
+- `offset`, `limit` — пагинация.
+
+При наличии `q` или `category_id` сначала выполняется поиск, затем к нему
+применяется пагинация.
+
+### `GET /api/v1/products/{id}`
+
+Получение товара по ID.
+
+### `POST /api/v1/products`
+
+Создание товара. Требует JWT. Поля запроса соответствуют `CreateProductDTO`:
+
+```json
+{
+  "customer_id": "user-1",
+  "category_id": "category-1",
+  "title": "Горный велосипед",
   "description": "Размер M, исправен",
-  "wishlist": {
-    "name": "Смартфон или ноутбук",
-    "category_ids": ["phones", "laptops"],
-    "allow_surcharge": true,
-    "max_surcharge": 5000
-  }
+  "image": "https://example.com/bike.jpg",
+  "price": 50000,
+  "location": "Москва",
+  "status": "active"
 }
 ```
 
-## Цель и экран «Обмены»
+`customer_id`, `title` обязательны. `status` можно не передавать.
 
-Эти эндпоинты покрывают экран: цель сверху, текущий товар, горизонтальный
-список вариантов следующего обмена и история снизу.
+### `PATCH /api/v1/products/{id}`
 
-| Метод | URL | Назначение |
+Изменение товара. Требует JWT. Все поля опциональны:
+
+```json
+{
+  "title": "Новое название",
+  "description": "Обновлённое описание",
+  "category_id": "category-2",
+  "image": "https://example.com/new.jpg",
+  "price": 45000,
+  "location": "Москва",
+  "status": "archived"
+}
+```
+
+### `GET /api/v1/products/search`
+
+Отдельный поиск товаров. Параметр `q` обязателен, `category_id` опционален.
+Ответ — массив `Product`.
+
+### `GET /api/v1/products/by-customer/{customerID}`
+
+Все товары пользователя.
+
+В текущем роутере не подключены `DELETE /products/{id}`, архивирование,
+wishlist товара и рекомендации товара, хотя обработчики этих операций могут
+присутствовать в исходном коде.
+
+Статусы товара: `active`, `reserved`, `exchanged`, `archived`.
+
+## Категории
+
+| Метод | Маршрут | Результат |
 | --- | --- | --- |
-| `POST` | `/exchange-goals` | Начать путь к цели |
-| `GET` | `/exchange-goals/{goalId}` | Получить состояние цели и маршрут |
-| `GET` | `/exchange-goals/{goalId}/board` | Данные экрана «Обмены» одним запросом |
-| `POST` | `/exchange-goals/{goalId}/recalculate` | Явно пересчитать рекомендации |
-| `POST` | `/exchange-goals/{goalId}/stop` | Завершить путь без достижения цели |
+| `GET` | `/api/v1/categories` | Список категорий |
+| `POST` | `/api/v1/categories` | Создание категории, `201` |
+| `GET` | `/api/v1/categories/{id}` | Категория по ID |
+| `PUT` | `/api/v1/categories/{id}` | Полное обновление категории |
+| `DELETE` | `/api/v1/categories/{id}` | Удаление, `204` |
+| `GET` | `/api/v1/categories/{id}/subcategories` | Дочерние категории |
 
-`POST /exchange-goals`
-
-```json
-{
-  "current_product_id": "bike-1",
-  "target": {
-    "product_id": "console-9",
-    "name": "Игровая приставка",
-    "category_id": "consoles"
-  },
-  "max_steps": 4
-}
-```
-
-`GET /exchange-goals/{goalId}/board` возвращает не более одной активной стадии:
+Модель категории:
 
 ```json
 {
-  "goal": { "id": "goal-1", "status": "active", "target": { "name": "iPhone 15" } },
-  "current_stage": {
-    "step_id": "step-1",
-    "current_product": { "id": "bike-1", "name": "Горный велосипед" },
-    "suggestions": [
-      {
-        "product": { "id": "phone-7", "name": "iPhone 13", "owner": { "id": "u-2", "rating": 4.9 } },
-        "route_preview": ["bike-1", "phone-7", "iphone-15"],
-        "match_score": 0.92,
-        "offer_status": null
-      }
-    ]
-  },
-  "history": [
-    {
-      "exchange_id": "ex-4",
-      "given_product": { "id": "scooter-2", "name": "Самокат" },
-      "received_product": { "id": "bike-1", "name": "Горный велосипед" },
-      "completed_at": "2026-08-07T10:20:00Z"
-    }
-  ]
+  "category_id": "category-1",
+  "name": "Электроника",
+  "parent_id": null,
+  "created_at": "2026-08-08T10:00:00Z",
+  "updated_at": "2026-08-08T10:00:00Z"
 }
 ```
 
-`suggestions` - кандидаты для **одного ближайшего шага**, а не обязательства
-всех владельцев по `route_preview`. Можно отправить предложения нескольким
-кандидатам одновременно.
+## Wishlist
 
-## Предложения и завершение обмена
-
-| Метод | URL | Назначение |
+| Метод | Маршрут | Результат |
 | --- | --- | --- |
-| `POST` | `/exchange-offers` | Отправить предложение одному владельцу |
-| `GET` | `/exchange-offers?role=incoming&status=pending` | Входящие/исходящие предложения |
-| `GET` | `/exchange-offers/{offerId}` | Детали, чат и состояние |
-| `POST` | `/exchange-offers/{offerId}/accept` | Принять предложение |
-| `POST` | `/exchange-offers/{offerId}/decline` | Отклонить предложение |
-| `POST` | `/exchange-offers/{offerId}/cancel` | Отозвать своё предложение |
-| `POST` | `/exchanges/{exchangeId}/confirm` | Подтвердить результат обмена |
+| `POST` | `/api/v1/wishlists` | Создание wishlist, `201` |
+| `GET` | `/api/v1/wishlists/{id}` | Wishlist по ID |
+| `DELETE` | `/api/v1/wishlists/{id}` | Удаление, `204` |
+| `GET` | `/api/v1/wishlists/by-product/{productID}` | Wishlist товара |
+| `GET` | `/api/v1/wishlists/{id}/options` | Категории-желания |
+| `POST` | `/api/v1/wishlists/{id}/options` | Добавление категории, `204` |
+| `DELETE` | `/api/v1/wishlists/{id}/options/{categoryID}` | Удаление категории, `204` |
 
-`POST /exchange-offers`
+Создание wishlist принимает `product_id` и `name`:
 
 ```json
 {
-  "offered_product_id": "bike-1",
-  "requested_product_id": "phone-7",
-  "exchange_goal_id": "goal-1",
-  "route_step_id": "step-1",
-  "surcharge": { "amount": 0, "currency": "RUB", "payer": null },
-  "comment": "Готов встретиться в выходные"
+  "product_id": "product-1",
+  "name": "Смартфон или ноутбук"
 }
 ```
 
-Поле `exchange_goal_id` необязательно: оно связывает предложение с экраном
-«Обмены». Без него это обычный прямой обмен. Сервер проверяет, что оба товара
-активны, принадлежат разным пользователям и инициатор владеет `offered_product_id`.
-
-Ответ на создание (201):
+Добавление категории в options:
 
 ```json
 {
-  "id": "offer-10",
+  "category_id": "category-1"
+}
+```
+
+## Цепочки обмена
+
+В текущей реализации предложение и сделка представлены сущностью `Chain`.
+Отдельных ресурсов `exchange-goals`, `exchange-offers`, `exchanges` и
+`conversations` нет.
+
+| Метод | Маршрут | Результат |
+| --- | --- | --- |
+| `POST` | `/api/v1/chains` | Создание цепочки, `201` |
+| `GET` | `/api/v1/chains/my` | Цепочки текущего пользователя |
+| `GET` | `/api/v1/chains/{id}` | Цепочка по ID |
+| `GET` | `/api/v1/chains/{id}/full` | Все связанные звенья |
+| `GET` | `/api/v1/chains/by-product/{productID}` | Цепочки товара |
+| `PATCH` | `/api/v1/chains/{id}/status` | Изменение статуса, `204` |
+| `POST` | `/api/v1/chains/{id}/confirm` | Подтверждение результата |
+| `DELETE` | `/api/v1/chains/{id}` | Удаление, `204` |
+| `GET` | `/api/v1/chains/{id}/messages` | Сообщения цепочки |
+| `POST` | `/api/v1/chains/{id}/messages` | Новое сообщение, `201` |
+
+Модель `Chain`:
+
+```json
+{
+  "chain_id": "chain-1",
+  "from_product_id": "product-1",
+  "to_product_id": "product-2",
+  "initiator_id": "user-1",
+  "recipient_id": "user-2",
+  "previous_chain_id": null,
+  "next_chain_id": null,
   "status": "pending",
-  "conversation_id": "chat-44",
-  "expires_at": "2026-08-10T12:00:00Z"
+  "message": "Готов обменяться",
+  "expires_at": "2026-08-15T10:00:00Z",
+  "created_at": "2026-08-08T10:00:00Z",
+  "updated_at": "2026-08-08T10:00:00Z"
 }
 ```
 
-`POST /exchange-offers/{offerId}/accept` создаёт `exchange` со статусом
-`awaiting_initiator`. Принятие не меняет владение товарами. Обе стороны затем
-вызывают `POST /exchanges/{exchangeId}/confirm`:
+При `POST /chains` поле `initiator_id` перезаписывается значением из JWT.
+Для подтверждения используется:
 
 ```json
-{ "result": "success" }
+{ "success": true }
 ```
 
-или
+Для `PATCH /chains/{id}/status`:
 
 ```json
-{ "result": "failed", "reason": "Не договорились о встрече" }
+{ "status": "active" }
 ```
 
-При первом `success` сервер сохраняет подтверждение и ждёт второго. При втором
-атомарно завершает обмен, закрывает конкурирующие pending-офферы для тех же
-товаров, обновляет цель и возвращает `goal_id` с новым состоянием.
+Поддерживаемые статусы: `pending`, `active`, `completed`, `cancelled`,
+`rejected`, `countered`, `failed`, `expired`.
 
-## Чат, отзывы и уведомления
+### Сообщения
 
-| Метод | URL | Назначение |
+`POST /api/v1/chains/{id}/messages` принимает:
+
+```json
+{ "body": "Готов встретиться в выходные" }
+```
+
+Сообщение возвращается с полями `message_id`, `chain_id`, `customer_id`,
+`body` и `created_at`.
+
+## Поиск цепочки
+
+### `GET /api/v1/search/chain`
+
+Находит путь от товаров текущего пользователя до целевого товара.
+
+Параметры:
+
+- `target_product_id` — обязательный ID целевого товара;
+- `max_depth` — максимальная глубина, по умолчанию `10`, должна быть больше `0`.
+
+Ответ:
+
+```json
+{
+  "chain": [],
+  "length": 0
+}
+```
+
+## Отзывы
+
+| Метод | Маршрут | Результат |
 | --- | --- | --- |
-| `GET`, `POST` | `/conversations/{conversationId}/messages` | Чтение и отправка сообщений |
-| `POST` | `/exchanges/{exchangeId}/reviews` | Отзыв после `completed` |
-| `GET` | `/notifications?unread=true` | Предложения, ответы и сообщения |
-| `POST` | `/notifications/{notificationId}/read` | Отметить уведомление прочитанным |
+| `POST` | `/api/v1/reviews` | Создание отзыва, `201` |
+| `GET` | `/api/v1/reviews/{id}` | Отзыв по ID |
+| `DELETE` | `/api/v1/reviews/{id}` | Удаление, `204` |
+| `GET` | `/api/v1/reviews/by-customer/{customerID}` | Отзывы пользователя |
+| `GET` | `/api/v1/reviews/by-customer/{customerID}/rating` | Средний рейтинг |
 
-Отзыв разрешён только участнику завершённого обмена и только один раз на
-контрагента в рамках `exchangeId`.
+Создание отзыва:
 
-## Правила конкурентности
+```json
+{
+  "chain_id": "chain-1",
+  "rating": 5,
+  "comment": "Всё прошло отлично",
+  "product_id": "product-2"
+}
+```
 
-1. При `accept` и финальном `confirm` блокируйте строки обоих товаров в одной
-   транзакции (`SELECT ... FOR UPDATE`).
-2. Повторный запрос должен быть идемпотентным: клиент передаёт `Idempotency-Key`
-   для `POST /exchange-offers` и `/confirm`.
-3. После отказа пересчитывайте маршрут цели, но не отменяйте остальные
-   `pending`-предложения пользователя.
-4. Если товар стал недоступен, помечайте соответствующую рекомендацию
-   `outdated`, формируйте новые кандидаты и возвращайте их через `board`.
+`from_customer_id` берётся из JWT и не передаётся клиентом. `product_id` можно
+не указывать. Ответ рейтинга имеет вид `{ "average_rating": 4.5 }`.
 
+## Ошибки
+
+Обработчики возвращают единый формат:
+
+```json
+{
+  "error": "resource not found"
+}
+```
+
+Основные соответствия:
+
+| HTTP | Сообщение сервиса |
+| --- | --- |
+| `400` | `invalid input` |
+| `403` | `operation forbidden` |
+| `404` | `resource not found` |
+| `409` | `resource conflict` |
+| `500` | `internal error` или текст внутренней ошибки |
+
+Ошибки отсутствующего или некорректного JWT формируются middleware напрямую
+как текстовый HTTP-ответ со статусом `401`, а не как JSON `ErrorResponse`.
+
+## Текущее подключение JWT
+
+`AuthMiddleware` явно установлен только на `POST /products` и
+`PATCH /products/{productID}`. Остальные обработчики, которым нужен user ID,
+проверяют контекст самостоятельно, однако общий middleware в роутере пока
+закомментирован. Поэтому для полного включения авторизации нужно подключить
+`r.Use(auth.AuthMiddleware)` к защищённой группе в `router.go` и убрать
+дублирующую локальную установку middleware с товарных маршрутов.
