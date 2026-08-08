@@ -1,0 +1,115 @@
+.route-page {
+    display: flex;
+    flex-direction: column;
+    gap: var(--main-gap);
+}
+
+.route-page__title {
+    font-size: var(--h1-font-size);
+    line-height: var(--h1-line-height);
+}
+
+.route-page__chain {
+    width: 100%;
+    max-width: 100%;
+    padding: var(--space-4) 0;
+    border-bottom: 1px solid var(--bg-shadows);
+}
+
+.route-page__actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--second-gap);
+}
+
+.route-page__action {
+    min-width: 0;
+}
+
+.route-page__action--secondary {
+    margin-left: auto;
+}
+
+.route-page__empty {
+    min-height: 240px;
+    padding: var(--space-5);
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--second-gap);
+
+    text-align: center;
+
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--bg-shadows);
+    border-radius: var(--radius-md);
+}
+
+.route-page__empty-title {
+    font-size: var(--h2-font-size);
+    line-height: var(--h2-line-height);
+}
+
+.route-page__empty-text {
+    color: var(--neutral-secondary);
+    font-size: var(--text-base-font-size);
+    line-height: var(--text-base-line-height);
+}
+
+.route-page__guest-card {
+    min-height: 240px;
+    padding: var(--space-5);
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--main-gap);
+
+    text-align: center;
+
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--bg-shadows);
+    border-radius: var(--radius-md);
+}
+
+.route-page__guest-card-body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--second-gap);
+}
+
+.route-page__guest-card-title {
+    font-size: var(--h2-font-size);
+    line-height: var(--h2-line-height);
+}
+
+.route-page__guest-card-text {
+    color: var(--neutral-secondary);
+    font-size: var(--text-base-font-size);
+    line-height: var(--text-base-line-height);
+}
+
+@media (max-width: 768px) {
+    .route-page {
+        gap: var(--second-gap);
+    }
+
+    .route-page__actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .route-page__action--secondary {
+        margin-left: 0;
+    }
+
+    .route-page__empty,
+    .route-page__guest-card {
+        padding: var(--space-4);
+    }
+}

@@ -18,10 +18,8 @@ export type TReview = {
 };
 
 export type TCreateReviewRequest = {
-    /** Идентификатор автора отзыва. */
-    from_customer_id: string;
-    /** Идентификатор пользователя, которому оставлен отзыв. */
-    to_customer_id: string;
+    /** Идентификатор звена обмена, по итогам которого оставляется отзыв. */
+    chain_id: string;
     /** Идентификатор связанного товара. */
     product_id?: string;
     /** Оценка пользователя. */

@@ -5,6 +5,7 @@ import { App } from '@app/App';
 import { AuthModal } from '@pages/auth';
 import { CatalogPage } from '@pages/catalog';
 import { CreateProductPage } from '@pages/createProduct';
+import { ExchangesPage } from '@pages/exchanges';
 import { ProductPage } from '@pages/product';
 import { ProfilePage } from '@pages/profile';
 import { Preloader } from '@shared/ui/preloader';
@@ -15,6 +16,12 @@ const withSuspense = (element: ReactElement) => (
 
 const NotFoundPageLazy = lazy(() =>
     import('@pages/notFound').then((module) => ({ default: module.NotFoundPage })),
+);
+const ExchangeRoomPageLazy = lazy(() =>
+    import('@pages/exchangeRoom').then((module) => ({ default: module.ExchangeRoomPage })),
+);
+const RoutePageLazy = lazy(() =>
+    import('@pages/route').then((module) => ({ default: module.RoutePage })),
 );
 
 export const AppRouter = () => {
@@ -31,6 +38,9 @@ export const AppRouter = () => {
                     <Route path="product/:productId/edit" element={<CreateProductPage />} />
                     <Route path="profile" element={<ProfilePage />} />
                     <Route path="profile/:customerId" element={<ProfilePage />} />
+                    <Route path="exchanges" element={<ExchangesPage />} />
+                    <Route path="exchanges/:chainId" element={withSuspense(<ExchangeRoomPageLazy />)} />
+                    <Route path="route" element={withSuspense(<RoutePageLazy />)} />
                     <Route path="*" element={withSuspense(<NotFoundPageLazy />)} />
                 </Route>
             </Routes>

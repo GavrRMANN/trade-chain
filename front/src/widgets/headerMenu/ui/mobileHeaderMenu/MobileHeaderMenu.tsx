@@ -38,6 +38,14 @@ export const MobileHeaderMenu = ({value, setValue, search, isLoading, isError, s
                 <PlusSVG/>
             </button>
             <button
+                className={Styles['header__action']}
+                type="button"
+                aria-label="Мои обмены"
+                onClick={() => getAuthToken() ? navigate('/exchanges') : openModal('auth')}
+            >
+                Обмены
+            </button>
+            <button
                 className={Styles['header__profile']}
                 type="button"
                 aria-label="Открыть профиль"

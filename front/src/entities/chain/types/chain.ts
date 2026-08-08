@@ -1,4 +1,12 @@
-export type TChainStatus = 'pending' | 'active' | 'completed' | 'cancelled' | 'rejected';
+export type TChainStatus =
+    | 'pending'
+    | 'active'
+    | 'completed'
+    | 'cancelled'
+    | 'rejected'
+    | 'countered'
+    | 'failed'
+    | 'expired';
 
 export type TChain = {
     /** Уникальный идентификатор звена цепочки. */
@@ -38,7 +46,17 @@ export type TCreateChainRequest = {
     message?: string;
 };
 
-export type TUpdateChainStatusRequest = {
-    /** Новый статус звена цепочки. */
-    status: TChainStatus;
+export type TUpdateChainStatus = 'pending' | 'active' | 'cancelled' | 'rejected' | 'countered';
+export type TUpdateChainStatusRequest = { status: TUpdateChainStatus };
+
+export type TChainMessage = {
+    message_id: string;
+    chain_id: string;
+    customer_id: string;
+    body: string;
+    created_at: string;
 };
+
+export type TConfirmChainRequest = { success: boolean };
+
+export type TSendChainMessageRequest = { body: string };

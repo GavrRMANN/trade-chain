@@ -36,6 +36,9 @@ export const DesktopHeaderMenu = ({value, setValue, search, isLoading, isError, 
             >
                 Разместить
             </Button>
+            <Button variant={'default'} onClick={() => getAuthToken() ? navigate('/exchanges') : openModal('auth')}>
+                Обмены
+            </Button>
             <Button variant={'default'} onClick={() => getAuthToken() ? navigate('/profile') : openModal('auth')}>
                 Профиль
             </Button>
