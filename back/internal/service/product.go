@@ -130,33 +130,54 @@ func (s *productService) Delete(ctx context.Context, id string) error {
 }
 
 // List – список продуктов с пагинацией
-func (s *productService) List(ctx context.Context, offset, limit int) ([]domain.Product, error) {
-	o, l, err := validatePage(offset, limit)
-	if err != nil {
-		return nil, err
+func (s *productService) List(
+	ctx context.Context,
+	q string,
+	categoryID *string,
+	page int,
+	limit int,
+) ([]domain.Product, error) {
+	if page < 1 {
+		page = 1
 	}
-	products, err := s.repo.List(ctx, o, l)
+
+	if limit < 1 {
+		limit = 20
+	}
+
+	if limit > 100 {
+		limit = 100
+	}
+
+	products, err := s.repo.List(
+		ctx,
+		q,
+		categoryID,
+		page,
+		limit,
+	)
 	if err != nil {
 		return nil, normalizeError(err)
 	}
+
 	return products, nil
 }
 
 // Search – полнотекстовый поиск
-func (s *productService) Search(ctx context.Context, q string, categoryID *string) ([]domain.Product, error) {
-	q = strings.TrimSpace(q)
-	if q == "" && (categoryID == nil || *categoryID == "") {
-		return nil, ErrInvalidInput
-	}
-	if categoryID != nil && *categoryID == "" {
-		categoryID = nil
-	}
-	products, err := s.repo.Search(ctx, q, categoryID)
-	if err != nil {
-		return nil, normalizeError(err)
-	}
-	return products, nil
-}
+// func (s *productService) Search(ctx context.Context, q string, categoryID *string) ([]domain.Product, error) {
+// 	q = strings.TrimSpace(q)
+// 	if q == "" && (categoryID == nil || *categoryID == "") {
+// 		return nil, ErrInvalidInput
+// 	}
+// 	if categoryID != nil && *categoryID == "" {
+// 		categoryID = nil
+// 	}
+// 	products, err := s.repo.Search(ctx, q, categoryID)
+// 	if err != nil {
+// 		return nil, normalizeError(err)
+// 	}
+// 	return products, nil
+// }
 
 // GetExchangeCandidates – кандидаты для обмена
 func (s *productService) GetExchangeCandidates(ctx context.Context, productID string) ([]domain.Product, error) {

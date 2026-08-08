@@ -231,7 +231,7 @@ BEGIN
     INSERT INTO products(
         customer_id,
         category_id,
-        name,
+        title,
         description
     )
     VALUES (
@@ -247,7 +247,7 @@ BEGIN
     INSERT INTO products(
         customer_id,
         category_id,
-        name,
+        title,
         description
     )
     VALUES (
@@ -263,7 +263,7 @@ BEGIN
     INSERT INTO products(
         customer_id,
         category_id,
-        name,
+        title,
         description
     )
     VALUES (
@@ -279,7 +279,7 @@ BEGIN
     INSERT INTO products(
         customer_id,
         category_id,
-        name,
+        title,
         description
     )
     VALUES (
@@ -298,7 +298,7 @@ BEGIN
     INSERT INTO products(
         customer_id,
         category_id,
-        name,
+        title,
         description
     )
     VALUES (
@@ -313,7 +313,7 @@ BEGIN
     INSERT INTO products(
         customer_id,
         category_id,
-        name,
+        title,
         description
     )
     VALUES (
@@ -332,7 +332,7 @@ BEGIN
     INSERT INTO products(
         customer_id,
         category_id,
-        name,
+        title,
         description
     )
     VALUES (
@@ -347,7 +347,7 @@ BEGIN
     INSERT INTO products(
         customer_id,
         category_id,
-        name,
+        title,
         description
     )
     VALUES (
@@ -366,7 +366,7 @@ BEGIN
     INSERT INTO products(
         customer_id,
         category_id,
-        name,
+        title,
         description
     )
     VALUES (
@@ -381,7 +381,7 @@ BEGIN
     INSERT INTO products(
         customer_id,
         category_id,
-        name,
+        title,
         description
     )
     VALUES (
@@ -400,7 +400,7 @@ BEGIN
     INSERT INTO products(
         customer_id,
         category_id,
-        name,
+        title,
         description
     )
     VALUES (
@@ -415,7 +415,7 @@ BEGIN
     INSERT INTO products(
         customer_id,
         category_id,
-        name,
+        title,
         description
     )
     VALUES (
@@ -434,7 +434,7 @@ BEGIN
     INSERT INTO products(
         customer_id,
         category_id,
-        name,
+        title,
         description
     )
     VALUES (
@@ -449,7 +449,7 @@ BEGIN
     INSERT INTO products(
         customer_id,
         category_id,
-        name,
+        title,
         description
     )
     VALUES (
@@ -464,7 +464,7 @@ BEGIN
     INSERT INTO products(
         customer_id,
         category_id,
-        name,
+        title,
         description
     )
     VALUES (
@@ -479,7 +479,7 @@ BEGIN
     INSERT INTO products(
         customer_id,
         category_id,
-        name,
+        title,
         description
     )
     VALUES (
@@ -498,7 +498,7 @@ BEGIN
     INSERT INTO products(
         customer_id,
         category_id,
-        name,
+        title,
         description
     )
     VALUES (
@@ -513,7 +513,7 @@ BEGIN
     INSERT INTO products(
         customer_id,
         category_id,
-        name,
+        title,
         description
     )
     VALUES (
@@ -856,7 +856,7 @@ $$;
 SELECT
     c.email,
     p.product_id,
-    p.name AS product_name,
+    p.title AS product_name,
     cat.category_id,
     cat.name AS category_name,
     w.wishlist_id,
@@ -868,4 +868,4 @@ LEFT JOIN categories cat
     ON cat.category_id = p.category_id
 LEFT JOIN wishlists w
     ON w.product_id = p.product_id
-ORDER BY c.email, p.name;
+ORDER BY c.email, p.title;

@@ -18,7 +18,7 @@ func main() {
 
 	dbURL := os.Getenv("DATABASE_URL")
 	if dbURL == "" {
-		dbURL = "postgres://postgres:postgres@localhost:5432/trade_chain?sslmode=disable"
+		log.Fatal("DATABASE_URL is not set")
 	}
 
 	pool, err := pgxpool.New(ctx, dbURL)

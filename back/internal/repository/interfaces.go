@@ -20,8 +20,7 @@ type ProductRepository interface {
 	GetByCustomerID(ctx context.Context, customerID string) ([]domain.Product, error)
 	Update(ctx context.Context, id string, product *domain.UpdateProductDTO) (*domain.Product, error)
 	Delete(ctx context.Context, id string) error
-	List(ctx context.Context, offset, limit int) ([]domain.Product, error)
-	Search(ctx context.Context, query string, categoryID *string) ([]domain.Product, error)
+	List(ctx context.Context, q string, categoryID *string, page int, limit int) ([]domain.Product, error)
 	GetExchangeCandidates(ctx context.Context, productID string) ([]domain.Product, error)
 }
 

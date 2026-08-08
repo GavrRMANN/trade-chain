@@ -20,8 +20,7 @@ type ProductService interface {
 	GetByCustomerID(context.Context, string) ([]domain.Product, error)
 	Update(context.Context, string, *domain.UpdateProductDTO) (*domain.Product, error)
 	Delete(context.Context, string) error
-	List(context.Context, int, int) ([]domain.Product, error)
-	Search(context.Context, string, *string) ([]domain.Product, error)
+	List(context.Context, string, *string, int, int) ([]domain.Product, error)
 	GetExchangeCandidates(context.Context, string) ([]domain.Product, error)
 }
 
