@@ -19,9 +19,15 @@ func mountChainRoutes(r chi.Router, s service.ChainService) {
 	h := chainHandler{s}
 	r.Route("/chains", func(r chi.Router) {
 		r.Post("/", h.create)
+		// Статичный сегмент объявляется до шаблона, иначе chi разберёт
+		// «my» как идентификатор звена.
+		r.Get("/my", h.mine)
 		r.Get("/{id}", h.get)
 		r.Get("/{id}/full", h.full)
 		r.Patch("/{id}/status", h.status)
+		r.Post("/{id}/confirm", h.confirm)
+		r.Get("/{id}/messages", h.messages)
+		r.Post("/{id}/messages", h.sendMessage)
 		r.Delete("/{id}", h.delete)
 		r.Get("/by-product/{productID}", h.byProduct)
 	})
