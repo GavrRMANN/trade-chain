@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"errors"
 	"time"
 )
 
@@ -17,12 +18,63 @@ type Chain struct {
 	UpdatedAt       time.Time `json:"updated_at"`
 }
 
+// ChainStatus — состояние звена обмена.
+//
+// Разделение completed и failed принципиально: только completed переводит
+// товары в статус «обменяно» и открывает возможность оставить отзыв.
+// Несостоявшаяся встреча даёт право на жалобу, но не на оценку — иначе отказ
+// от сделки превращается в инструмент давления на вторую сторону.
 type ChainStatus string
 
 const (
-	ChainPending   ChainStatus = "pending"
-	ChainActive    ChainStatus = "active"
-	ChainCompleted ChainStatus = "completed"
-	ChainCancelled ChainStatus = "cancelled"
-	ChainRejected  ChainStatus = "rejected" // дополнительный статус
+	ChainPending   ChainStatus = "pending"   // предложение отправлено, ответа нет
+	ChainActive    ChainStatus = "active"    // получатель согласился, стороны договариваются
+	ChainCompleted ChainStatus = "completed" // обмен состоялся, подтвердили оба
+	ChainCancelled ChainStatus = "cancelled" // инициатор отозвал предложение
+	ChainRejected  ChainStatus = "rejected"  // получатель отказался
+	ChainCountered ChainStatus = "countered" // получатель предложил свой вариант
+	ChainFailed    ChainStatus = "failed"    // договорились, но обмен не состоялся
+	ChainExpired   ChainStatus = "expired"   // ответа не дождались
+)
+
+// IsFinal сообщает, что звено больше не изменится.
+func (s ChainStatus) IsFinal() bool {
+	switch s {
+	case ChainCompleted, ChainCancelled, ChainRejected, ChainCountered, ChainFailed, ChainExpired:
+		return true
+	default:
+		return false
+	}
+}
+
+// ChainMessage — реплика в переписке по конкретному звену.
+//
+// Чат привязан к сделке, а не к паре пользователей: обсуждение всегда имеет
+// предмет, и обе стороны видят, о каком именно обмене идёт речь.
+type ChainMessage struct {
+	MessageID  string    `json:"message_id"`
+	ChainID    string    `json:"chain_id"`
+	CustomerID string    `json:"customer_id"`
+	Body       string    `json:"body"`
+	CreatedAt  time.Time `json:"created_at"`
+}
+
+// ChainConfirmation — подтверждение итога обмена одной из сторон.
+type ChainConfirmation struct {
+	ChainID    string    `json:"chain_id"`
+	CustomerID string    `json:"customer_id"`
+	Success    bool      `json:"success"`
+	CreatedAt  time.Time `json:"created_at"`
+}
+
+// Ошибки бизнес-правил обмена. Транспортный слой переводит их в коды ответа
+// через сервисные ошибки, поэтому текст здесь пишется для человека.
+var (
+	ErrNotParticipant     = errors.New("пользователь не участвует в этом обмене")
+	ErrWrongActor         = errors.New("это действие доступно другой стороне")
+	ErrChainFinal         = errors.New("обмен уже завершён")
+	ErrInvalidTransition  = errors.New("действие недоступно в текущем статусе")
+	ErrSelfExchange       = errors.New("нельзя обменяться с самим собой")
+	ErrProductUnavailable = errors.New("товар недоступен для обмена")
+	ErrAlreadyConfirmed   = errors.New("итог обмена уже подтверждён")
 )
