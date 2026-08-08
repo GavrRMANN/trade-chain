@@ -7,6 +7,7 @@ import {
 } from '@entities/user';
 import { Button } from '@shared/ui/button';
 import { Input } from '@shared/ui/input';
+import { setAuthToken } from '@shared/api';
 
 import Styles from './auth-form.module.css';
 
@@ -73,7 +74,9 @@ export const AuthForm = () => {
         setSuccessMessage(undefined);
 
         const validationErrors = validate(email, password, confirmPassword, mode);
+
         setErrors(validationErrors);
+
         if (Object.keys(validationErrors).length > 0) {
             return;
         }
@@ -81,16 +84,17 @@ export const AuthForm = () => {
         try {
             if (mode === 'login') {
                 const response = await loginUser({email: email.trim(), password}).unwrap();
-                localStorage.setItem('token', response.token);
-                navigate('/');
+
+                setAuthToken(response.token);
+                navigate('/', {replace: true});
+
                 return;
             }
 
-            await registerUser({email: email.trim(), password}).unwrap();
-            setMode('login');
-            setPassword('');
-            setConfirmPassword('');
-            setSuccessMessage('Аккаунт создан. Теперь войдите с вашим email и паролем.');
+            const response = await registerUser({email: email.trim(), password}).unwrap();
+
+            setAuthToken(response.token);
+            navigate('/', {replace: true});
         } catch (error) {
             setRequestError(getErrorMessage(error));
         }

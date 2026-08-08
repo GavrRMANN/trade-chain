@@ -1,4 +1,4 @@
-export type TModalRouteEntity = 'clients' | 'deals' | 'tasks';
+export type TModalRouteEntity = 'auth' | 'clients' | 'deals' | 'tasks';
 
 /**
  * Строит путь модального окна для открытия через react-router.
@@ -7,4 +7,4 @@ export type TModalRouteEntity = 'clients' | 'deals' | 'tasks';
  * @returns Путь модального окна.
  */
 export const buildModalRoutePath = (entity: TModalRouteEntity, id?: string): string =>
-    id ? `/${entity}/${id}` : `/${entity}/new`;
+    entity === 'auth' ? '/auth' : id ? `/${entity}/${id}` : `/${entity}/new`;

@@ -22,8 +22,8 @@ export const productApi = createApi({
                 ...(params ? {params} : {}),
             }),
         }),
-        searchProducts: builder.query<TProduct[], { q: string; category_id?: string }>({
-            query: (params) => ({ url: '/products/search', params }),
+        getProductsByCustomer: builder.query<TProduct[], string>({
+            query: (customerId) => `/products/by-customer/${customerId}`,
         }),
         getProduct: builder.query<TProduct, string>({
             query: (productId) => `/products/${productId}`,
@@ -38,21 +38,14 @@ export const productApi = createApi({
                 body: data,
             }),
         }),
-        deleteProduct: builder.mutation<void, string>({
-            query: (productId) => ({ url: `/products/${productId}`, method: 'DELETE' }),
-        }),
-        getProductsByCustomer: builder.query<TProduct[], string>({
-            query: (customerId) => `/products/by-customer/${customerId}`,
-        }),
     }),
 });
 
 export const {
     useGetProductsQuery,
+    useGetProductsByCustomerQuery,
+    useLazyGetProductsQuery,
     useGetProductQuery,
-    useSearchProductsQuery,
     useCreateProductMutation,
     useUpdateProductMutation,
-    useDeleteProductMutation,
-    useGetProductsByCustomerQuery,
 } = productApi;

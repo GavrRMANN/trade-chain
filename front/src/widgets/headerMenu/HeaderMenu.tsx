@@ -5,9 +5,11 @@ import {MobileHeaderMenu} from "@widgets/headerMenu/ui/mobileHeaderMenu";
 
 export const HeaderMenu = () => {
     const isMobile = useIsMobile();
-    const [value, setValue] = useSearch({initialValue: ''});
+    const search = useSearch({initialValue: ''});
 
     return (
-        isMobile ? <MobileHeaderMenu value={value} setValue={setValue}/> : <DesktopHeaderMenu value={value} setValue={setValue}/>
+        isMobile
+            ? <MobileHeaderMenu {...search}/>
+            : <DesktopHeaderMenu {...search}/>
     );
 };

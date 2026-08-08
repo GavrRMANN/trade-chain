@@ -30,7 +30,13 @@
 }
 
 .header__profile {
-
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
 }
 
 @media (max-width: 768px) {
