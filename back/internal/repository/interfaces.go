@@ -49,10 +49,20 @@ type ChainRepository interface {
 	Create(ctx context.Context, chain *domain.Chain) (*domain.Chain, error)
 	GetByID(ctx context.Context, id string) (*domain.Chain, error)
 	GetByProductID(ctx context.Context, productID string) ([]domain.Chain, error)
+	GetByCustomerID(ctx context.Context, customerID string) ([]domain.Chain, error)
 	GetFullChain(ctx context.Context, chainID string) ([]domain.Chain, error)
 	UpdateStatus(ctx context.Context, id string, status domain.ChainStatus) error
 	CompleteExchange(ctx context.Context, chainID string) error // добавить
 	Delete(ctx context.Context, id string) error
+}
+
+// NegotiationRepository хранит то, чем звено обрастает в переговорах:
+// переписку сторон и их решения об итоге обмена.
+type NegotiationRepository interface {
+	AddMessage(ctx context.Context, message *domain.ChainMessage) (*domain.ChainMessage, error)
+	ListMessages(ctx context.Context, chainID string) ([]domain.ChainMessage, error)
+	Confirm(ctx context.Context, confirmation *domain.ChainConfirmation) error
+	ListConfirmations(ctx context.Context, chainID string) ([]domain.ChainConfirmation, error)
 }
 
 type ReviewRepository interface {

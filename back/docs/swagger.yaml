@@ -19,6 +19,8 @@ definitions:
         type: string
       created_at:
         type: string
+      expires_at:
+        type: string
       from_product_id:
         type: string
       initiator_id:
@@ -29,11 +31,26 @@ definitions:
         type: string
       previous_chain_id:
         type: string
+      recipient_id:
+        type: string
       status:
         type: string
       to_product_id:
         type: string
       updated_at:
+        type: string
+    type: object
+  domain.ChainMessage:
+    properties:
+      body:
+        type: string
+      chain_id:
+        type: string
+      created_at:
+        type: string
+      customer_id:
+        type: string
+      message_id:
         type: string
     type: object
   domain.ChainStatus:
@@ -43,21 +60,37 @@ definitions:
     - completed
     - cancelled
     - rejected
+    - countered
+    - failed
+    - expired
     type: string
     x-enum-comments:
-      ChainRejected: дополнительный статус
+      ChainActive: получатель согласился, стороны договариваются
+      ChainCancelled: инициатор отозвал предложение
+      ChainCompleted: обмен состоялся, подтвердили оба
+      ChainCountered: получатель предложил свой вариант
+      ChainExpired: ответа не дождались
+      ChainFailed: договорились, но обмен не состоялся
+      ChainPending: предложение отправлено, ответа нет
+      ChainRejected: получатель отказался
     x-enum-descriptions:
-    - ""
-    - ""
-    - ""
-    - ""
-    - дополнительный статус
+    - предложение отправлено, ответа нет
+    - получатель согласился, стороны договариваются
+    - обмен состоялся, подтвердили оба
+    - инициатор отозвал предложение
+    - получатель отказался
+    - получатель предложил свой вариант
+    - договорились, но обмен не состоялся
+    - ответа не дождались
     x-enum-varnames:
     - ChainPending
     - ChainActive
     - ChainCompleted
     - ChainCancelled
     - ChainRejected
+    - ChainCountered
+    - ChainFailed
+    - ChainExpired
   domain.CreateCustomerDTO:
     properties:
       email:
@@ -141,6 +174,11 @@ definitions:
     - ProductArchived
   domain.Review:
     properties:
+      chain_id:
+        description: |-
+          ChainID — сделка, по итогам которой оставлена оценка. Допускает NULL
+          ради отзывов, заведённых до появления привязки.
+        type: string
       comment:
         type: string
       created_at:
@@ -208,6 +246,11 @@ definitions:
       status:
         $ref: '#/definitions/domain.ChainStatus'
     type: object
+  httpapi.ConfirmRequest:
+    properties:
+      success:
+        type: boolean
+    type: object
   httpapi.ErrorResponse:
     properties:
       error:
@@ -220,10 +263,26 @@ definitions:
       password:
         type: string
     type: object
+  httpapi.MessageRequest:
+    properties:
+      body:
+        type: string
+    type: object
   httpapi.OptionRequest:
     properties:
       category_id:
         type: string
+    type: object
+  httpapi.ReviewRequest:
+    properties:
+      chain_id:
+        type: string
+      comment:
+        type: string
+      product_id:
+        type: string
+      rating:
+        type: integer
     type: object
 host: localhost:8080
 info:
@@ -598,6 +657,56 @@ paths:
       summary: Get chain by ID
       tags:
       - chains
+  /chains/{id}/confirm:
+    post:
+      consumes:
+      - application/json
+      description: |-
+        Подтвердить итог обмена. Состоявшимся обмен считается только
+        после подтверждения обеими сторонами; несостоявшимся — по
+        заявлению одной.
+      parameters:
+      - description: Chain ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Итог встречи
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/httpapi.ConfirmRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.Chain'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/httpapi.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/httpapi.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/httpapi.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/httpapi.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpapi.ErrorResponse'
+      summary: Confirm exchange outcome
+      tags:
+      - chains
   /chains/{id}/full:
     get:
       consumes:
@@ -631,6 +740,83 @@ paths:
           schema:
             $ref: '#/definitions/httpapi.ErrorResponse'
       summary: Get full chain
+      tags:
+      - chains
+  /chains/{id}/messages:
+    get:
+      description: Переписка по сделке. Доступна только её участникам.
+      parameters:
+      - description: Chain ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/domain.ChainMessage'
+            type: array
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/httpapi.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/httpapi.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpapi.ErrorResponse'
+      summary: Read exchange chat
+      tags:
+      - chains
+    post:
+      consumes:
+      - application/json
+      description: |-
+        Написать второй стороне по этой сделке. По закрытой сделке
+        переписка недоступна.
+      parameters:
+      - description: Chain ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Текст сообщения
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/httpapi.MessageRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/domain.ChainMessage'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/httpapi.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/httpapi.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/httpapi.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpapi.ErrorResponse'
+      summary: Write to exchange chat
       tags:
       - chains
   /chains/{id}/status:
@@ -703,6 +889,29 @@ paths:
           schema:
             $ref: '#/definitions/httpapi.ErrorResponse'
       summary: Get chains by product
+      tags:
+      - chains
+  /chains/my:
+    get:
+      description: 'Обмены пользователя: и предложенные им, и полученные'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/domain.Chain'
+            type: array
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/httpapi.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpapi.ErrorResponse'
+      summary: List my exchanges
       tags:
       - chains
   /customers:
@@ -880,8 +1089,17 @@ paths:
     get:
       consumes:
       - application/json
-      description: List products with pagination
+      description: Get product catalog with pagination and optional text/category
+        search
       parameters:
+      - description: Search query
+        in: query
+        name: q
+        type: string
+      - description: Category ID
+        in: query
+        name: category_id
+        type: string
       - default: 0
         description: Offset
         in: query
@@ -910,7 +1128,7 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/httpapi.ErrorResponse'
-      summary: List products
+      summary: List and search products
       tags:
       - products
     post:
@@ -1115,12 +1333,12 @@ paths:
       - application/json
       description: Create a new review for a customer
       parameters:
-      - description: Review data
+      - description: Оценка по итогам обмена
         in: body
         name: request
         required: true
         schema:
-          $ref: '#/definitions/domain.Review'
+          $ref: '#/definitions/httpapi.ReviewRequest'
       produces:
       - application/json
       responses:
@@ -1130,6 +1348,14 @@ paths:
             $ref: '#/definitions/domain.Review'
         "400":
           description: Bad Request
+          schema:
+            $ref: '#/definitions/httpapi.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/httpapi.ErrorResponse'
+        "409":
+          description: Conflict
           schema:
             $ref: '#/definitions/httpapi.ErrorResponse'
         "500":
