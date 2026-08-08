@@ -1,6 +1,7 @@
 import {type ChangeEvent, memo, type SubmitEvent} from "react";
 
 import SearchSVG from '../../assets/icons/Search.svg?react';
+import XMarkSVG from '../../assets/icons/X-mark.svg?react';
 import Styles from "./SearchInput.module.css";
 import ControlStyles from "../control/Control.module.css";
 import {Spinner} from "../spinner";
@@ -18,6 +19,8 @@ type TSearchInputProps = {
     error?: TError;
     disabled?: boolean;
     loading?: boolean;
+    onFocus?: () => void;
+    onClear?: () => void;
 };
 
 export const SearchInput = memo(({
@@ -27,7 +30,9 @@ export const SearchInput = memo(({
                                      onSearch,
                                      error,
                                      disabled = false,
-                                     loading = false
+                                     loading = false,
+                                     onFocus,
+                                     onClear,
                                  }: TSearchInputProps) => {
     const inputClasses = [
         Styles['input'],
@@ -69,7 +74,18 @@ export const SearchInput = memo(({
                 placeholder={placeholder}
                 disabled={disabled}
                 onChange={handleChange}
+                onFocus={onFocus}
             />
+            {value && onClear && (
+                <button
+                    aria-label="Очистить поиск"
+                    type="button"
+                    className={Styles.clear}
+                    onClick={onClear}
+                >
+                    <XMarkSVG aria-hidden="true"/>
+                </button>
+            )}
             <button aria-label="Поиск" type="submit" className={btnClasses}>
                 <SearchSVG className={Styles['icon']} aria-hidden="true"/>
             </button>

@@ -14,6 +14,7 @@ type TButtonProps = {
     loading?: boolean;
     variant?: TButtonVariant;
     ariaLabel?: string;
+    className?: string;
 }
 
 export const Button = forwardRef<HTMLButtonElement, TButtonProps>(({
@@ -26,10 +27,12 @@ export const Button = forwardRef<HTMLButtonElement, TButtonProps>(({
                                                                        loading = false,
                                                                        variant = 'primary',
                                                                        ariaLabel,
+                                                                       className,
                                                                    }, ref) => {
     const classes = [
         Styles.button,
         Styles[`button--${variant}`],
+        className,
         active && Styles[`button--active`],
         loading && Styles['button--loading'],
         icon && Styles['button--icon'],

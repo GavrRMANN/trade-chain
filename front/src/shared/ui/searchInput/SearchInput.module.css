@@ -86,6 +86,33 @@
     cursor: pointer;
 }
 
+.clear {
+    width: 32px;
+    height: 36px;
+    padding: 0;
+    flex-shrink: 0;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    border: 0;
+    background: transparent;
+    color: var(--neutral-secondary);
+    cursor: pointer;
+}
+
+.clear svg {
+    width: 16px;
+    height: 16px;
+}
+
+.clear:hover,
+.clear:focus-visible {
+    color: var(--neutral-primary);
+    outline: none;
+}
+
 .btn:not(.btn--disabled):hover {
     background: var(--accent-secondary, #1E40AF);
 }

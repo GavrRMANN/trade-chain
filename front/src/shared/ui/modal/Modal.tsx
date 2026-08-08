@@ -95,7 +95,12 @@ export const Modal = forwardRef<HTMLDivElement, TModalProps>(({
                                     {title}
                                 </h2>
 
-                                <Button variant={'default'} icon={<XMarkSVG/>} onClick={onClose}/>
+                                <Button
+                                    variant={'default'}
+                                    icon={<XMarkSVG/>}
+                                    onClick={onClose}
+                                    ariaLabel="Закрыть"
+                                />
                             </div>
                             <div className={Styles['modal__container']}>
                                 {children}

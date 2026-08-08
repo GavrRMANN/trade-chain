@@ -5,34 +5,31 @@ type TWhiteBoxProps = {
     active?: boolean;
     img?: string;
     disabled?: boolean;
+    onClick?: () => void;
 }
 
-export const WhiteBox = ({title, active, img, disabled}: TWhiteBoxProps) => {
+export const WhiteBox = ({title, active, img, disabled, onClick}: TWhiteBoxProps) => {
     const whiteBoxClasses = [
         Styles['white-box'],
         active && Styles['white-box--active'],
-        !img && Styles['white-box--title'],
+        !img && Styles['white-box--without-image'],
         disabled && Styles['white-box--disabled'],
     ].filter(Boolean).join(' ');
 
-    const titleClasses = [
-        Styles['title'],
-        img && Styles['left'],
-    ].filter(Boolean).join(' ');
-
-    const imgClasses = [
-        Styles['img'],
-        img && Styles['right'],
-    ].filter(Boolean).join(' ');
-
     return (
-        <div className={whiteBoxClasses}>
-            <h4 className={titleClasses}>
-                Белый бокс
+        <button
+            className={whiteBoxClasses}
+            type="button"
+            disabled={disabled}
+            aria-pressed={active}
+            onClick={onClick}
+        >
+            <h4 className={Styles.title}>
+                {title}
             </h4>
             {
-                img && <img className={imgClasses} src={img} alt={title}/>
+                img && <img className={Styles.img} src={img} alt="" aria-hidden="true"/>
             }
-        </div>
+        </button>
     )
 };

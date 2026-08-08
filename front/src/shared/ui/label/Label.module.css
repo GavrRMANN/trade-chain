@@ -1,15 +1,15 @@
 .label {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 7px;
+    width: 100%;
 
     cursor: pointer;
 }
 
 .label--active {
-    padding: 16px 8px;
-
-    gap: 8px;
+    padding: 0;
 }
 
 .label:focus {
@@ -18,12 +18,12 @@
 
 .label:focus-visible {
     border-radius: 4px;
-    outline: 1px solid var(--accent-primary, #1E40AF);
-    border: 1px solid var(--accent-primary, #1E40AF);
+    outline: 1px solid var(--accent-primary);
+    border: 1px solid var(--accent-primary);
 }
 
 .label--disabled {
-    color: var(--neutral-disable, #9CA3AF);
+    color: var(--neutral-disable);
 
     cursor: not-allowed;
 }
@@ -33,13 +33,14 @@
 
     display: flex;
     flex-direction: column;
+    width: 100%;
 }
 
 .label__error-text {
     position: absolute;
     top: 100%;
 
-    color: var(--accent-danger, #EF4444);
+    color: var(--accent-danger);
 
     /* text-xs */
     font-family: Inter, sans-serif;

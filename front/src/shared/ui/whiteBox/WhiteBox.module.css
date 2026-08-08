@@ -1,12 +1,19 @@
 .white-box {
+    width: 100%;
     min-height: 92px;
+    aspect-ratio: 1.62;
+    container-type: inline-size;
 
     display: flex;
     flex-direction: column;
     justify-content: space-between;
     align-items: center;
 
-    padding: 12px;
+    padding: clamp(12px, 8cqw, 24px);
+
+    color: inherit;
+    font: inherit;
+    text-align: left;
 
     border: 1px solid transparent;
     border-radius: var(--radius-md);
@@ -23,16 +30,16 @@
 }
 
 .white-box--active {
-    background-color: var(--neutral-primary);
+    background-color: #000;
     color: var(--neutral-white);
 }
 
 .white-box--active:hover {
-    background-color: var(--bg-neutral);
-    color: var(--neutral-primary);
+    background-color: #000;
+    color: var(--neutral-white);
 }
 
-.white-box--title {
+.white-box--without-image {
     justify-content: center;
 }
 
@@ -46,20 +53,22 @@
 }
 
 .title {
-    font-size: var(--text-sm-font-size);
-    font-weight: var(--text-sm-line-height);
-    line-height: var(--h3-line-height);
+    align-self: start;
+
+    font-size: clamp(14px, 10cqw, 28px);
+    font-weight: 400;
+    line-height: 1.2;
+}
+
+.white-box--without-image .title {
+    align-self: center;
+    text-align: center;
 }
 
 .img {
+    align-self: end;
+
     width: 40px;
     height: 40px;
-}
-
-.left {
-    align-self: start;
-}
-
-.right {
-    align-self: end;
+    object-fit: contain;
 }
