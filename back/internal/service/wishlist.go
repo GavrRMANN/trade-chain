@@ -65,3 +65,28 @@ func (s *wishlistService) Delete(ctx context.Context, id string) error {
 	}
 	return normalizeError(s.repo.Delete(ctx, id))
 }
+
+func (s *wishlistService) UpdateByProductID(
+	ctx context.Context,
+	productID string,
+	dto *domain.CreateWishlistDTO,
+) (*domain.Wishlist, error) {
+	if blank(productID) || dto == nil || blank(dto.Name) {
+		return nil, ErrInvalidInput
+	}
+
+	dto.Name = strings.TrimSpace(dto.Name)
+
+	if _, err := s.products.GetByID(ctx, productID); err != nil {
+		return nil, normalizeError(err)
+	}
+
+	out, err := s.repo.UpdateByProductID(
+		ctx,
+		productID,
+		dto.Name,
+		dto.CategoryIDs,
+	)
+
+	return out, normalizeError(err)
+}

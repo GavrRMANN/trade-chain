@@ -9,6 +9,7 @@ import (
 	"strings"
 	"trade-chain/internal/auth"
 	"trade-chain/internal/domain"
+	"trade-chain/internal/search"
 	"trade-chain/internal/service"
 
 	"github.com/google/uuid"
@@ -16,14 +17,19 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-type productHandler struct{ s service.ProductService }
+type productHandler struct {
+	s        service.ProductService
+	wishlist service.WishlistService
+	search   *search.SearchService
+}
 
-func mountProductRoutes(r chi.Router, s service.ProductService) {
-	h := productHandler{s}
+func mountProductRoutes(r chi.Router, s service.ProductService, w service.WishlistService, ss *search.SearchService) {
+	h := productHandler{s, w, ss}
 
 	r.Route("/products", func(r chi.Router) {
 		// Публичные маршруты
 		r.Get("/", h.list)
+		r.Get("/by-customer/{customerID}", h.byCustomer)
 		r.Get("/{productID}", h.get)
 
 		// Защищенные маршруты
@@ -39,13 +45,13 @@ func mountProductRoutes(r chi.Router, s service.ProductService) {
 			r.Post("/{productID}/image", h.uploadImage)
 
 			// Снять товар с обмена
-			//r.Post("/{productID}/archive", h.archive)
+			r.Post("/{productID}/archive", h.delete)
 
 			// Задать, что владелец хочет получить
-			//r.Put("/{productID}/wishlist", h.updateWishlist)
+			r.Put("/{productID}/wishlist", h.updateWishlist)
 
 			// Подходящие прямые товары
-			//r.Get("/{productID}/recommendations", h.recommendations)
+			r.Get("/{productID}/recommendations", h.recommendations)
 		})
 	})
 }
@@ -62,17 +68,53 @@ func mountProductRoutes(r chi.Router, s service.ProductService) {
 // @Failure 500 {object} ErrorResponse
 // @Router /products [post]
 func (h productHandler) create(w http.ResponseWriter, r *http.Request) {
-	var v domain.CreateProductDTO
+	var v domain.CreateProductRequest
+
 	if decodeJSON(r, &v) != nil {
 		writeError(w, service.ErrInvalidInput)
 		return
 	}
-	out, e := h.s.Create(r.Context(), &v)
-	if e != nil {
-		writeError(w, e)
+
+	product, err := h.s.Create(
+		r.Context(),
+		&v.CreateProductDTO,
+	)
+	if err != nil {
+		writeError(w, err)
 		return
 	}
-	writeJSON(w, http.StatusCreated, out)
+
+	if v.Wishlist == nil {
+		writeJSON(w, http.StatusCreated, product)
+		return
+	}
+
+	wishlist := &domain.Wishlist{
+		ProductID: product.ProductID,
+		Name:      v.Wishlist.Name,
+	}
+
+	createdWishlist, err := h.wishlist.Create(
+		r.Context(),
+		wishlist,
+	)
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+
+	for _, categoryID := range v.Wishlist.CategoryIDs {
+		if err := h.wishlist.AddCategoryOption(
+			r.Context(),
+			createdWishlist.WishlistID,
+			categoryID,
+		); err != nil {
+			writeError(w, err)
+			return
+		}
+	}
+
+	writeJSON(w, http.StatusCreated, product)
 }
 
 // get godoc
@@ -129,17 +171,27 @@ func (h productHandler) update(w http.ResponseWriter, r *http.Request) {
 // @Tags products
 // @Accept json
 // @Produce json
-// @Param id path string true "Product ID"
+// @Param productID path string true "Product ID"
 // @Success 204 "No content"
 // @Failure 400 {object} ErrorResponse
+// @Failure 403 {object} ErrorResponse
 // @Failure 404 {object} ErrorResponse
 // @Failure 500 {object} ErrorResponse
-// @Router /products/{id} [delete]
+// @Router /products/{productID} [delete]
 func (h productHandler) delete(w http.ResponseWriter, r *http.Request) {
-	if e := h.s.Delete(r.Context(), chi.URLParam(r, "productID")); e != nil {
-		writeError(w, e)
+	productID := chi.URLParam(r, "productID")
+
+	customerID, ok := auth.UserIDFromContext(r.Context())
+	if !ok {
+		writeError(w, service.ErrForbidden)
 		return
 	}
+
+	if err := h.s.Delete(r.Context(), productID, customerID); err != nil {
+		writeError(w, err)
+		return
+	}
+
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -174,9 +226,19 @@ func (h productHandler) list(w http.ResponseWriter, r *http.Request) {
 	if categoryID != "" {
 		category = &categoryID
 	}
+	userID, ok := auth.UserIDFromContext(r.Context())
+
+	var userIDptr *string
+
+	if ok {
+		userIDptr = &userID
+	} else {
+		userIDptr = nil
+	}
 
 	products, err := h.s.List(
 		r.Context(),
+		userIDptr,
 		q,
 		category,
 		page,
@@ -210,6 +272,101 @@ func (h productHandler) byCustomer(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, v)
 }
 
+// recommendations godoc
+// @Summary Get product recommendations
+// @Description Get products that are direct exchange candidates
+// @Tags products
+// @Accept json
+// @Produce json
+// @Param productID path string true "Product ID"
+// @Success 200 {array} domain.Product
+// @Failure 400 {object} ErrorResponse
+// @Failure 404 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /products/{productID}/recommendations [get]
+func (h productHandler) recommendations(w http.ResponseWriter, r *http.Request) {
+	productID := chi.URLParam(r, "productID")
+
+	if productID == "" {
+		writeError(w, service.ErrInvalidInput)
+		return
+	}
+
+	customerID, ok := auth.UserIDFromContext(r.Context())
+	if !ok {
+		writeError(w, service.ErrForbidden)
+		return
+	}
+
+	result, err := h.search.FindChain(
+		r.Context(),
+		customerID,
+		productID,
+		5,
+	)
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+
+	writeJSON(w, http.StatusOK, result)
+}
+
+// updateWishlist godoc
+// @Summary Update product wishlist
+// @Description Replace the wishlist of a product
+// @Tags products
+// @Accept json
+// @Produce json
+// @Param productID path string true "Product ID"
+// @Param request body domain.CreateWishlistDTO true "Wishlist data"
+// @Success 200 {object} domain.Wishlist
+// @Failure 400 {object} ErrorResponse
+// @Failure 403 {object} ErrorResponse
+// @Failure 404 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /products/{productID}/wishlist [put]
+func (h productHandler) updateWishlist(w http.ResponseWriter, r *http.Request) {
+	productID := chi.URLParam(r, "productID")
+
+	customerID, ok := auth.UserIDFromContext(r.Context())
+	if !ok {
+		writeError(w, service.ErrForbidden)
+		return
+	}
+
+	// Проверяем, что товар принадлежит текущему пользователю.
+	product, err := h.s.GetByID(r.Context(), productID)
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+
+	if product.CustomerID != customerID {
+		writeError(w, service.ErrForbidden)
+		return
+	}
+
+	var v domain.CreateWishlistDTO
+	if decodeJSON(r, &v) != nil {
+		writeError(w, service.ErrInvalidInput)
+		return
+	}
+
+	wishlist, err := h.wishlist.UpdateByProductID(
+		r.Context(),
+		productID,
+		&v,
+	)
+	if err != nil {
+
+		writeError(w, err)
+		return
+	}
+
+	writeJSON(w, http.StatusOK, wishlist)
+}
+
 // uploadImage godoc
 // @Summary Upload image for product
 // @Description Upload an image for a specific product
@@ -231,99 +388,84 @@ func (h productHandler) uploadImage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	productID := chi.URLParam(r, "productID")
-	if productID == "" {
-		writeError(w, service.ErrInvalidInput)
-		return
-	}
-
-	// 2. Получаем продукт, чтобы проверить владельца
 	product, err := h.s.GetByID(r.Context(), productID)
-	if err != nil {
-		writeError(w, err)
-		return
-	}
+	// 2. Получаем продукт, чтобы проверить владельца
 	if product.CustomerID != userID {
-		writeError(w, service.ErrForbidden)
-		return
-	}
+		// 3. Читаем файл из запроса (максимум 5 МБ)
+		err = r.ParseMultipartForm(10 << 20) // 5 MB
+		if err != nil {
+			writeError(w, service.ErrInvalidInput)
+			return
+		}
+		file, header, err := r.FormFile("image") // имя поля должно быть "image"
+		if err != nil {
+			writeError(w, service.ErrInvalidInput)
+			return
+		}
+		defer file.Close()
 
-	// 3. Читаем файл из запроса (максимум 5 МБ)
-	err = r.ParseMultipartForm(10 << 20) // 5 MB
-	if err != nil {
-		writeError(w, service.ErrInvalidInput)
-		return
-	}
-	file, header, err := r.FormFile("image") // имя поля должно быть "image"
-	if err != nil {
-		writeError(w, service.ErrInvalidInput)
-		return
-	}
-	defer file.Close()
+		// 4. Проверяем тип файла (MIME)
+		buffer := make([]byte, 512)
+		_, err = file.Read(buffer)
+		if err != nil {
+			writeError(w, service.ErrInvalidInput)
+			return
+		}
+		mimeType := http.DetectContentType(buffer)
+		// Разрешаем только изображения
+		if !strings.HasPrefix(mimeType, "image/") {
+			writeError(w, service.ErrInvalidInput)
+			return
+		}
+		// Возвращаем указатель в начало файла
+		_, err = file.Seek(0, io.SeekStart)
+		if err != nil {
+			writeError(w, service.ErrInternal)
+			return
+		}
 
-	// 4. Проверяем тип файла (MIME)
-	buffer := make([]byte, 512)
-	_, err = file.Read(buffer)
-	if err != nil {
-		writeError(w, service.ErrInvalidInput)
-		return
-	}
-	mimeType := http.DetectContentType(buffer)
-	// Разрешаем только изображения
-	if !strings.HasPrefix(mimeType, "image/") {
-		writeError(w, service.ErrInvalidInput)
-		return
-	}
-	// Возвращаем указатель в начало файла
-	_, err = file.Seek(0, io.SeekStart)
-	if err != nil {
-		writeError(w, service.ErrInternal)
-		return
-	}
+		// 5. Генерируем уникальное имя файла
+		ext := path.Ext(header.Filename)
+		if ext == "" {
+			// Если расширения нет, можно по MIME определить
+			switch mimeType {
+			case "image/jpeg":
+				ext = ".jpg"
+			case "image/png":
+				ext = ".png"
+			case "image/gif":
+				ext = ".gif"
+			default:
+				ext = ".bin"
+			}
+		}
+		newFileName := uuid.New().String() + ext
+		savePath := filepath.Join("./uploads", newFileName)
 
-	// 5. Генерируем уникальное имя файла
-	ext := path.Ext(header.Filename)
-	if ext == "" {
-		// Если расширения нет, можно по MIME определить
-		switch mimeType {
-		case "image/jpeg":
-			ext = ".jpg"
-		case "image/png":
-			ext = ".png"
-		case "image/gif":
-			ext = ".gif"
-		default:
-			ext = ".bin"
+		// 6. Сохраняем файл
+		outFile, err := os.Create(savePath)
+		if err != nil {
+			writeError(w, service.ErrInternal)
+			return
+		}
+		defer outFile.Close()
+		_, err = io.Copy(outFile, file)
+		if err != nil {
+			writeError(w, service.ErrInternal)
+			return
+		}
+
+		// 7. Обновляем продукт: записываем относительный путь
+		imageURL := "/uploads/" + newFileName
+		updateDTO := &domain.UpdateProductDTO{
+			Image: &imageURL,
+		}
+		updated, err := h.s.Update(r.Context(), productID, updateDTO)
+		if err != nil {
+			// Если обновление не удалось, можно удалить загруженный файл (опционально)
+			os.Remove(savePath)
+			// 8. Возвращаем обновлённый продукт
+			writeJSON(w, http.StatusOK, updated)
 		}
 	}
-	newFileName := uuid.New().String() + ext
-	savePath := filepath.Join("./uploads", newFileName)
-
-	// 6. Сохраняем файл
-	outFile, err := os.Create(savePath)
-	if err != nil {
-		writeError(w, service.ErrInternal)
-		return
-	}
-	defer outFile.Close()
-	_, err = io.Copy(outFile, file)
-	if err != nil {
-		writeError(w, service.ErrInternal)
-		return
-	}
-
-	// 7. Обновляем продукт: записываем относительный путь
-	imageURL := "/uploads/" + newFileName
-	updateDTO := &domain.UpdateProductDTO{
-		Image: &imageURL,
-	}
-	updated, err := h.s.Update(r.Context(), productID, updateDTO)
-	if err != nil {
-		// Если обновление не удалось, можно удалить загруженный файл (опционально)
-		os.Remove(savePath)
-		writeError(w, err)
-		return
-	}
-
-	// 8. Возвращаем обновлённый продукт
-	writeJSON(w, http.StatusOK, updated)
 }

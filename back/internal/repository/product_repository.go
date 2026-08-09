@@ -20,10 +20,21 @@ func NewProductRepository(db *pgxpool.Pool) ProductRepository {
 	return &productRepository{db: db}
 }
 
-func (r *productRepository) Create(ctx context.Context, dto *domain.CreateProductDTO) (*domain.Product, error) {
+func (r *productRepository) Create(
+	ctx context.Context,
+	dto *domain.CreateProductDTO,
+) (*domain.Product, error) {
 	query := `
-		INSERT INTO products (customer_id, category_id, title, description, image, price, location, status)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+		INSERT INTO products (
+			customer_id,
+			category_id,
+			title,
+			description,
+			image,
+			price,
+			location
+		)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
 		RETURNING
 			product_id,
 			customer_id,
@@ -35,10 +46,14 @@ func (r *productRepository) Create(ctx context.Context, dto *domain.CreateProduc
 			COALESCE(location, ''),
 			status,
 			created_at,
-			updated_at	`
+			updated_at
+	`
 
 	var created domain.Product
-	err := r.db.QueryRow(ctx, query,
+
+	err := r.db.QueryRow(
+		ctx,
+		query,
 		dto.CustomerID,
 		dto.CategoryID,
 		dto.Title,
@@ -46,7 +61,6 @@ func (r *productRepository) Create(ctx context.Context, dto *domain.CreateProduc
 		dto.Image,
 		dto.Price,
 		dto.Location,
-		dto.Status,
 	).Scan(
 		&created.ProductID,
 		&created.CustomerID,
@@ -60,9 +74,11 @@ func (r *productRepository) Create(ctx context.Context, dto *domain.CreateProduc
 		&created.CreatedAt,
 		&created.UpdatedAt,
 	)
+
 	if err != nil {
 		return nil, err
 	}
+
 	return &created, nil
 }
 
@@ -212,20 +228,33 @@ func (r *productRepository) Update(ctx context.Context, id string, dto *domain.U
 	return &updated, nil
 }
 
-func (r *productRepository) Delete(ctx context.Context, id string) error {
-	query := `UPDATE products SET status = 'archived' WHERE product_id = $1`
-	result, err := r.db.Exec(ctx, query, id)
+func (r *productRepository) Delete(
+	ctx context.Context,
+	productID string,
+	customerID string,
+) error {
+	query := `
+		UPDATE products
+		SET status = 'archived'
+		WHERE product_id = $1
+		  AND customer_id = $2
+	`
+
+	result, err := r.db.Exec(ctx, query, productID, customerID)
 	if err != nil {
 		return err
 	}
+
 	if result.RowsAffected() == 0 {
 		return sql.ErrNoRows
 	}
+
 	return nil
 }
 
 func (r *productRepository) List(
 	ctx context.Context,
+	customerID *string,
 	q string,
 	categoryID *string,
 	page int,
@@ -253,7 +282,20 @@ func (r *productRepository) List(
 	args := []interface{}{}
 	argIndex := 1
 
+	if customerID != nil {
+		query += fmt.Sprintf(`
+			AND customer_id != $%d
+		`, argIndex)
+
+		args = append(args, *customerID)
+		argIndex++
+	}
+
+	var searchArgIndex int
+
 	if q != "" {
+		searchArgIndex = argIndex
+
 		query += fmt.Sprintf(`
 			AND (
 				COALESCE(search_vector, ''::tsvector)
@@ -261,7 +303,7 @@ func (r *productRepository) List(
 				OR title %% $%d
 				OR COALESCE(description, '') %% $%d
 			)
-		`, argIndex, argIndex, argIndex)
+		`, searchArgIndex, searchArgIndex, searchArgIndex)
 
 		args = append(args, q)
 		argIndex++
@@ -277,27 +319,33 @@ func (r *productRepository) List(
 	}
 
 	if q != "" {
-		query += `
+		query += fmt.Sprintf(`
 			ORDER BY
 				(
 					0.60 * ts_rank_cd(
 						COALESCE(search_vector, ''::tsvector),
-						websearch_to_tsquery('simple', $1)
+						websearch_to_tsquery('simple', $%d)
 					) +
-					0.25 * similarity(title, $1) +
-					0.15 * similarity(COALESCE(description, ''), $1)
+					0.25 * similarity(title, $%d) +
+					0.15 * similarity(
+						COALESCE(description, ''),
+						$%d
+					)
 				) DESC,
 				created_at DESC
-		`
+		`, searchArgIndex, searchArgIndex, searchArgIndex)
 	} else {
 		query += `
 			ORDER BY created_at DESC
 		`
 	}
 
+	limitArgIndex := argIndex
+	offsetArgIndex := argIndex + 1
+
 	query += fmt.Sprintf(`
 		LIMIT $%d OFFSET $%d
-	`, argIndex, argIndex+1)
+	`, limitArgIndex, offsetArgIndex)
 
 	args = append(args, limit, offset)
 
@@ -339,7 +387,8 @@ func (r *productRepository) List(
 	}
 
 	log.Printf(
-		"PRODUCT LIST SUCCESS: q=%q category=%v page=%d limit=%d got=%d",
+		"PRODUCT LIST SUCCESS: customerID=%v q=%q category=%v page=%d limit=%d got=%d",
+		customerID,
 		q,
 		categoryID,
 		page,

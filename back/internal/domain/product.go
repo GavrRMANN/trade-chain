@@ -4,6 +4,11 @@ import (
 	"time"
 )
 
+type CreateProductRequest struct {
+	CreateProductDTO
+	Wishlist *CreateWishlistDTO `json:"wishlist"`
+}
+
 type ProductStatus string
 
 const (

@@ -87,6 +87,74 @@ func (r *wishlistRepository) GetByProductID(ctx context.Context, productID strin
 	return &wishlist, nil
 }
 
+func (r *wishlistRepository) UpdateByProductID(
+	ctx context.Context,
+	productID string,
+	name string,
+	categoryIDs []string,
+) (*domain.Wishlist, error) {
+	tx, err := r.db.Begin(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback(ctx)
+
+	query := `
+		UPDATE wishlists
+		SET name = $1,
+		    updated_at = CURRENT_TIMESTAMP
+		WHERE product_id = $2
+		RETURNING wishlist_id, product_id, name, created_at, updated_at
+	`
+
+	var wishlist domain.Wishlist
+
+	err = tx.QueryRow(ctx, query, name, productID).Scan(
+		&wishlist.WishlistID,
+		&wishlist.ProductID,
+		&wishlist.Name,
+		&wishlist.CreatedAt,
+		&wishlist.UpdatedAt,
+	)
+
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, sql.ErrNoRows
+		}
+		return nil, err
+	}
+
+	_, err = tx.Exec(
+		ctx,
+		`DELETE FROM wishlist_options WHERE wishlist_id = $1`,
+		wishlist.WishlistID,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, categoryID := range categoryIDs {
+		_, err = tx.Exec(
+			ctx,
+			`
+			INSERT INTO wishlist_options (wishlist_id, category_id)
+			VALUES ($1, $2)
+			`,
+			wishlist.WishlistID,
+			categoryID,
+		)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return nil, err
+	}
+
+	return &wishlist, nil
+}
+
 func (r *wishlistRepository) AddCategoryOption(ctx context.Context, wishlistID, categoryID string) error {
 	query := `
 		INSERT INTO wishlist_options (wishlist_id, category_id)
