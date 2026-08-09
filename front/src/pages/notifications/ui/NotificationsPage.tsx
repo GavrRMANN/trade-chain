@@ -113,7 +113,6 @@ export const NotificationsPage = () => {
         <MainSection>
             <div className={Styles['notifications-page']}>
                 <header className={Styles['notifications-page__header']}>
-                    <h1 className={Styles['notifications-page__title']}>Уведомления</h1>
                     {unreadCount > 0 && (
                         <span className={Styles['notifications-page__counter']}>
                             {unreadCount} ждёт ответа

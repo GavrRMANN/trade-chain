@@ -10,13 +10,6 @@
     gap: var(--space-3);
 }
 
-.notifications-page__title {
-    margin: 0;
-
-    font-size: var(--h1-font-size);
-    line-height: var(--h1-line-height);
-}
-
 .notifications-page__counter {
     color: var(--accent-primary);
 
