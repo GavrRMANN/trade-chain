@@ -1,6 +1,6 @@
 import { useLocation } from 'react-router-dom';
 
-import { useProtectedNavigation } from '@shared/lib';
+import { useProtectedNavigation } from '@features/auth';
 
 /**
  * Инкапсулирует всю логику навигации и роутинга для MobileNavBar.

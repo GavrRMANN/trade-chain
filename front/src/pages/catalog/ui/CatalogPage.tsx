@@ -1,6 +1,6 @@
 import Styles from './catalog-page.module.css';
 import { MainSection } from '@shared/ui/mainSection';
-import { ProductCard } from '@shared/ui/productCard';
+import { ProductCard } from '@entities/product';
 import { Preloader } from '@shared/ui/preloader';
 import { WhiteBox } from '@shared/ui/whiteBox';
 import { Button } from '@shared/ui/button';

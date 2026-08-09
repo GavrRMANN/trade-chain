@@ -2,17 +2,13 @@ import {forwardRef} from "react";
 
 import {Label} from "../label";
 import {useRadio} from './useRadio';
-
-type TError = {
-    showError: boolean;
-    errorMessage: string;
-};
+import type {TFormError} from '@shared/lib/form';
 
 type TRadioProps = {
     name?: string;
     label?: string;
     disabled?: boolean;
-    error?: TError;
+    error?: TFormError;
     checked: boolean;
     onChange?: (value: boolean) => void;
 };

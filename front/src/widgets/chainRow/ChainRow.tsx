@@ -1,7 +1,7 @@
 import {type KeyboardEvent} from 'react';
 
 import type {TProduct} from '@entities/product';
-import {ProductImage} from '@shared/ui/productImage';
+import {ProductImage} from '@entities/product';
 
 import Styles from './ChainRow.module.css';
 

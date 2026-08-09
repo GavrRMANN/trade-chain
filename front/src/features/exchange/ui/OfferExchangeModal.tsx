@@ -2,7 +2,7 @@ import {Button} from '@shared/ui/button';
 import {Input} from '@shared/ui/input';
 import {Modal} from '@shared/ui/modal';
 import {Preloader} from '@shared/ui/preloader';
-import {ProductCard} from '@shared/ui/productCard';
+import {ProductCard} from '@entities/product';
 
 import Styles from './offer-exchange-modal.module.css';
 import {useOfferExchangeForm} from './useOfferExchangeForm';

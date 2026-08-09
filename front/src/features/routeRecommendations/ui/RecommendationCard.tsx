@@ -1,5 +1,5 @@
 import { Button } from '@shared/ui/button';
-import { ProductImage } from '@shared/ui/productImage';
+import { ProductImage } from '@entities/product';
 import { ChainStatusBadge } from '@entities/chain';
 import { formatAmount } from '@shared/lib';
 

@@ -2,7 +2,7 @@ import {FormEvent, useEffect, useState} from 'react';
 
 import {useCreateChainMutation} from '@entities/chain';
 import {useGetProductsByCustomerQuery} from '@entities/product';
-import {parseApiError} from '@shared/lib';
+import {parseApiError} from '@shared/api';
 
 type TOfferExchangeFormParams = {
     isOpen: boolean;

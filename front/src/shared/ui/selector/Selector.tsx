@@ -7,11 +7,7 @@ import Styles from "./Selector.module.css";
 import {Spinner} from "../spinner";
 import {Label} from "../label";
 import {useSelector} from './useSelector';
-
-type TError = {
-    showError: boolean;
-    errorMessage: string;
-};
+import type {TFormError} from '@shared/lib/form';
 
 type TOption = {
     value: string;
@@ -24,7 +20,7 @@ type TSelectorProps = {
     label?: string;
     options: TOption[];
     onSelect?: (value: string) => void;
-    error?: TError;
+    error?: TFormError;
     disabled?: boolean,
     loading?: boolean,
 }

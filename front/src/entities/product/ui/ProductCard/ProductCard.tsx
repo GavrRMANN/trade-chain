@@ -1,7 +1,7 @@
 import Styles from './ProductCard.module.css';
 import {formatAmount} from "@shared/lib";
 
-import GeoSVG from '../../assets/icons/Geo.svg';
+import GeoSVG from '@shared/assets/icons/Geo.svg';
 import {useProductCard} from './useProductCard';
 
 type TProductCardProps = {

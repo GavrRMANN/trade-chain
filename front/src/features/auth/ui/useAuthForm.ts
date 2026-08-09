@@ -6,9 +6,9 @@ import {
     useLoginUserMutation,
     useRegisterUserMutation,
 } from '@entities/user';
-import { parseApiError } from '@shared/lib';
+import { parseApiError } from '@shared/api';
 import { useAppDispatch } from '@app/redux';
-import { getBackgroundRoute } from '@shared/lib';
+import { getBackgroundRoute } from '@features/auth';
 
 type TMode = 'login' | 'register';
 type TField = 'email' | 'password' | 'confirmPassword';

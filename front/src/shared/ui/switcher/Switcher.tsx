@@ -2,17 +2,13 @@ import {forwardRef} from "react";
 import {Label} from "../label";
 import Styles from "./Switcher.module.css";
 import {useSwitcher} from './useSwitcher';
-
-type TError = {
-    showError: boolean;
-    errorMessage: string;
-};
+import type {TFormError} from '@shared/lib/form';
 
 type TSwitcherProps = {
     name?: string;
     label?: string;
     disabled?: boolean;
-    error?: TError;
+    error?: TFormError;
     checked: boolean;
     onChange?: (value: boolean) => void;
 };

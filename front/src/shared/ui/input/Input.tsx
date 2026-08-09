@@ -1,11 +1,7 @@
 import {forwardRef} from "react";
 import {Label} from "../label";
 import {useInput} from './useInput';
-
-type TError = {
-    showError: boolean;
-    errorMessage: string;
-};
+import type {TFormError} from '@shared/lib/form';
 
 type TInputProps = {
     label?: string;
@@ -14,7 +10,7 @@ type TInputProps = {
     value: string;
     placeholder?: string;
     onChange?: (value: string) => void;
-    error?: TError;
+    error?: TFormError;
     disabled?: boolean,
     loading?: boolean,
 }

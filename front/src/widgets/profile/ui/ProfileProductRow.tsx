@@ -1,7 +1,7 @@
 import type {TProduct} from '@entities/product';
 import {formatAmount, formatDate} from '@shared/lib';
 import {Button} from '@shared/ui/button';
-import {ProductImage} from '@shared/ui/productImage';
+import {ProductImage} from '@entities/product';
 
 import Styles from './profile-product-row.module.css';
 

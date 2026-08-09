@@ -8,7 +8,7 @@ import {
 } from '@entities/wishlist';
 import type {TWishlist} from '@entities/wishlist';
 import {useGetCategoriesQuery} from '@entities/category';
-import {parseApiError} from '@shared/lib';
+import {parseApiError} from '@shared/api';
 
 type TWishlistEditorParams = {
     productId: string;

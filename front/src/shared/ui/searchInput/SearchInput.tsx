@@ -5,18 +5,14 @@ import XMarkSVG from '../../assets/icons/X-mark.svg?react';
 import Styles from "./SearchInput.module.css";
 import {Spinner} from "../spinner";
 import {useSearchInput} from './useSearchInput';
-
-type TError = {
-    showError: boolean;
-    errorMessage: string;
-};
+import type {TFormError} from '@shared/lib/form';
 
 type TSearchInputProps = {
     value: string;
     placeholder?: string;
     onChange?: (value: string) => void;
     onSearch?: (value: string) => void;
-    error?: TError;
+    error?: TFormError;
     disabled?: boolean;
     loading?: boolean;
     onFocus?: () => void;

@@ -4,7 +4,7 @@ import { Button } from '@shared/ui/button';
 import { MainSection } from '@shared/ui/mainSection';
 import { PageError } from '@shared/ui/pageError';
 import { Preloader } from '@shared/ui/preloader';
-import { ProductImage } from '@shared/ui/productImage';
+import { ProductImage } from '@entities/product';
 import { formatAmount, formatDate } from '@shared/lib';
 
 import { useRoute } from '../lib';

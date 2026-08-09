@@ -1,5 +1,5 @@
 import type { TProduct } from '@entities/product';
-import { ProductImage } from '@shared/ui/productImage';
+import { ProductImage } from '@entities/product';
 import { formatAmount } from '@shared/lib';
 
 import Styles from './ExchangeRow.module.css';

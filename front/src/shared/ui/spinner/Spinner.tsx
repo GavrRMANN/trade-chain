@@ -25,7 +25,6 @@ export const Spinner = ({
             className={spinnerClassName}
             role="status"
             aria-label={ariaLabel}
-            aria-hidden="true"
         />
     );
 };

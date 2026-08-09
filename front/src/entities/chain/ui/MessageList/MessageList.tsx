@@ -1,16 +1,10 @@
 import {formatDate} from '@shared/lib';
+import type {TChainMessage} from '../../types/chain';
 
 import Styles from './MessageList.module.css';
 
-export type TMessage = {
-    message_id: string;
-    customer_id: string;
-    body: string;
-    created_at: string;
-};
-
 type TMessageListProps = {
-    messages: TMessage[];
+    messages: TChainMessage[];
     currentCustomerId?: string;
     className?: string;
 };

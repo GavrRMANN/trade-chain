@@ -2,17 +2,13 @@ import {forwardRef} from "react";
 
 import {Label} from "../label";
 import {useCheckbox} from './useCheckbox';
-
-type TError = {
-    showError: boolean;
-    errorMessage: string;
-};
+import type {TFormError} from '@shared/lib/form';
 
 type TCheckboxProps = {
     name?: string;
     label?: string;
     disabled?: boolean;
-    error?: TError;
+    error?: TFormError;
     checked: boolean;
     onChange?: (value: boolean) => void;
 };

@@ -1,4 +1,4 @@
-import { Spin } from 'antd';
+import { Spinner } from '../spinner';
 
 import Styles from './preloader.module.css';
 
@@ -9,7 +9,7 @@ type TPreloaderProps = {
 export const Preloader = ({ message }: TPreloaderProps) => {
     return (
         <div className={Styles['preloader-block']}>
-            <Spin className={Styles['preloader']} />
+            <Spinner size="lg" className={Styles['preloader']} />
             <p>{message}</p>
         </div>
     );

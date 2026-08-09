@@ -1,13 +1,16 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { checkImageUrl } from '@shared/lib/helpers';
 
 /** Проверяет доступность изображения и обновляет состояние при смене ссылки. */
 export const useImageAvailability = (src?: string) => {
     const [isImageAvailable, setIsImageAvailable] = useState(false);
+    const controllerRef = useRef<AbortController | null>(null);
 
     useEffect(() => {
-        let cancelled = false;
+        controllerRef.current?.abort();
+        const controller = new AbortController();
+        controllerRef.current = controller;
 
         setIsImageAvailable(false);
 
@@ -15,14 +18,14 @@ export const useImageAvailability = (src?: string) => {
             return;
         }
 
-        checkImageUrl(src).then((isAvailable) => {
-            if (!cancelled) {
+        checkImageUrl(src, controller.signal).then((isAvailable) => {
+            if (!controller.signal.aborted) {
                 setIsImageAvailable(isAvailable);
             }
         });
 
         return () => {
-            cancelled = true;
+            controller.abort();
         };
     }, [src]);
 
