@@ -29,6 +29,7 @@
     align-items: center;
 }
 
+.header__action,
 .header__profile {
     display: flex;
     align-items: center;
@@ -37,6 +38,12 @@
     border: 0;
     background: transparent;
     cursor: pointer;
+    color: var(--neutral-primary);
+}
+
+.header__action svg {
+    width: 20px;
+    height: 20px;
 }
 
 @media (max-width: 768px) {

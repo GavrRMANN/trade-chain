@@ -4,6 +4,7 @@ import { Route, Routes, useLocation } from 'react-router-dom';
 import { App } from '@app/App';
 import { AuthModal } from '@pages/auth';
 import { CatalogPage } from '@pages/catalog';
+import { CreateProductPage } from '@pages/createProduct';
 import { ProductPage } from '@pages/product';
 import { ProfilePage } from '@pages/profile';
 import { Preloader } from '@shared/ui/preloader';
@@ -25,7 +26,9 @@ export const AppRouter = () => {
             <Routes location={backgroundLocation || location}>
                 <Route element={<App />}>
                     <Route index element={<CatalogPage />} />
+                    <Route path="create" element={<CreateProductPage />} />
                     <Route path="product/:productId" element={<ProductPage />} />
+                    <Route path="product/:productId/edit" element={<CreateProductPage />} />
                     <Route path="profile" element={<ProfilePage />} />
                     <Route path="profile/:customerId" element={<ProfilePage />} />
                     <Route path="*" element={withSuspense(<NotFoundPageLazy />)} />

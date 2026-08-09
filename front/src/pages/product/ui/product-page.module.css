@@ -36,6 +36,9 @@
 }
 
 .mediaColumn {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-8);
     min-width: 0;
 }
 
@@ -85,12 +88,9 @@
 }
 
 .details {
-    grid-column: 1;
+    display: grid;
+    gap: var(--space-4);
     min-width: 0;
-}
-
-.details > section:first-child {
-    padding-top: 0;
 }
 
 .characteristics {
@@ -201,10 +201,6 @@
     .productAside {
         gap: var(--space-6);
         margin-top: var(--space-6);
-    }
-
-    .details {
-        margin-top: var(--space-8);
     }
 
     .characteristics div {
