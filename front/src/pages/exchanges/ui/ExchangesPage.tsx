@@ -10,12 +10,17 @@ import {RouteBuilder} from '@features/routeBuilder';
 
 import Styles from './exchanges-page.module.css';
 import {useExchanges} from '../lib';
-import type {TExchangeTab} from '../lib/useExchanges';
+import type {TExchangeRouteTab, TExchangeTab} from '../lib/useExchanges';
 
 const TABS: {id: TExchangeTab; label: string}[] = [
     {id: 'active', label: 'Активные'},
     {id: 'incoming', label: 'Входящие'},
     {id: 'outgoing', label: 'Исходящие'},
+    {id: 'completed', label: 'Завершённые'},
+];
+
+const ROUTE_TABS: {id: TExchangeRouteTab; label: string}[] = [
+    {id: 'active', label: 'Активные'},
     {id: 'completed', label: 'Завершённые'},
 ];
 
@@ -26,6 +31,11 @@ const EMPTY_TEXT: Record<TExchangeTab, string> = {
     completed: 'Завершённых обменов пока нет',
 };
 
+const ROUTE_EMPTY_TEXT: Record<TExchangeRouteTab, string> = {
+    active: 'Активных цепочек обменов пока нет',
+    completed: 'Завершённых цепочек обменов пока нет',
+};
+
 const formatClasses = (...classes: Array<string | false | undefined>): string =>
     classes.filter(Boolean).join(' ');
 
@@ -33,12 +43,15 @@ export const ExchangesPage = () => {
     const {
         activeTab,
         setActiveTab,
+        activeRouteTab,
+        setActiveRouteTab,
         activeView,
         setActiveView,
         isBuilderOpen,
         setIsBuilderOpen,
         visibleRows,
         routeGroups,
+        visibleRouteGroups,
         isLoading,
         isFetching,
         isError,
@@ -95,7 +108,25 @@ export const ExchangesPage = () => {
                             </Button>
                         </div>
 
-                        {routeGroups.length === 0 ? (
+                        <div className={Styles['exchanges-page__tabs']} role="tablist">
+                            {ROUTE_TABS.map((tab) => (
+                                <Button
+                                    key={tab.id}
+                                    variant="text"
+                                    active={activeRouteTab === tab.id}
+                                    onClick={() => setActiveRouteTab(tab.id)}
+                                    ariaLabel={tab.label}
+                                    className={formatClasses(
+                                        Styles['exchanges-page__tab'],
+                                        activeRouteTab === tab.id && Styles['exchanges-page__tab--active'],
+                                    )}
+                                >
+                                    {tab.label}
+                                </Button>
+                            ))}
+                        </div>
+
+                        {visibleRouteGroups.length === 0 && routeGroups.length === 0 ? (
                             <div className={Styles['exchanges-page__routes-empty']}>
                                 <span aria-hidden="true">↗</span>
                                 <div>
@@ -105,15 +136,19 @@ export const ExchangesPage = () => {
                                         следующего обмена.
                                     </p>
                                 </div>
-                                {!isBuilderOpen && (
+                                {activeRouteTab === 'active' && !isBuilderOpen && (
                                     <Button variant="secondary" onClick={() => setIsBuilderOpen(true)}>
                                         Построить первую
                                     </Button>
                                 )}
                             </div>
+                        ) : visibleRouteGroups.length === 0 ? (
+                            <div className={Styles['exchanges-page__empty']}>
+                                {ROUTE_EMPTY_TEXT[activeRouteTab]}
+                            </div>
                         ) : (
                             <div className={Styles['exchanges-page__routes-list']}>
-                                {routeGroups.map((group) => (
+                                {visibleRouteGroups.map((group) => (
                                     <article
                                         key={group.goalId}
                                         className={Styles['exchanges-page__route-card']}
