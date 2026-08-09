@@ -1,7 +1,3 @@
-import {FormEvent, useEffect, useState} from 'react';
-
-import {useCreateChainMutation} from '@entities/chain';
-import {useGetProductsByCustomerQuery} from '@entities/product';
 import {Button} from '@shared/ui/button';
 import {Input} from '@shared/ui/input';
 import {Modal} from '@shared/ui/modal';
@@ -9,6 +5,7 @@ import {Preloader} from '@shared/ui/preloader';
 import {ProductCard} from '@shared/ui/productCard';
 
 import Styles from './offer-exchange-modal.module.css';
+import {useOfferExchangeForm} from './useOfferExchangeForm';
 
 type TOfferExchangeModalProps = {
     isOpen: boolean;
@@ -23,16 +20,6 @@ type TOfferExchangeModalProps = {
     currentCustomerId?: string;
 };
 
-const getErrorMessage = (error: unknown) => {
-    if (typeof error === 'object' && error !== null && 'data' in error) {
-        const data = error.data;
-        if (typeof data === 'object' && data !== null && 'error' in data && typeof data.error === 'string') {
-            return data.error;
-        }
-    }
-    return 'Не удалось отправить предложение. Попробуйте ещё раз.';
-};
-
 export const OfferExchangeModal = ({
     isOpen,
     onClose,
@@ -40,50 +27,24 @@ export const OfferExchangeModal = ({
     targetProductId,
     currentCustomerId,
 }: TOfferExchangeModalProps) => {
-    const [selectedProductId, setSelectedProductId] = useState('');
-    const [message, setMessage] = useState('');
-    const [requestError, setRequestError] = useState<string>();
-
-    const {data: myProducts = [], isLoading: isProductsLoading} = useGetProductsByCustomerQuery(
-        currentCustomerId ?? '',
-        {skip: !currentCustomerId},
-    );
-    const [createChain, {isLoading: isCreating}] = useCreateChainMutation();
-
-    // Сбрасываем состояние при каждом открытии.
-    useEffect(() => {
-        if (isOpen) {
-            setSelectedProductId('');
-            setMessage('');
-            setRequestError(undefined);
-        }
-    }, [isOpen]);
-
-    const canSubmit = Boolean(selectedProductId) && !isCreating;
-
-    const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-        event.preventDefault();
-        setRequestError(undefined);
-
-        if (!selectedProductId) {
-            setRequestError('Выберите товар для обмена');
-            return;
-        }
-
-        try {
-            const created = await createChain({
-                from_product_id: selectedProductId,
-                to_product_id: targetProductId,
-                status: 'pending',
-                message: message.trim() || undefined,
-            }).unwrap();
-
-            onSuccess?.(created.chain_id);
-            onClose();
-        } catch (error) {
-            setRequestError(getErrorMessage(error));
-        }
-    };
+    const {
+        myProducts,
+        isProductsLoading,
+        isCreating,
+        selectedProductId,
+        message,
+        requestError,
+        canSubmit,
+        setSelectedProductId,
+        setMessage,
+        handleSubmit,
+    } = useOfferExchangeForm({
+        isOpen,
+        targetProductId,
+        currentCustomerId,
+        onSuccess,
+        onClose,
+    });
 
     return (
         <Modal

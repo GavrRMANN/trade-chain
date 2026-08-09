@@ -1,15 +1,16 @@
-import {ChangeEvent, useRef, useState} from 'react';
+import { useCallback } from 'react';
 
 import {Button} from '@shared/ui/button';
 import {Input} from '@shared/ui/input';
 import {Selector} from '@shared/ui/selector';
 import {Textarea} from '@shared/ui/textarea';
-import {readFileAsDataUrl} from '@shared/lib';
+import {sanitizePrice} from '@shared/lib';
 import type {Category} from '@entities/category';
 import type {TProductStatus} from '@entities/product';
 
 import {CategoryPicker} from './CategoryPicker';
 import Styles from './product-form.module.css';
+import {useImageUpload} from './useImageUpload';
 
 type TField = 'title' | 'categoryId' | 'description' | 'price' | 'location';
 type TErrors = Partial<Record<TField, string>>;
@@ -38,14 +39,6 @@ type TProductFormProps = {
     handleSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
 };
 
-const sanitizePrice = (value: string) => {
-    const digits = value.replace(/[^\d]/g, '');
-    if (!digits) {
-        return '';
-    }
-    return digits.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
-};
-
 export const ProductForm = ({
     isEdit,
     categories,
@@ -69,38 +62,13 @@ export const ProductForm = ({
     setStatus,
     handleSubmit,
 }: TProductFormProps) => {
-    const fileInputRef = useRef<HTMLInputElement>(null);
-    const [imageError, setImageError] = useState<string>();
+    const { fileInputRef, imageError, handleImageChange, handleRemoveImage } = useImageUpload({
+        onImageLoaded: setImage,
+    });
 
-    const handleImageChange = async (event: ChangeEvent<HTMLInputElement>) => {
-        setImageError(undefined);
-        const file = event.target.files?.[0];
-        if (!file) {
-            return;
-        }
-        if (!file.type.startsWith('image/')) {
-            setImageError('Выберите изображение');
-            return;
-        }
-        if (file.size > 10 * 1024 * 1024) {
-            setImageError('Размер изображения не должен превышать 10 МБ');
-            return;
-        }
-        try {
-            const dataUrl = await readFileAsDataUrl(file);
-            setImage(dataUrl);
-        } catch {
-            setImageError('Не удалось загрузить изображение');
-        }
-    };
-
-    const handleRemoveImage = () => {
-        setImage('');
-        setImageError(undefined);
-        if (fileInputRef.current) {
-            fileInputRef.current.value = '';
-        }
-    };
+    const handlePriceChange = useCallback((value: string) => {
+        setPrice(sanitizePrice(value));
+    }, [setPrice]);
 
     return (
         <form className={Styles.form} onSubmit={handleSubmit} noValidate>
@@ -149,7 +117,7 @@ export const ProductForm = ({
                         name="price"
                         value={price}
                         placeholder="0"
-                        onChange={(value) => setPrice(sanitizePrice(value))}
+                        onChange={handlePriceChange}
                         disabled={isLoading}
                         error={{showError: Boolean(errors.price), errorMessage: errors.price ?? ''}}
                     />

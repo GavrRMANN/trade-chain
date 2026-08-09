@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type PointerEvent } from 'react';
+import { useMemo } from 'react';
 
 import type { TChain } from '@entities/chain';
 import type { TProduct } from '@entities/product';
@@ -6,6 +6,8 @@ import { Button } from '@shared/ui/button';
 
 import { RecommendationCard } from './RecommendationCard';
 import Styles from './route-recommendations.module.css';
+import { useSwipeGesture } from './useSwipeGesture';
+import { useCarousel } from './useCarousel';
 
 export type TRouteRecommendation = {
     product: TProduct;
@@ -31,21 +33,8 @@ export const RouteRecommendations = ({
     onOpenProduct,
     onOpenOffer,
 }: TRouteRecommendationsProps) => {
-    const [activeIndex, setActiveIndex] = useState(0);
-    const pointerStartX = useRef<number | undefined>(undefined);
+    const { activeIndex, current, advance } = useCarousel(items);
     const selected = useMemo(() => new Set(selectedIds), [selectedIds]);
-
-    useEffect(() => {
-        if (activeIndex >= items.length) {
-            setActiveIndex(Math.max(0, items.length - 1));
-        }
-    }, [activeIndex, items.length]);
-
-    const current = items[activeIndex];
-
-    const advance = () => {
-        setActiveIndex((index) => (items.length === 0 ? 0 : (index + 1) % items.length));
-    };
 
     const selectAndAdvance = () => {
         if (!current || current.offer) {
@@ -56,25 +45,10 @@ export const RouteRecommendations = ({
         advance();
     };
 
-    const handlePointerDown = (event: PointerEvent<HTMLDivElement>) => {
-        pointerStartX.current = event.clientX;
-        event.currentTarget.setPointerCapture(event.pointerId);
-    };
-
-    const handlePointerUp = (event: PointerEvent<HTMLDivElement>) => {
-        if (pointerStartX.current === undefined) {
-            return;
-        }
-
-        const distance = event.clientX - pointerStartX.current;
-        pointerStartX.current = undefined;
-
-        if (distance <= -60) {
-            selectAndAdvance();
-        } else if (distance >= 60) {
-            advance();
-        }
-    };
+    const { handlePointerDown, handlePointerUp } = useSwipeGesture({
+        onSwipeLeft: selectAndAdvance,
+        onSwipeRight: advance,
+    });
 
     if (items.length === 0) {
         return (

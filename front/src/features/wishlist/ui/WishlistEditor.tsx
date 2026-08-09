@@ -1,17 +1,10 @@
-import {useEffect, useState} from 'react';
-
 import type {Category} from '@entities/category';
-import {
-    useAddWishlistOptionMutation,
-    useCreateWishlistMutation,
-    useRemoveWishlistOptionMutation,
-} from '@entities/wishlist';
 import type {TWishlist} from '@entities/wishlist';
-import {useGetCategoriesQuery} from '@entities/category';
 import {Selector} from '@shared/ui/selector';
 import {Button} from '@shared/ui/button';
 
 import Styles from './wishlist-editor.module.css';
+import {useWishlistEditor} from './useWishlistEditor';
 
 type TWishlistEditorProps = {
     productId: string;
@@ -20,75 +13,27 @@ type TWishlistEditorProps = {
     options: Category[];
 };
 
-const getErrorMessage = (error: unknown) => {
-    if (typeof error === 'object' && error !== null && 'data' in error) {
-        const data = error.data;
-        if (typeof data === 'object' && data !== null && 'error' in data && typeof data.error === 'string') {
-            return data.error;
-        }
-    }
-    return 'Не удалось обновить список желаний. Попробуйте ещё раз.';
-};
-
 export const WishlistEditor = ({productId, productTitle, wishlist, options}: TWishlistEditorProps) => {
-    const [selectedCategoryId, setSelectedCategoryId] = useState('');
-    const [requestError, setRequestError] = useState<string>();
-    const [isEditing, setIsEditing] = useState(false);
-
-    const {data: categories = []} = useGetCategoriesQuery();
-    const [createWishlist, {isLoading: isCreatingWishlist}] = useCreateWishlistMutation();
-    const [addOption, {isLoading: isAdding}] = useAddWishlistOptionMutation();
-    const [removeOption, {isLoading: isRemoving}] = useRemoveWishlistOptionMutation();
-
-    const isLoading = isCreatingWishlist || isAdding || isRemoving;
-
-    // Доступные для добавления категории (ещё не в списке желаний).
-    const availableOptions = categories
-        .filter((category) => !options.some((option) => option.category_id === category.category_id))
-        .map((category) => ({value: category.category_id, label: category.name}));
-
-    useEffect(() => {
-        setSelectedCategoryId('');
-    }, [options.length]);
-
-    const ensureWishlist = async (): Promise<TWishlist> => {
-        if (wishlist) {
-            return wishlist;
-        }
-        return createWishlist({product_id: productId, name: `Хочу взамен за ${productTitle}`}).unwrap();
-    };
-
-    const handleAdd = async () => {
-        if (!selectedCategoryId) {
-            return;
-        }
-        setRequestError(undefined);
-        try {
-            const target = await ensureWishlist();
-            await addOption({id: target.wishlist_id, body: {category_id: selectedCategoryId}}).unwrap();
-            setSelectedCategoryId('');
-        } catch (error) {
-            setRequestError(getErrorMessage(error));
-        }
-    };
-
-    const handleRemove = async (categoryId: string) => {
-        if (!wishlist) {
-            return;
-        }
-        setRequestError(undefined);
-        try {
-            await removeOption({id: wishlist.wishlist_id, categoryId}).unwrap();
-        } catch (error) {
-            setRequestError(getErrorMessage(error));
-        }
-    };
+    const {
+        isEditing,
+        isLoading,
+        isAdding,
+        isCreatingWishlist,
+        selectedCategoryId,
+        availableOptions,
+        requestError,
+        setSelectedCategoryId,
+        handleAdd,
+        handleRemove,
+        toggleEditing,
+        startEditing,
+    } = useWishlistEditor({productId, productTitle, wishlist, options});
 
     return (
         <div className={Styles.editor}>
             <div className={Styles['editor__title-row']}>
                 <h2>Хочу взамен</h2>
-                <button type="button" className={Styles['editor__edit']} onClick={() => setIsEditing((value) => !value)}>
+                <button type="button" className={Styles['editor__edit']} onClick={toggleEditing}>
                     {isEditing ? 'Готово' : 'Редактировать'} {!isEditing && '✎'}
                 </button>
             </div>
@@ -121,7 +66,7 @@ export const WishlistEditor = ({productId, productTitle, wishlist, options}: TWi
             )}
 
             {!isEditing ? (
-                <button type="button" className={Styles['editor__add-link']} onClick={() => setIsEditing(true)}>
+                <button type="button" className={Styles['editor__add-link']} onClick={startEditing}>
                     <span aria-hidden="true">＋</span> Добавить категорию
                 </button>
             ) : (
