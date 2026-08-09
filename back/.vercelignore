@@ -1,0 +1,5 @@
+app
+Dockerfile
+Dockerfile.vercel
+.env.local
+infrastructure/migrations
