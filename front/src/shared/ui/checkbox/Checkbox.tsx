@@ -1,7 +1,7 @@
-import {forwardRef, type ChangeEvent} from "react";
+import {forwardRef} from "react";
 
-import Styles from './Checkbox.module.css';
 import {Label} from "../label";
+import {useCheckbox} from './useCheckbox';
 
 type TError = {
     showError: boolean;
@@ -25,14 +25,7 @@ export const Checkbox = forwardRef<HTMLInputElement, TCheckboxProps>(({
                                                                           checked,
                                                                           onChange
                                                                       }, ref) => {
-        const checkboxClasses = [
-            Styles['checkbox'],
-            error?.showError && Styles['checkbox--error']
-        ].filter(Boolean).join(' ');
-
-        const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
-            onChange?.(e.target.checked);
-        };
+        const {checkboxClasses, handleChange} = useCheckbox({error, onChange});
 
         return (
             <Label label={label} error={error} disabled={disabled} role={'checkbox'} aria-checked={checked}>

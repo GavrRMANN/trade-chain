@@ -1,8 +1,7 @@
-import {type FormEvent, type KeyboardEvent} from 'react';
-
 import {Button} from '@shared/ui/button';
 
 import Styles from './MessageInput.module.css';
+import {useMessageInput} from './useMessageInput';
 
 type TMessageInputProps = {
     value: string;
@@ -23,30 +22,9 @@ export const MessageInput = ({
     placeholder,
     className,
 }: TMessageInputProps) => {
-    const canSend = value.trim().length > 0 && !disabled && !loading;
-
-    const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
-        event.preventDefault();
-
-        if (canSend) {
-            onSend();
-        }
-    };
-
-    const handleKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
-        if (event.key === 'Enter' && !event.shiftKey) {
-            event.preventDefault();
-
-            if (canSend) {
-                onSend();
-            }
-        }
-    };
-
-    const formClasses = [
-        Styles['message-input'],
-        className,
-    ].filter(Boolean).join(' ');
+    const {canSend, formClasses, handleChange, handleSubmit, handleKeyDown} = useMessageInput({
+        value, disabled, loading, className, onChange, onSend,
+    });
 
     return (
         <form className={formClasses} onSubmit={handleSubmit}>
@@ -56,7 +34,7 @@ export const MessageInput = ({
                 placeholder={placeholder}
                 rows={1}
                 disabled={disabled || loading}
-                onChange={(event) => onChange(event.target.value)}
+                onChange={handleChange}
                 onKeyDown={handleKeyDown}
             />
 

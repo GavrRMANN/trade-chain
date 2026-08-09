@@ -1,4 +1,4 @@
-import Styles from './Spinner.module.css';
+import {useSpinner} from './useSpinner';
 
 type TSpinnerSize = 'sm' | 'md' | 'lg';
 
@@ -18,15 +18,11 @@ export const Spinner = ({
                             className,
                             'aria-label': ariaLabel = 'Загрузка',
                         }: TSpinnerProps) => {
-    const classes = [
-        Styles.spinner,
-        Styles[`spinner--${size}`],
-        className,
-    ].filter(Boolean).join(' ');
+    const {className: spinnerClassName} = useSpinner({size, className});
 
     return (
         <span
-            className={classes}
+            className={spinnerClassName}
             role="status"
             aria-label={ariaLabel}
             aria-hidden="true"

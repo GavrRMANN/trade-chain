@@ -1,0 +1,62 @@
+import {useEffect, useMemo, useRef, useState} from 'react';
+
+import ControlStyles from '../control/Control.module.css';
+import Styles from './Selector.module.css';
+
+type TOption = { value: string; label: string };
+
+type TUseSelectorParams = {
+    label?: string;
+    value: string;
+    options: TOption[];
+    disabled: boolean;
+    loading: boolean;
+    error?: { showError: boolean };
+    onSelect?: (value: string) => void;
+};
+
+/** Инкапсулирует состояние и взаимодействия выпадающего списка. */
+export const useSelector = ({label, value, options, disabled, loading, error, onSelect}: TUseSelectorParams) => {
+    const [isExpanded, setIsExpanded] = useState(false);
+    const wrapperRef = useRef<HTMLLabelElement>(null);
+    const selectedLabel = useMemo(
+        () => options.find((option) => option.value === value)?.label || label || options[0]?.label,
+        [label, options, value],
+    );
+    const selectorClasses = [
+        Styles.selector,
+        ControlStyles.text,
+        isExpanded && Styles['selector--active'],
+        (disabled || loading) && Styles['selector--disabled'],
+        error?.showError && Styles['selector--error'],
+    ].filter(Boolean).join(' ');
+    const buttonClasses = [loading ? Styles.loading : Styles.arrow].filter(Boolean).join(' ');
+    const wrapperClasses = [Styles.wrapper, ControlStyles.text].filter(Boolean).join(' ');
+    const textClasses = [ControlStyles.text, (disabled || loading) && ControlStyles['text--disabled']]
+        .filter(Boolean)
+        .join(' ');
+    const toggle = () => {
+        if (!disabled && !loading) {
+            setIsExpanded((previous) => !previous);
+        }
+    };
+    const selectOption = (option: TOption) => {
+        onSelect?.(option.value);
+        setIsExpanded(false);
+    };
+
+    useEffect(() => {
+        if (!isExpanded) {
+            return;
+        }
+        const handleDocumentClick = (event: MouseEvent) => {
+            if (event.target instanceof Node && !wrapperRef.current?.contains(event.target)) {
+                setIsExpanded(false);
+            }
+        };
+        document.addEventListener('mousedown', handleDocumentClick);
+        return () => document.removeEventListener('mousedown', handleDocumentClick);
+    }, [isExpanded]);
+
+    return {isExpanded, wrapperRef, selectedLabel, selectorClasses, buttonClasses, wrapperClasses, textClasses, toggle, selectOption};
+};

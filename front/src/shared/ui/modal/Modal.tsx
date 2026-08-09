@@ -1,4 +1,4 @@
-import { forwardRef, type MouseEvent, type ReactNode, useEffect, useRef } from 'react';
+import { forwardRef, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 
 import Styles from './Modal.module.css';
@@ -6,6 +6,7 @@ import { Button } from '../button';
 
 import XMarkSVG from '../../assets/icons/X-mark.svg?react';
 import { Transition } from 'react-transition-group';
+import {useModal} from './useModal';
 
 type TModalProps = {
     title?: string;
@@ -19,44 +20,7 @@ type TModalProps = {
 
 export const Modal = forwardRef<HTMLDivElement, TModalProps>(
     ({ title = '', isOpen, size = 'default', onOpen, onClose, children, footer }, ref) => {
-        const modalRoot = document.getElementById('modal-root');
-        const overlayRef = useRef<HTMLDivElement>(null);
-
-        useEffect(() => {
-            if (isOpen) {
-                onOpen?.();
-            }
-        }, [isOpen, onOpen]);
-
-        useEffect(() => {
-            if (isOpen) {
-                overlayRef.current?.focus();
-            }
-        }, [isOpen]);
-
-        useEffect(() => {
-            if (!isOpen) {
-                return;
-            }
-
-            const handleKeyDown = (event: KeyboardEvent) => {
-                if (event.key === 'Escape') {
-                    onClose?.();
-                }
-            };
-
-            document.addEventListener('keydown', handleKeyDown);
-
-            return () => {
-                document.removeEventListener('keydown', handleKeyDown);
-            };
-        }, [isOpen, onClose]);
-
-        const onOverlayClick = (event: MouseEvent<HTMLDivElement>) => {
-            if (event.target === event.currentTarget) {
-                onClose?.();
-            }
-        };
+        const {modalRoot, overlayRef, handleOverlayClick} = useModal({isOpen, onOpen, onClose});
 
         if (!modalRoot) {
             return null;
@@ -69,7 +33,7 @@ export const Modal = forwardRef<HTMLDivElement, TModalProps>(
                         tabIndex={-1}
                         ref={overlayRef}
                         className={`${Styles['overlay']} ${Styles[`overlay--${state}`]}`}
-                        onClick={onOverlayClick}
+                        onClick={handleOverlayClick}
                     >
                         <div
                             ref={ref}

@@ -1,12 +1,12 @@
-import {forwardRef, useEffect, useMemo, useRef, useState} from "react";
+import {forwardRef} from "react";
 
 import ArrowUp from '../../assets/icons/ArrowUp.svg?react';
 import ArrowDown from '../../assets/icons/ArrowDown.svg?react';
 
-import ControlStyles from '../control/Control.module.css';
 import Styles from "./Selector.module.css";
 import {Spinner} from "../spinner";
 import {Label} from "../label";
+import {useSelector} from './useSelector';
 
 type TError = {
     showError: boolean;
@@ -39,73 +39,9 @@ export const Selector = forwardRef<HTMLDivElement, TSelectorProps>(({
                                                                         disabled = false,
                                                                         loading = false
                                                                     }, ref) => {
-    const [isExpanded, setIsExpanded] = useState<boolean>(false);
-    const wrapperRef = useRef<HTMLLabelElement | null>(null);
-
-    const selectedLabel = useMemo(
-        () => options.find((opt) => opt.value === value)?.label || label || options[0]?.label,
-        [label, options, value]
-    );
-
-    const selectorClasses = [
-        Styles['selector'],
-        ControlStyles['text'],
-        isExpanded && Styles['selector--active'],
-        (disabled || loading) && Styles['selector--disabled'],
-        error?.showError && Styles['selector--error']
-    ].filter(Boolean).join(' ');
-
-    const btnClasses = [
-        loading ? Styles['loading'] : Styles['arrow'],
-    ].filter(Boolean).join(' ');
-
-    const wrapperClasses = [
-        Styles['wrapper'],
-        ControlStyles['text'],
-    ].filter(Boolean).join(' ');
-
-    const textClasses = [
-        ControlStyles['text'],
-        (disabled || loading) && ControlStyles['text--disabled']
-    ].filter(Boolean).join(' ');
-
-    const onClick = () => {
-        if (disabled || loading) {
-            return;
-        }
-
-        setIsExpanded((prev) => !prev);
-    };
-
-    const onClickOption = (opt: TOption) => {
-        onSelect?.(opt.value);
-
-        setIsExpanded(false);
-    };
-
-    useEffect(() => {
-        if (!isExpanded) {
-            return;
-        }
-
-        const handleClick = (event: MouseEvent) => {
-            const target = event.target;
-
-            if (!(target instanceof Node)) {
-                return;
-            }
-
-            if (!wrapperRef.current?.contains(target)) {
-                setIsExpanded(false);
-            }
-        };
-
-        document.addEventListener('mousedown', handleClick);
-
-        return () => {
-            document.removeEventListener('mousedown', handleClick);
-        };
-    }, [isExpanded]);
+    const {isExpanded, wrapperRef, selectedLabel, selectorClasses, buttonClasses, wrapperClasses, textClasses, toggle, selectOption} = useSelector({
+        label, value, options, disabled, loading, error, onSelect,
+    });
 
     return (
         <Label label={label} disabled={disabled} error={error} ref={wrapperRef}>
@@ -113,7 +49,7 @@ export const Selector = forwardRef<HTMLDivElement, TSelectorProps>(({
                 ref={ref}
                 tabIndex={disabled ? -1 : 0}
                 className={selectorClasses}
-                onClick={onClick}
+                onClick={toggle}
                 aria-invalid={Boolean(error)}
                 role="combobox"
                 aria-haspopup="listbox"
@@ -123,7 +59,7 @@ export const Selector = forwardRef<HTMLDivElement, TSelectorProps>(({
                 <span className={textClasses}>
                     {selectedLabel}
                 </span>
-                <span className={btnClasses} aria-hidden="true">
+                <span className={buttonClasses} aria-hidden="true">
                     {loading ?
                         <Spinner size={'sm'}/>
                         :
@@ -148,7 +84,7 @@ export const Selector = forwardRef<HTMLDivElement, TSelectorProps>(({
                                     key={opt.value}
                                     className={`${Styles['wrapper__item']} ${opt.value === value && Styles['wrapper__item--active']}`}
                                     data-value={opt.value}
-                                    onClick={() => onClickOption(opt)}
+                                    onClick={() => selectOption(opt)}
                                     role="option"
                                     aria-selected={opt.value === value}
                                 >

@@ -1,8 +1,8 @@
 import Styles from './ProductCard.module.css';
-import {checkImageUrl, formatAmount} from "@shared/lib";
+import {formatAmount} from "@shared/lib";
 
 import GeoSVG from '../../assets/icons/Geo.svg';
-import {useEffect, useState} from "react";
+import {useProductCard} from './useProductCard';
 
 type TProductCardProps = {
     title: string;
@@ -23,36 +23,15 @@ export const ProductCard = ({
                                 variant = 'vertical',
                                 onClick,
                             }: TProductCardProps) => {
-    const [isImageAvailable, setIsImageAvailable] = useState(false);
-
-    useEffect(() => {
-        let cancelled = false;
-
-
-        setIsImageAvailable(false);
-
-        if (!img) {
-            return;
-        }
-
-        checkImageUrl(img).then((isAvailable) => {
-            if (!cancelled) {
-                setIsImageAvailable(isAvailable);
-            }
-        });
-
-        return () => {
-            cancelled = true;
-        };
-    }, [img]);
+    const {isImageAvailable, className, handleKeyDown} = useProductCard({image: img, variant, onClick});
 
     return (
         <article
-            className={`${Styles['product-card']} ${Styles[`product-card--${variant}`]} ${onClick ? Styles['product-card--clickable'] : ''}`}
+            className={className}
             onClick={onClick}
             role={onClick ? 'link' : undefined}
             tabIndex={onClick ? 0 : undefined}
-            onKeyDown={onClick ? (event) => event.key === 'Enter' && onClick() : undefined}
+            onKeyDown={onClick ? handleKeyDown : undefined}
         >
             <div className={Styles['image-container']}>
                 {isImageAvailable ? (

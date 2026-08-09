@@ -1,6 +1,7 @@
-import {type ChangeEvent, forwardRef} from "react";
+import {forwardRef} from "react";
 import {Label} from "../label";
 import Styles from "./Switcher.module.css";
+import {useSwitcher} from './useSwitcher';
 
 type TError = {
     showError: boolean;
@@ -24,14 +25,7 @@ export const Switcher = forwardRef<HTMLInputElement, TSwitcherProps>(({
                                                                           checked,
                                                                           onChange
                                                                       }, ref) => {
-        const switcherClasses = [
-            Styles['switcher'],
-            error?.showError && Styles['switcher--error']
-        ].filter(Boolean).join(' ');
-
-        const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
-            onChange?.(e.target.checked);
-        };
+        const {switcherClasses, handleChange} = useSwitcher({error, onChange});
 
         return (
             <Label label={label} error={error} disabled={disabled} role={'checkbox'} aria-checked={checked}>

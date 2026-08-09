@@ -1,7 +1,6 @@
-import {type ChangeEvent, forwardRef} from "react";
-import ControlStyles from "../control/Control.module.css";
-import Styles from "./Textarea.module.css";
+import {forwardRef} from "react";
 import {Label} from "../label";
+import {useTextarea} from './useTextarea';
 
 type TError = {
     showError: boolean;
@@ -31,16 +30,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TTextareaProps>(({
                                                                               loading = false,
                                                                               rows = 4,
                                                                           }, ref) => {
-    const textareaClasses = [
-        Styles['textarea'],
-        ControlStyles['text'],
-        (disabled || loading) && Styles['textarea--disabled'],
-        error?.showError && Styles['textarea--error']
-    ].filter(Boolean).join(' ');
-
-    const handleChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
-        onChange?.(e.target.value);
-    };
+    const {textareaClasses, handleChange} = useTextarea({disabled, error, loading, onChange});
 
     return (
         <Label label={label} error={error} disabled={disabled}>
