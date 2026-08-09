@@ -1,22 +1,26 @@
 import { useGetCurrentUserQuery } from '@entities/user';
 import { useProfile } from '@pages/profile/lib';
 import { MainSection } from '@shared/ui/mainSection';
-import { ProfileContent } from '@shared/ui/profileContent';
+import { ProfileContent } from './ProfileContent';
 
 export const AuthenticatedProfile = ({
     user,
-    isPublic = false,
+    isOwner,
     onLogout,
 }: {
     user: NonNullable<ReturnType<typeof useGetCurrentUserQuery>>['data'];
-    isPublic?: boolean;
+    isOwner: boolean;
     onLogout?: () => void;
 }) => {
-    const profile = useProfile(user);
+    const profile = useProfile(user, isOwner);
 
     return (
         <MainSection>
-            <ProfileContent user={user} isPublic={isPublic} viewModel={{ ...profile, onLogout }} />
+            <ProfileContent
+                user={user}
+                isOwner={isOwner}
+                viewModel={{...profile, onLogout}}
+            />
         </MainSection>
     );
 };
