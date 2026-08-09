@@ -7,26 +7,19 @@ import { getAuthToken } from '@shared/api';
 import { Modal } from '@shared/ui/modal';
 
 import Styles from './auth-modal.module.css';
+import { getBackgroundRoute } from '@shared/lib';
 
 export const AuthModal = () => {
     const location = useLocation();
     const navigate = useNavigate();
     const isAuthenticated = Boolean(getAuthToken());
 
-    const getBackgroundRoute = useCallback(() => {
-        const backgroundLocation = location.state?.backgroundLocation;
-
-        return backgroundLocation
-            ? {
-                pathname: backgroundLocation.pathname,
-                search: backgroundLocation.search,
-                hash: backgroundLocation.hash,
-            }
-            : '/';
+    const getBackgroundRouteCallback = useCallback(() => {
+        return getBackgroundRoute(location);
     }, [location.state]);
 
     const closeModal = useCallback(() => {
-        navigate(getBackgroundRoute(), {replace: true});
+        navigate(getBackgroundRouteCallback(), { replace: true });
     }, [getBackgroundRoute, navigate]);
 
     useEffect(() => {
