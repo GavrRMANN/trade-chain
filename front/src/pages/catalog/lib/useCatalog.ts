@@ -48,8 +48,14 @@ export const useCatalog = () => {
     }, [categoryFilters, categoryQuery, setSearchParams]);
 
     useLayoutEffect(() => {
-        setTitle('Вещи в обороте');
-    }, [setTitle]);
+        setTitle(
+            searchQuery
+                ? `Результаты поиска: ${searchQuery}`
+                : categoryQuery
+                  ? 'Объявления категории'
+                  : 'Вещи в обороте',
+        );
+    }, [categoryQuery, searchQuery, setTitle]);
 
     const selectCategory = (categoryId: string) => {
         setSearchParams((currentParams) => {

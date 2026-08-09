@@ -56,7 +56,7 @@ export const ExchangeRoomPage = () => {
     const [comment, setComment] = useState('');
 
     useLayoutEffect(() => {
-        setTitle('');
+        setTitle('Сделка обмена');
     }, [setTitle]);
 
     if (!isAuthenticated) {
@@ -95,7 +95,6 @@ export const ExchangeRoomPage = () => {
             <div className={Styles.page}>
                 <header className={Styles.header}>
                     <div className={Styles['header__meta']}>
-                        <h1 className={Styles['header__title']}>Сделка обмена</h1>
                         <StatusBadge status={chain.status} />
                     </div>
                     <span className={Styles['header__created']}>

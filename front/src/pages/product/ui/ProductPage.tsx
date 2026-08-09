@@ -46,14 +46,13 @@ export const ProductPage = () => {
         isOwner,
         currentUserId,
         isLoading,
-        isError
+        isError,
     } = useProductPageData(productId);
 
     const [isOfferOpen, setIsOfferOpen] = useState(false);
 
     const {
         requestArchive,
-        requestDelete,
         cancelConfirm,
         confirm,
         confirmAction,
@@ -64,17 +63,21 @@ export const ProductPage = () => {
     } = useProductActions(product?.product_id);
 
     useLayoutEffect(() => {
-        setTitle('');
-    }, [setTitle]);
+        if (!product) {
+            setTitle('');
+            return;
+        }
+
+        const price = product.price !== undefined ? formatAmount(product.price) : 'Цена не указана';
+        setTitle(`${product.title} · ${price}`);
+    }, [product, setTitle]);
 
     if (isLoading) {
         return <Preloader />;
     }
 
     if (isError || !product) {
-        return (
-            <PageError message={'Не удалось загрузить товар'}/>
-        );
+        return <PageError message={'Не удалось загрузить товар'} />;
     }
 
     const sellerName = customer?.email || 'Email не указан';
@@ -82,32 +85,46 @@ export const ProductPage = () => {
     const ratingText = hasRating
         ? `${averageRating?.toFixed(1)} · Отзывов: ${reviews.length}`
         : reviews.length
-            ? `Отзывов: ${reviews.length}`
-            : 'Пока без отзывов';
+          ? `Отзывов: ${reviews.length}`
+          : 'Пока без отзывов';
     const statusLabel = statusLabels[product.status];
 
     return (
         <MainSection>
             <div className={Styles.page}>
-                <header className={Styles.topbar}>
-                    <h1>{product.title}</h1>
-                    <p className={Styles.price}>{product.price !== undefined ? formatAmount(product.price) : 'Цена не указана'}</p>
-                </header>
-
                 <div className={Styles.hero}>
                     <div className={Styles.mediaColumn}>
-                        <ProductImage src={product.image} alt={product.title} title={product.title} />
+                        <ProductImage
+                            src={product.image}
+                            alt={product.title}
+                            title={product.title}
+                        />
                         <div className={Styles.details}>
                             <ProductSection title="Характеристики">
                                 <dl className={Styles.characteristics}>
-                                    <div><dt>Статус</dt><dd>{statusLabel}</dd></div>
-                                    <div><dt>Город</dt><dd>{product.location || 'Не указан'}</dd></div>
-                                    <div><dt>Цена</dt><dd className={Styles.strong}>{product.price !== undefined ? formatAmount(product.price) : 'Не указана'}</dd></div>
+                                    <div>
+                                        <dt>Статус</dt>
+                                        <dd>{statusLabel}</dd>
+                                    </div>
+                                    <div>
+                                        <dt>Город</dt>
+                                        <dd>{product.location || 'Не указан'}</dd>
+                                    </div>
+                                    <div>
+                                        <dt>Цена</dt>
+                                        <dd className={Styles.strong}>
+                                            {product.price !== undefined
+                                                ? formatAmount(product.price)
+                                                : 'Не указана'}
+                                        </dd>
+                                    </div>
                                 </dl>
                             </ProductSection>
 
                             <ProductSection title="Описание">
-                                <p className={Styles.description}>{product.description || 'Описание не указано.'}</p>
+                                <p className={Styles.description}>
+                                    {product.description || 'Описание не указано.'}
+                                </p>
                             </ProductSection>
                         </div>
                     </div>
@@ -133,9 +150,6 @@ export const ProductPage = () => {
                                         <Button variant="secondary" onClick={requestArchive}>
                                             Снять с обмена
                                         </Button>
-                                        <Button variant="text" onClick={requestDelete}>
-                                            Удалить
-                                        </Button>
                                     </div>
                                 ) : (
                                     <p className={Styles.muted}>Товар снят с обмена</p>
@@ -159,7 +173,11 @@ export const ProductPage = () => {
 
                         <div className={Styles.reputation}>
                             {hasRating && <Rating value={averageRating ?? 0} />}
-                            <SellerInfo name={sellerName} meta={ratingText} profileId={product.customer_id} />
+                            <SellerInfo
+                                name={sellerName}
+                                meta={ratingText}
+                                profileId={product.customer_id}
+                            />
                         </div>
 
                         {reviews.length > 0 && (
@@ -186,27 +204,48 @@ export const ProductPage = () => {
                                 />
                             ) : wishlist && wishlistOptions.length ? (
                                 <div className={Styles.wishlist}>
-                                    {wishlistOptions.map((option) => <span key={option.category_id}>{option.name}</span>)}
+                                    {wishlistOptions.map((option) => (
+                                        <span key={option.category_id}>{option.name}</span>
+                                    ))}
                                 </div>
                             ) : wishlist ? (
                                 <p className={Styles.muted}>{wishlist.name}</p>
                             ) : (
-                                <p className={Styles.muted}>Владелец пока не указал, что хочет получить.</p>
+                                <p className={Styles.muted}>
+                                    Владелец пока не указал, что хочет получить.
+                                </p>
                             )}
                         </section>
 
                         {!isOwner && (
-                            <section className={Styles.recommendations} aria-label="Подходящие вещи">
+                            <section
+                                className={Styles.recommendations}
+                                aria-label="Подходящие вещи"
+                            >
                                 <h2>Ваши подходящие вещи</h2>
                                 {matchingProducts.length ? (
                                     <>
                                         <div className={Styles.matches}>
                                             {matchingProducts.map((match) => (
-                                                <ProductCard key={match.product_id} title={match.title} img={match.image} price={match.price} location={match.location} onClick={() => navigate(`/product/${match.product_id}`)} />
+                                                <ProductCard
+                                                    key={match.product_id}
+                                                    title={match.title}
+                                                    img={match.image}
+                                                    price={match.price}
+                                                    location={match.location}
+                                                    onClick={() =>
+                                                        navigate(`/product/${match.product_id}`)
+                                                    }
+                                                />
                                             ))}
                                         </div>
                                         {routeChain.length > 1 && (
-                                            <Button variant="text" onClick={() => navigate(`/route?target=${product.product_id}`)}>
+                                            <Button
+                                                variant="text"
+                                                onClick={() =>
+                                                    navigate(`/route?target=${product.product_id}`)
+                                                }
+                                            >
                                                 Построить маршрут обмена
                                             </Button>
                                         )}
@@ -214,7 +253,8 @@ export const ProductPage = () => {
                                 ) : routeChain.length > 1 ? (
                                     <div className={Styles.routePreview}>
                                         <p className={Styles.routeHint}>
-                                            Прямого обмена нет, но можно дойти через промежуточные звенья:
+                                            Прямого обмена нет, но можно дойти через промежуточные
+                                            звенья:
                                         </p>
                                         <ChainRow
                                             nodes={routeChain.map((item, index) => ({
@@ -224,22 +264,32 @@ export const ProductPage = () => {
                                             }))}
                                             onNodeClick={(id) => navigate(`/product/${id}`)}
                                         />
-                                        <Button variant="text" onClick={() => navigate(`/route?target=${product.product_id}`)}>
+                                        <Button
+                                            variant="text"
+                                            onClick={() =>
+                                                navigate(`/route?target=${product.product_id}`)
+                                            }
+                                        >
                                             Открыть маршрут
                                         </Button>
                                     </div>
                                 ) : (
                                     <div className={Styles.emptyMatch}>
                                         <h3>Прямой обмен пока не складывается</h3>
-                                        <p>Ни одна из ваших вещей не подходит под пожелания владельца. Можно предложить что-то другое — владелец решит сам.</p>
-                                        <Button variant="text" onClick={() => setIsOfferOpen(true)}>Предложить другой товар</Button>
+                                        <p>
+                                            Ни одна из ваших вещей не подходит под пожелания
+                                            владельца. Можно предложить что-то другое — владелец
+                                            решит сам.
+                                        </p>
+                                        <Button variant="text" onClick={() => setIsOfferOpen(true)}>
+                                            Предложить другой товар
+                                        </Button>
                                     </div>
                                 )}
                             </section>
                         )}
                     </aside>
                 </div>
-
             </div>
 
             <Modal

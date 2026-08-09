@@ -5,28 +5,6 @@
     width: 100%;
 }
 
-.topbar {
-    display: grid;
-    grid-column: 1 / -1;
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: end;
-    gap: var(--space-8);
-}
-
-.topbar h1 {
-    max-width: 760px;
-    font-size: var(--h1-font-size);
-    line-height: var(--h1-line-height);
-}
-
-.price {
-    color: var(--neutral-primary);
-    font-size: var(--h1-font-size);
-    font-weight: 700;
-    line-height: var(--h1-line-height);
-    white-space: nowrap;
-}
-
 .hero {
     display: grid;
     grid-column: 1 / -1;
@@ -292,21 +270,6 @@
     .page,
     .hero {
         display: block;
-    }
-
-    .topbar {
-        align-items: start;
-        margin-bottom: var(--space-6);
-    }
-
-    .topbar h1 {
-        font-size: var(--h2-font-size);
-        line-height: var(--h2-line-height);
-    }
-
-    .price {
-        font-size: var(--h2-font-size);
-        line-height: var(--h2-line-height);
     }
 
     .productAside {

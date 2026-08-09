@@ -1,12 +1,7 @@
 import { createApi } from '@reduxjs/toolkit/query/react';
 
 import { apiBaseQuery } from '@shared/api';
-import type {
-    TCreateCustomerRequest,
-    TCustomer,
-    TCustomerListRequest,
-    TUpdateCustomerRequest,
-} from '../types';
+import type { TCustomer, TCustomerListRequest, TUpdateCustomerRequest } from '../types';
 
 type TUpdateCustomerArgs = {
     customerId: string;
@@ -26,9 +21,6 @@ export const customerApi = createApi({
         getCustomer: builder.query<TCustomer, string>({
             query: (customerId) => `/customers/${customerId}`,
         }),
-        createCustomer: builder.mutation<TCustomer, TCreateCustomerRequest>({
-            query: (body) => ({ url: '/customers', method: 'POST', body }),
-        }),
         updateCustomer: builder.mutation<TCustomer, TUpdateCustomerArgs>({
             query: ({ customerId, data }) => ({
                 url: `/customers/${customerId}`,
@@ -45,7 +37,6 @@ export const customerApi = createApi({
 export const {
     useGetCustomersQuery,
     useGetCustomerQuery,
-    useCreateCustomerMutation,
     useUpdateCustomerMutation,
     useDeleteCustomerMutation,
 } = customerApi;

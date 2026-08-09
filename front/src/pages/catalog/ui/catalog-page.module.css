@@ -6,11 +6,6 @@
     flex: 0 0 auto;
 }
 
-.title {
-    font-size: var(--h1-font-size);
-    line-height: var(--h1-line-height);
-}
-
 .catalog-page {
     display: grid;
 

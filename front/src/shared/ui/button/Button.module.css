@@ -20,7 +20,9 @@
 
     cursor: pointer;
 
-    transition: color background-color var(--animation-normal) ease-in;
+    transition:
+        color var(--animation-fast) ease-in,
+        background-color var(--animation-fast) ease-in;
 }
 
 .button[type='submit'] {
@@ -149,7 +151,8 @@
 
 }
 
-.button--default + .button--active {
+.button--default.button--active {
+    color: var(--accent-primary);
     background: var(--bg-disabled);
 }
 

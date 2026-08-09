@@ -23,9 +23,20 @@ export type TExchangeRow = {
     chain: TChain;
     fromProduct?: TProduct;
     toProduct?: TProduct;
+    goalProduct?: TProduct;
 };
 
-export type TExchangeTab = 'incoming' | 'outgoing' | 'completed';
+export type TExchangeRouteGroup = {
+    goalId: string;
+    goalProduct?: TProduct;
+    sourceProduct?: TProduct;
+    offersCount: number;
+    openOffersCount: number;
+    completedOffersCount: number;
+    updatedAt: string;
+};
+
+export type TExchangeTab = 'active' | 'incoming' | 'outgoing' | 'completed';
 
 /**
  * Управляет данными, фильтрацией по вкладкам и навигацией страницы «Мои обмены».
@@ -70,10 +81,55 @@ export const useExchanges = () => {
             chain,
             fromProduct: productsById.get(chain.from_product_id),
             toProduct: productsById.get(chain.to_product_id),
+            goalProduct: productsById.get(chain.exchange_goal_id ?? chain.to_product_id),
         });
     }, [productsById]);
 
-    const {incoming, outgoing, completed} = useMemo(() => {
+    const routeGroups = useMemo<TExchangeRouteGroup[]>(() => {
+        const groups = new Map<string, TExchangeRouteGroup>();
+
+        for (const chain of chains) {
+            if (chain.initiator_id !== currentUserId) {
+                continue;
+            }
+
+            const goalId = chain.exchange_goal_id ?? chain.to_product_id;
+            const current = groups.get(goalId);
+            const isOpen = !FINAL_STATUSES.has(chain.status);
+            const isCompleted = chain.status === 'completed';
+
+            if (!current) {
+                groups.set(goalId, {
+                    goalId,
+                    goalProduct: productsById.get(goalId),
+                    sourceProduct: productsById.get(chain.route_step_id ?? chain.from_product_id),
+                    offersCount: 1,
+                    openOffersCount: isOpen ? 1 : 0,
+                    completedOffersCount: isCompleted ? 1 : 0,
+                    updatedAt: chain.updated_at,
+                });
+                continue;
+            }
+
+            current.offersCount += 1;
+            current.openOffersCount += isOpen ? 1 : 0;
+            current.completedOffersCount += isCompleted ? 1 : 0;
+
+            if (chain.updated_at > current.updatedAt) {
+                current.updatedAt = chain.updated_at;
+                current.sourceProduct = productsById.get(
+                    chain.route_step_id ?? chain.from_product_id,
+                );
+            }
+        }
+
+        return [...groups.values()].sort((left, right) =>
+            right.updatedAt.localeCompare(left.updatedAt),
+        );
+    }, [chains, currentUserId, productsById]);
+
+    const {active, incoming, outgoing, completed} = useMemo(() => {
+        const active: TExchangeRow[] = [];
         const inc: TExchangeRow[] = [];
         const out: TExchangeRow[] = [];
         const done: TExchangeRow[] = [];
@@ -84,6 +140,10 @@ export const useExchanges = () => {
                 continue;
             }
 
+            if (chain.status === 'active') {
+                active.push(buildRow(chain));
+            }
+
             if (chain.initiator_id === currentUserId) {
                 out.push(buildRow(chain));
             } else {
@@ -91,7 +151,7 @@ export const useExchanges = () => {
             }
         }
 
-        return {incoming: inc, outgoing: out, completed: done};
+        return {active, incoming: inc, outgoing: out, completed: done};
     }, [chains, currentUserId, buildRow]);
 
     useLayoutEffect(() => {
@@ -102,15 +162,26 @@ export const useExchanges = () => {
         navigate(`/exchanges/${chainId}`);
     };
 
+    const openRoute = (goalId: string, sourceId?: string) => {
+        const params = new URLSearchParams({target: goalId});
+        if (sourceId) {
+            params.set('from', sourceId);
+        }
+        navigate(`/route?${params.toString()}`);
+    };
+
     return {
         isAuthenticated,
         currentUserId,
+        active,
         incoming,
         outgoing,
         completed,
+        routeGroups,
         isLoading: isChainsLoading,
         isFetching: isChainsFetching,
         isError: isChainsError,
         openExchange,
+        openRoute,
     };
 };

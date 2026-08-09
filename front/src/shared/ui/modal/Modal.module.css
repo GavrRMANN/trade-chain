@@ -29,6 +29,17 @@
     box-shadow: 0 8px 16px 0 var(--bg-shadows);
 }
 
+.modal--large {
+    width: min(1120px, calc(100vw - 64px));
+    max-height: calc(100vh - 48px);
+}
+
+.modal--large .modal__container {
+    height: calc(100vh - 144px);
+    max-height: calc(100vh - 144px);
+    overflow: hidden;
+}
+
 .modal__title {
     display: flex;
     justify-content: space-between;
@@ -98,5 +109,25 @@
         flex-direction: column;
         align-items: stretch;
         gap: 8px;
+    }
+
+    .modal--large {
+        width: 100vw;
+        height: 100dvh;
+        max-height: none;
+        padding: var(--space-4);
+        border-radius: 0;
+    }
+
+    .modal--large .modal__title {
+        flex: 0 0 auto;
+    }
+
+    .modal--large .modal__container {
+        flex: 1 1 auto;
+        min-height: 0;
+        height: auto;
+        max-height: none;
+        overflow: hidden;
     }
 }

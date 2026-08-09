@@ -1,10 +1,9 @@
-import {createApi} from '@reduxjs/toolkit/query/react';
-import {apiBaseQuery} from '@shared/api';
+import { createApi } from '@reduxjs/toolkit/query/react';
+import { apiBaseQuery } from '@shared/api';
 import type {
     TCreateProductRequest,
     TProduct,
     TProductListRequest,
-    TProductRecommendationsResponse,
     TUpdateProductRequest,
 } from '../types';
 
@@ -20,33 +19,24 @@ export const productApi = createApi({
         getProducts: builder.query<TProduct[], TProductListRequest | void>({
             query: (params) => ({
                 url: '/products',
-                ...(params ? {params} : {}),
+                ...(params ? { params } : {}),
             }),
         }),
         getProductsByCustomer: builder.query<TProduct[], string>({
             query: (customerId) => `/products/by-customer/${customerId}`,
         }),
-        searchProducts: builder.query<TProduct[], { q: string; category_id?: string }>({
-            query: (params) => ({ url: '/products/search', params }),
-        }),
         getProduct: builder.query<TProduct, string>({
             query: (productId) => `/products/${productId}`,
         }),
-        getRecommendations: builder.query<TProductRecommendationsResponse, string>({
-            query: (productId) => `/products/${productId}/recommendations`,
-        }),
         createProduct: builder.mutation<TProduct, TCreateProductRequest>({
-            query: (body) => ({url: '/products', method: 'POST', body}),
+            query: (body) => ({ url: '/products', method: 'POST', body }),
         }),
         updateProduct: builder.mutation<TProduct, TUpdateProductArgs>({
-            query: ({productId, data}) => ({
+            query: ({ productId, data }) => ({
                 url: `/products/${productId}`,
                 method: 'PATCH',
                 body: data,
             }),
-        }),
-        deleteProduct: builder.mutation<void, string>({
-            query: (productId) => ({ url: `/products/${productId}`, method: 'DELETE' }),
         }),
     }),
 });
@@ -56,10 +46,6 @@ export const {
     useGetProductsByCustomerQuery,
     useLazyGetProductsQuery,
     useGetProductQuery,
-    useGetRecommendationsQuery,
-    useLazyGetRecommendationsQuery,
-    useSearchProductsQuery,
     useCreateProductMutation,
     useUpdateProductMutation,
-    useDeleteProductMutation,
 } = productApi;

@@ -1,8 +1,10 @@
-import type {TChain} from '@entities/chain';
-import type {TProduct} from '@entities/product';
-import {ProductImage} from '@shared/ui/productImage';
-import {StatusBadge} from '@shared/ui/statusBadge';
-import {formatDate} from '@shared/lib';
+import type { TChain } from '@entities/chain';
+import { useGetCustomerQuery } from '@entities/customer';
+import type { TProduct } from '@entities/product';
+import { ProductImage } from '@shared/ui/productImage';
+import { StatusBadge } from '@shared/ui/statusBadge';
+import { ExchangeDirection } from '@shared/ui/exchangeDirection';
+import { formatAmount, formatDate } from '@shared/lib';
 
 import Styles from './ExchangeRow.module.css';
 
@@ -10,6 +12,7 @@ export type TExchangeRowData = {
     chain: TChain;
     fromProduct?: TProduct;
     toProduct?: TProduct;
+    goalProduct?: TProduct;
 };
 
 type TExchangeRowProps = {
@@ -18,34 +21,53 @@ type TExchangeRowProps = {
     className?: string;
 };
 
-const Thumb = ({product}: {product?: TProduct}) => {
-    if (!product) {
-        return (
-            <div className={Styles['exchange-row__product']}>
-                <ProductImage title="?" alt="Товар недоступен"/>
-                <div className={Styles['exchange-row__product-info']}>
-                    <p className={Styles['exchange-row__product-fallback']}>Товар недоступен</p>
-                </div>
-            </div>
-        );
-    }
+type TProductCardProps = {
+    product?: TProduct;
+    label: string;
+    sellerEmail?: string;
+    tone: 'target' | 'source';
+};
+
+const ProductCard = ({ product, label, sellerEmail, tone }: TProductCardProps) => {
+    const title = product?.title ?? 'Товар недоступен';
+    const price = product?.price === undefined ? 'Цена не указана' : formatAmount(product.price);
+    const location = product?.location ?? 'Город не указан';
+    const classes = [
+        Styles['exchange-row__product'],
+        Styles[`exchange-row__product--${tone}`],
+    ].join(' ');
 
     return (
-        <div className={Styles['exchange-row__product']}>
-            <ProductImage src={product.image} alt={product.title} title={product.title}/>
+        <div className={classes}>
+            <p className={Styles['exchange-row__product-label']}>{label}</p>
             <div className={Styles['exchange-row__product-info']}>
-                <p className={Styles['exchange-row__product-title']}>{product.title}</p>
+                <div className={Styles['exchange-row__product-media']}>
+                    <ProductImage src={product?.image} alt={title} title={title} />
+                </div>
+                <div className={Styles['exchange-row__product-details']}>
+                    <p className={Styles['exchange-row__product-title']}>{title}</p>
+                    {sellerEmail && (
+                        <p className={Styles['exchange-row__seller']}>Продавец: {sellerEmail}</p>
+                    )}
+                </div>
+                <div className={Styles['exchange-row__product-meta']}>
+                    <span className={Styles['exchange-row__product-price']}>{price}</span>
+                    <span>{location}</span>
+                </div>
             </div>
         </div>
     );
 };
 
 /**
- * Компактная строка обмена: товар → товар + статус + дата.
+ * Карточка обмена с товарами, статусом и датой.
  * Используется в «Мои обмены», профиле и центре уведомлений.
  */
-export const ExchangeRow = ({row, onOpen, className}: TExchangeRowProps) => {
-    const {chain, fromProduct, toProduct} = row;
+export const ExchangeRow = ({ row, onOpen, className }: TExchangeRowProps) => {
+    const { chain, fromProduct, toProduct, goalProduct } = row;
+    const { data: toProductSeller } = useGetCustomerQuery(toProduct?.customer_id ?? '', {
+        skip: !toProduct?.customer_id,
+    });
     const classes = [Styles['exchange-row'], className].filter(Boolean).join(' ');
 
     const interactive = Boolean(onOpen);
@@ -68,17 +90,29 @@ export const ExchangeRow = ({row, onOpen, className}: TExchangeRowProps) => {
             onClick={handleOpen}
             onKeyDown={handleKeyDown}
         >
-            <div className={Styles['exchange-row__products']}>
-                <Thumb product={fromProduct}/>
-                <span className={Styles['exchange-row__arrow']} aria-hidden="true">→</span>
-                <Thumb product={toProduct}/>
-            </div>
             <div className={Styles['exchange-row__meta']}>
-                <StatusBadge status={chain.status}/>
-                <span className={Styles['exchange-row__date']}>
-                    {formatDate(chain.created_at)}
-                </span>
+                <div className={Styles['exchange-row__meta-main']}>
+                    <StatusBadge status={chain.status} />
+                    <span className={Styles['exchange-row__chain-label']}>
+                        <span>Цепочка</span>
+                        {goalProduct?.title ?? 'Цель недоступна'}
+                    </span>
+                </div>
+                <span className={Styles['exchange-row__date']}>{formatDate(chain.created_at)}</span>
             </div>
+            <div className={Styles['exchange-row__products']}>
+                <ProductCard
+                    product={toProduct}
+                    label="Получаю"
+                    sellerEmail={toProductSeller?.email}
+                    tone="target"
+                />
+                <div className={Styles['exchange-row__connector']}>
+                    <ExchangeDirection />
+                </div>
+                <ProductCard product={fromProduct} label="Отдаю" tone="source" />
+            </div>
+            {chain.message && <p className={Styles['exchange-row__message']}>{chain.message}</p>}
         </div>
     );
 };

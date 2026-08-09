@@ -11,8 +11,6 @@ export const CatalogPage = () => {
     const {
         categoryFilters,
         selectedCategory,
-        searchQuery,
-        categoryQuery,
         products,
         isLoading,
         isFetching,
@@ -45,13 +43,6 @@ export const CatalogPage = () => {
                     />
                 ))}
             </div>
-            <h1 className={Styles.title}>
-                {searchQuery
-                    ? `Результаты поиска: ${searchQuery}`
-                    : categoryQuery
-                      ? 'Объявления категории'
-                      : 'Вещи в обороте'}
-            </h1>
             <div className={Styles['catalog-page']}>
                 {(isLoading || isFetching) && (
                     <div className={Styles['catalog-state']}>
