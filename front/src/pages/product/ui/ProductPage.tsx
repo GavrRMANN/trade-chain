@@ -1,132 +1,263 @@
-import { useLayoutEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import {useLayoutEffect, useState} from 'react';
+import {useNavigate, useParams} from 'react-router-dom';
 
-import { usePageTitle } from '@app/providers/pageTitle';
-import { ProductSection } from '@shared/ui/productSection';
-import { ProductImage } from '@shared/ui/productImage';
-import { SellerInfo } from '@shared/ui/sellerInfo';
-import { MainSection } from '@shared/ui/mainSection';
-import { Preloader } from '@shared/ui/preloader';
-import { ProductCard } from '@shared/ui/productCard';
-import { Button } from '@shared/ui/button';
-import { formatAmount } from '@shared/lib';
-import { useProductPageData } from '../lib';
+import {usePageTitle} from '@app/providers/pageTitle';
+import {OfferExchangeModal} from '@features/exchange';
+import {WishlistEditor} from '@features/wishlist';
+import {Button} from '@shared/ui/button';
+import {ChainRow} from '@shared/ui/chainRow';
+import {ExchangeRow} from '@shared/ui/exchangeRow';
+import {MainSection} from '@shared/ui/mainSection';
+import {Modal} from '@shared/ui/modal';
+import {PageError} from '@shared/ui/pageError';
+import {Preloader} from '@shared/ui/preloader';
+import {ProductCard} from '@shared/ui/productCard';
+import {ProductImage} from '@shared/ui/productImage';
+import {Rating} from '@shared/ui/rating';
+import {ReviewCard} from '@shared/ui/reviewCard';
+import {SellerInfo} from '@shared/ui/sellerInfo';
+import {formatAmount, formatDate, useOpenModalRoute} from '@shared/lib';
+import {useProductActions, useProductPageData} from '../lib';
 
 import Styles from './product-page.module.css';
-import { PageError } from '@shared/ui/pageError';
 
 const statusLabels = {
-    active: 'Товар активен',
-    reserved: 'Товар зарезервирован',
-    exchanged: 'Товар обменян',
-    archived: 'Товар в архиве',
+    active: 'Активен',
+    reserved: 'Зарезервирован',
+    exchanged: 'Обменян',
+    archived: 'В архиве',
 } as const;
 
 export const ProductPage = () => {
-    const { productId } = useParams<{ productId: string }>();
+    const {productId} = useParams<{productId: string}>();
     const navigate = useNavigate();
-    const { setTitle } = usePageTitle();
+    const openModalRoute = useOpenModalRoute();
+    const {setTitle} = usePageTitle();
+    const [isOfferOpen, setIsOfferOpen] = useState(false);
 
     const {
         product,
         customer,
+        category,
         wishlist,
         wishlistOptions,
         matchingProducts,
+        routeChain,
         reviews,
+        averageRating,
+        incomingOffers,
+        productOffers,
         isOwner,
+        isAuthenticated,
+        currentUserId,
         isLoading,
-        isError
+        isError,
     } = useProductPageData(productId);
+
+    const {
+        status: actionStatus,
+        requestArchive,
+        cancelConfirm,
+        confirm,
+        confirmAction,
+        confirmText,
+        confirmLabel,
+        isLoading: isActionLoading,
+        error: actionError,
+    } = useProductActions(product?.product_id);
 
     useLayoutEffect(() => {
         setTitle('');
     }, [setTitle]);
 
-    if (isLoading) {
-        return <Preloader />;
-    }
+    if (isLoading) return <Preloader />;
+    if (isError || !product) return <PageError message="Не удалось загрузить товар" />;
 
-    if (isError || !product) {
-        return (
-            <PageError message={'Не удалось загрузить товар'}/>
-        );
-    }
-
+    const status = actionStatus ?? product.status;
     const sellerName = customer?.email || 'Email не указан';
-    const ratingText = reviews.length ? `Отзывов: ${reviews.length}` : 'Пока без отзывов';
-    const statusLabel = statusLabels[product.status];
+    const hasRating = typeof averageRating === 'number' && averageRating > 0;
+    const ratingText = hasRating
+        ? `${averageRating.toFixed(1)} · Отзывов: ${reviews.length}`
+        : reviews.length
+            ? `Отзывов: ${reviews.length}`
+            : 'Пока без отзывов';
+    const canOffer = status === 'active' && !isOwner && isAuthenticated;
+
+    const openOffer = () => {
+        if (!isAuthenticated) {
+            openModalRoute('auth');
+            return;
+        }
+        if (status === 'active') setIsOfferOpen(true);
+    };
 
     return (
         <MainSection>
-            <div className={Styles.page}>
-                <header className={Styles.topbar}>
+            <article className={Styles['product-page']}>
+                <header className={Styles['product-page__header']}>
                     <h1>{product.title}</h1>
-                    <p className={Styles.price}>{product.price !== undefined ? formatAmount(product.price) : 'Цена не указана'}</p>
+                    <div className={Styles['product-page__meta']}>
+                        <strong className={Styles['product-page__price']}>
+                            {product.price !== undefined ? formatAmount(product.price) : 'Цена не указана'}
+                        </strong>
+                        <span className={Styles['product-page__status']}>{statusLabels[status]}</span>
+                        {product.location && <span>{product.location}</span>}
+                    </div>
                 </header>
 
-                <div className={Styles.hero}>
-                    <div className={Styles.mediaColumn}>
-                        <ProductImage src={product.image} alt={product.title} title={product.title} />
-                        <div className={Styles.details}>
-                            <ProductSection title="Характеристики">
-                                <dl className={Styles.characteristics}>
-                                    <div><dt>Статус</dt><dd>{statusLabel}</dd></div>
-                                    <div><dt>Город</dt><dd>{product.location || 'Не указан'}</dd></div>
-                                    <div><dt>Цена</dt><dd className={Styles.strong}>{product.price !== undefined ? formatAmount(product.price) : 'Не указана'}</dd></div>
+                <div className={Styles['product-page__hero']}>
+                    <div className={Styles['product-page__main']}>
+                        <div className={Styles['product-page__overview']}>
+                            <div className={Styles['product-page__media']}>
+                                <ProductImage src={product.image} alt={product.title} title={product.title} />
+                            </div>
+                            <div className={Styles['product-page__details']}>
+                                <section className={Styles['product-page__section']}>
+                                    <h2>Описание</h2>
+                                    <p>{product.description || 'Владелец пока не добавил описание.'}</p>
+                                </section>
+                                <section className={Styles['product-page__section']}>
+                                    <h2>О товаре</h2>
+                                    <dl className={Styles['product-page__facts']}>
+                                        <div><dt>Категория</dt><dd>{category?.name || 'Не указана'}</dd></div>
+                                        <div><dt>Статус</dt><dd>{statusLabels[status]}</dd></div>
+                                        <div><dt>Город</dt><dd>{product.location || 'Не указан'}</dd></div>
+                                    </dl>
+                                </section>
+                                <dl className={Styles['product-page__dates']}>
+                                    <div><dt>Размещено</dt><dd>{formatDate(product.created_at, 'long')}</dd></div>
+                                    <div><dt>Обновлено</dt><dd>{formatDate(product.updated_at, 'long')}</dd></div>
                                 </dl>
-                            </ProductSection>
-
-                            <ProductSection title="Описание">
-                                <p className={Styles.description}>{product.description || 'Описание не указано.'}</p>
-                            </ProductSection>
+                            </div>
                         </div>
                     </div>
-                    <aside className={Styles.productAside}>
-                        {isOwner ? (
-                            <Button
-                                variant="secondary"
-                                onClick={() => navigate(`/product/${product.product_id}/edit`)}
-                            >
-                                Редактировать
-                            </Button>
-                        ) : (
-                            <div className={Styles.status}>{statusLabel}</div>
-                        )}
-                        <SellerInfo name={sellerName} meta={ratingText} profileId={product.customer_id} />
-                        <section className={Styles.exchange}>
-                            <h2>Что хочет взамен</h2>
-                            {wishlist && wishlistOptions.length ? (
-                                <div className={Styles.wishlist}>
-                                    {wishlistOptions.map((option) => <span key={option.category_id}>{option.name}</span>)}
+
+                    <aside className={Styles['product-page__aside']}>
+                        <section className={Styles['product-page__panel']}>
+                            <h2>{isOwner ? 'Управление объявлением' : 'Обмен'}</h2>
+                            {isOwner ? (
+                                <div className={Styles['product-page__actions']}>
+                                    <Button variant="secondary" onClick={() => navigate(`/product/${product.product_id}/edit`)}>
+                                        Редактировать
+                                    </Button>
+                                    {status === 'active' ? (
+                                        <Button variant="secondary" onClick={requestArchive}>Снять с обмена</Button>
+                                    ) : (
+                                        <p className={Styles['product-page__muted']}>Товар больше не участвует в новых обменах.</p>
+                                    )}
+                                    <div className={Styles['product-page__offer-summary']}>
+                                        <span>Активных предложений</span>
+                                        <strong>{incomingOffers}</strong>
+                                        <Button variant="text" onClick={() => navigate('/exchanges')}>Смотреть предложения</Button>
+                                    </div>
                                 </div>
-                            ) : wishlist ? (
-                                <p className={Styles.muted}>{wishlist.name}</p>
                             ) : (
-                                <p className={Styles.muted}>Владелец пока не указал, что хочет получить.</p>
+                                <div className={Styles['product-page__actions']}>
+                                    <Button onClick={openOffer} disabled={isAuthenticated && !canOffer}>
+                                        {isAuthenticated ? 'Предложить обмен' : 'Войти, чтобы предложить обмен'}
+                                    </Button>
+                                    {status !== 'active' && (
+                                        <p className={Styles['product-page__muted']}>Владелец временно не принимает новые предложения.</p>
+                                    )}
+                                </div>
                             )}
                         </section>
 
-                        <section className={Styles.recommendations} aria-label="Подходящие вещи">
-                            <h2>Ваши подходящие вещи</h2>
-                            {matchingProducts.length ? (
-                                <div className={Styles.matches}>
-                                    {matchingProducts.map((match) => (
-                                        <ProductCard key={match.product_id} title={match.title} img={match.image} price={match.price} location={match.location} />
-                                    ))}
+                        <section className={Styles['product-page__panel']}>
+                            <h2>{isOwner ? 'Ваш профиль' : 'Продавец'}</h2>
+                            {hasRating && <Rating value={averageRating ?? 0} />}
+                            <SellerInfo name={sellerName} meta={ratingText} profileId={product.customer_id} />
+                        </section>
+
+                        <section className={Styles['product-page__panel']}>
+                            <h2>{isOwner ? 'Хочу взамен' : 'Что хочет взамен'}</h2>
+                            {isOwner ? (
+                                <WishlistEditor productId={product.product_id} productTitle={product.title} wishlist={wishlist} options={wishlistOptions} />
+                            ) : wishlistOptions.length ? (
+                                <div className={Styles['product-page__wishlist']}>
+                                    {wishlistOptions.map((option) => <span key={option.category_id}>{option.name}</span>)}
                                 </div>
                             ) : (
-                                <div className={Styles.emptyMatch}>
-                                    <h3>Прямой обмен пока не складывается</h3>
-                                    <p>Ни одна из ваших вещей не подходит под пожелания владельца. Можно предложить что-то другое — владелец решит сам, или построить маршрут через промежуточные обмены.</p>
-                                    <Button variant="text" onClick={() => navigate('/')}>Открыть маршрут</Button>
-                                </div>
+                                <p className={Styles['product-page__muted']}>Владелец не указал желаемые категории — можно предложить любой свой товар.</p>
                             )}
                         </section>
+
+                        {!isOwner && isAuthenticated && (
+                            <section className={Styles['product-page__panel']}>
+                                <h2>Ваши варианты обмена</h2>
+                                {matchingProducts.length ? (
+                                    <>
+                                        <p className={Styles['product-page__muted']}>Эти вещи совпадают с пожеланиями владельца.</p>
+                                        <div className={Styles['product-page__matches']}>
+                                            {matchingProducts.slice(0, 2).map((match) => (
+                                                <ProductCard key={match.product_id} title={match.title} img={match.image} price={match.price} location={match.location} onClick={openOffer} />
+                                            ))}
+                                        </div>
+                                    </>
+                                ) : (
+                                    <p className={Styles['product-page__muted']}>Прямого совпадения нет, но владелец может принять другое предложение.</p>
+                                )}
+                                {routeChain.length > 1 && (
+                                    <div className={Styles['product-page__route']}>
+                                        <h3>Маршрут через цепочку</h3>
+                                        <ChainRow
+                                            nodes={routeChain.map((item, index) => ({product: item, isCurrent: index === 0, isGoal: index === routeChain.length - 1}))}
+                                            onNodeClick={(id) => navigate(`/product/${id}`)}
+                                        />
+                                        <Button variant="text" onClick={() => navigate(`/route?target=${product.product_id}`)}>Открыть маршрут обмена</Button>
+                                    </div>
+                                )}
+                            </section>
+                        )}
                     </aside>
                 </div>
 
-            </div>
+                {isOwner && (
+                    <section className={Styles['product-page__wide-section']}>
+                        <div className={Styles['product-page__section-heading']}>
+                            <div><h2>Предложения по этому товару</h2><p>Все цепочки, в которых ваш товар указан целью обмена.</p></div>
+                            <Button variant="text" onClick={() => navigate('/exchanges')}>Все предложения</Button>
+                        </div>
+                        {productOffers.length ? (
+                            <div className={Styles['product-page__offers']}>
+                                {productOffers.slice(0, 3).map((row) => (
+                                    <ExchangeRow key={row.chain.chain_id} row={row} onOpen={(chainId) => navigate(`/exchanges/${chainId}`)} />
+                                ))}
+                            </div>
+                        ) : <div className={Styles['product-page__empty']}>Пока никто не предложил обмен на этот товар.</div>}
+                    </section>
+                )}
+
+                <section className={Styles['product-page__wide-section']}>
+                    <div className={Styles['product-page__section-heading']}>
+                        <div><h2>Отзывы о продавце</h2><p>{ratingText}</p></div>
+                    </div>
+                    {reviews.length ? (
+                        <ul className={Styles['product-page__reviews']}>
+                            {reviews.slice(0, 4).map((review) => <li key={review.review_id}><ReviewCard review={review} /></li>)}
+                        </ul>
+                    ) : <div className={Styles['product-page__empty']}>У продавца пока нет отзывов.</div>}
+                </section>
+            </article>
+
+            <OfferExchangeModal
+                isOpen={isOfferOpen && canOffer}
+                onClose={() => setIsOfferOpen(false)}
+                onSuccess={(chainId) => navigate(`/exchanges/${chainId}`)}
+                targetProductId={product.product_id}
+                currentCustomerId={currentUserId}
+            />
+
+            <Modal title="Подтвердите действие" isOpen={confirmAction} onClose={cancelConfirm}>
+                <div className={Styles['product-page__confirm']}>
+                    <p>{confirmText}</p>
+                    {actionError && <p className={Styles['product-page__error']}>{actionError}</p>}
+                    <div className={Styles['product-page__confirm-actions']}>
+                        <Button loading={isActionLoading} disabled={isActionLoading} onClick={confirm}>{confirmLabel}</Button>
+                        <Button variant="text" onClick={cancelConfirm} disabled={isActionLoading}>Отмена</Button>
+                    </div>
+                </div>
+            </Modal>
         </MainSection>
     );
 };

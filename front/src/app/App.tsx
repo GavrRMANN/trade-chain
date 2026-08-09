@@ -11,7 +11,7 @@ import { useIsMobile } from '@shared/lib';
 const { Content } = Layout;
 
 export const App = () => {
-    const { title } = usePageTitle();
+    const { title, subTitle } = usePageTitle();
     const isMobile = useIsMobile();
 
     return (
@@ -19,7 +19,7 @@ export const App = () => {
             <HeaderMenu />
             <Layout>
                 <Content className={Styles['content']}>
-                    <PageTitle title={title} />
+                    <PageTitle title={title} subTitle={subTitle} />
                     <Outlet />
                 </Content>
             </Layout>

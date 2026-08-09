@@ -1,5 +1,5 @@
-import {createApi} from '@reduxjs/toolkit/query/react';
-import {apiBaseQuery} from '@shared/api';
+import { createApi } from '@reduxjs/toolkit/query/react';
+import { apiBaseQuery } from '@shared/api';
 import type {
     TCreateProductRequest,
     TProduct,
@@ -19,30 +19,30 @@ export const productApi = createApi({
         getProducts: builder.query<TProduct[], TProductListRequest | void>({
             query: (params) => ({
                 url: '/products',
-                ...(params ? {params} : {}),
+                ...(params ? { params } : {}),
             }),
         }),
         getProductsByCustomer: builder.query<TProduct[], string>({
             query: (customerId) => `/products/by-customer/${customerId}`,
         }),
-        searchProducts: builder.query<TProduct[], { q: string; category_id?: string }>({
-            query: (params) => ({ url: '/products/search', params }),
-        }),
         getProduct: builder.query<TProduct, string>({
             query: (productId) => `/products/${productId}`,
         }),
         createProduct: builder.mutation<TProduct, TCreateProductRequest>({
-            query: (body) => ({url: '/products', method: 'POST', body}),
+            query: (body) => ({ url: '/products', method: 'POST', body }),
         }),
         updateProduct: builder.mutation<TProduct, TUpdateProductArgs>({
-            query: ({productId, data}) => ({
+            query: ({ productId, data }) => ({
                 url: `/products/${productId}`,
                 method: 'PATCH',
                 body: data,
             }),
         }),
-        deleteProduct: builder.mutation<void, string>({
-            query: (productId) => ({ url: `/products/${productId}`, method: 'DELETE' }),
+        archiveProduct: builder.mutation<void, string>({
+            query: (productId) => ({
+                url: `/products/${productId}/archive`,
+                method: 'POST',
+            }),
         }),
     }),
 });
@@ -52,8 +52,7 @@ export const {
     useGetProductsByCustomerQuery,
     useLazyGetProductsQuery,
     useGetProductQuery,
-    useSearchProductsQuery,
     useCreateProductMutation,
     useUpdateProductMutation,
-    useDeleteProductMutation,
+    useArchiveProductMutation,
 } = productApi;

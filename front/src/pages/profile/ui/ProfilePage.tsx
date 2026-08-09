@@ -26,8 +26,11 @@ export const ProfilePage = () => {
     const { data: user, isLoading: isUserLoading } = useGetCurrentUserQuery(undefined, {
         skip: !isAuthenticated,
     });
-    const publicUserQuery = useGetCustomerQuery(customerId ?? '', { skip: !customerId });
-    const profileUser = customerId ? publicUserQuery.data : user;
+    const isOwner = !customerId || user?.customer_id === customerId;
+    const publicUserQuery = useGetCustomerQuery(customerId ?? '', {
+        skip: !customerId || isOwner,
+    });
+    const profileUser = isOwner ? user : publicUserQuery.data;
 
     useLayoutEffect(() => setTitle('Профиль'), [setTitle]);
 
@@ -51,7 +54,7 @@ export const ProfilePage = () => {
         );
     }
 
-    if ((customerId && publicUserQuery.isLoading) || (!customerId && isUserLoading)) {
+    if ((customerId && !isOwner && publicUserQuery.isLoading) || (isOwner && isUserLoading)) {
         return <Preloader message={'Загружаем профиль…'} />;
     }
 
@@ -61,8 +64,8 @@ export const ProfilePage = () => {
     return (
         <AuthenticatedProfile
             user={profileUser}
-            isPublic={Boolean(customerId)}
-            onLogout={customerId ? undefined : () => dispatch(logout())}
+            isOwner={isOwner}
+            onLogout={isOwner ? () => dispatch(logout()) : undefined}
         />
     );
 };

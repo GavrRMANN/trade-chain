@@ -10,6 +10,7 @@ import { Transition } from 'react-transition-group';
 type TModalProps = {
     title?: string;
     isOpen: boolean;
+    size?: 'default' | 'large';
     onOpen?: () => void;
     onClose?: () => void;
     children?: ReactNode;
@@ -17,7 +18,7 @@ type TModalProps = {
 };
 
 export const Modal = forwardRef<HTMLDivElement, TModalProps>(
-    ({ title = '', isOpen, onOpen, onClose, children, footer }, ref) => {
+    ({ title = '', isOpen, size = 'default', onOpen, onClose, children, footer }, ref) => {
         const modalRoot = document.getElementById('modal-root');
         const overlayRef = useRef<HTMLDivElement>(null);
 
@@ -72,7 +73,7 @@ export const Modal = forwardRef<HTMLDivElement, TModalProps>(
                     >
                         <div
                             ref={ref}
-                            className={Styles['modal']}
+                            className={`${Styles['modal']} ${Styles[`modal--${size}`]}`}
                             role="dialog"
                             aria-modal="true"
                             aria-labelledby="modal-title"

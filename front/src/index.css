@@ -6,6 +6,7 @@
 
 :root {
     --header-height: 75px;
+    --mobile-nav-height: 0px;
     --max-width: 1200px;
 
     /* Accent */
@@ -13,6 +14,7 @@
     --accent-secondary: #0099f7;
     --accent-success: #10b981;
     --accent-danger: #ef4444;
+    --accent-rating: #ffb800;
 
     /* Text */
     --neutral-primary: #1f2937;
@@ -175,6 +177,7 @@ main {
 @media (max-width: 768px) {
     :root {
         --header-height: 50px;
+        --mobile-nav-height: 72px;
     }
 
     h3 {

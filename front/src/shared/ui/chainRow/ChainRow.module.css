@@ -1,0 +1,142 @@
+.chain-row {
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+
+    gap: var(--space-1-5);
+
+    width: 100%;
+
+    overflow-x: auto;
+    overflow-y: hidden;
+
+    /* Скрываем полосу прокрутки, но оставляем возможность свайпа. */
+    scrollbar-width: thin;
+}
+
+.chain-row__group {
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+    flex: 0 0 auto;
+
+    gap: var(--space-1-5);
+}
+
+.chain-node {
+    flex: 0 0 180px;
+
+    display: flex;
+    flex-direction: column;
+
+    gap: var(--space-2);
+
+    padding: var(--space-2);
+
+    border: 1px solid var(--bg-shadows);
+    border-radius: var(--radius-md);
+
+    background: var(--bg-secondary);
+
+    transition: border-color var(--animation-normal) ease-in,
+                background var(--animation-normal) ease-in,
+                box-shadow var(--animation-normal) ease-in;
+}
+
+.chain-node--clickable {
+    cursor: pointer;
+}
+
+.chain-node--clickable:hover {
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 1px var(--accent-primary);
+}
+
+.chain-node--current {
+    border: 2px solid var(--accent-primary);
+
+    background: color-mix(in srgb, var(--accent-primary) 6%, var(--bg-secondary));
+}
+
+.chain-node--done {
+    opacity: 0.55;
+}
+
+.chain-node__media {
+    width: 100%;
+}
+
+.chain-node__media > * {
+    width: 100%;
+}
+
+.chain-node__title {
+    /* text-sm R */
+    font-family: var(--font-text), sans-serif;
+    font-size: var(--text-sm-font-size);
+    line-height: var(--text-sm-line-height);
+    font-weight: 400;
+    color: var(--neutral-primary);
+
+    display: -webkit-box;
+    overflow: hidden;
+
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+
+    line-clamp: 2;
+}
+
+.chain-node__status-row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: wrap;
+
+    gap: var(--space-1);
+}
+
+.chain-node__tag {
+    display: inline-block;
+
+    padding: var(--space-0-5) var(--space-2);
+
+    border-radius: var(--radius-sm);
+
+    font-family: var(--font-text), sans-serif;
+    font-size: var(--text-xs-font-size);
+    line-height: var(--text-xs-line-height);
+    font-weight: 600;
+}
+
+.chain-node__tag--goal {
+    color: var(--accent-secondary);
+
+    background: color-mix(in srgb, var(--accent-secondary) 14%, transparent);
+}
+
+.chain-separator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    min-width: var(--space-4);
+    flex: 0 0 auto;
+
+    color: var(--neutral-disable);
+
+    font-size: var(--text-base-font-size);
+    line-height: 1;
+}
+
+@media (max-width: 768px) {
+    .chain-node {
+        flex: 0 0 150px;
+
+        padding: var(--space-1-5);
+    }
+
+    .chain-separator {
+        min-width: var(--space-2-5);
+    }
+}

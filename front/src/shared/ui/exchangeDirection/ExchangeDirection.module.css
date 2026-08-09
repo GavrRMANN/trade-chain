@@ -1,0 +1,25 @@
+.exchange-direction {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+
+    width: var(--space-8);
+    height: var(--space-8);
+    border: 1px solid color-mix(in srgb, var(--accent-primary) 25%, var(--bg-shadows));
+    border-radius: 50%;
+
+    background: color-mix(in srgb, var(--accent-primary) 8%, var(--bg-secondary));
+    color: var(--accent-primary);
+}
+
+.exchange-direction svg {
+    width: var(--space-4);
+    height: var(--space-4);
+
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 1.75;
+}
