@@ -2,16 +2,20 @@ import { lazy, Suspense, type ReactElement } from 'react';
 import { Route, Routes, useLocation } from 'react-router-dom';
 
 import { App } from '@app/App';
-import { AuthModal } from '@pages/auth';
 import { CatalogPage } from '@pages/catalog';
 import { CreateProductPage } from '@pages/createProduct';
 import { ExchangesPage } from '@pages/exchanges';
 import { ProductPage } from '@pages/product';
 import { ProfilePage } from '@pages/profile';
 import { Preloader } from '@shared/ui/preloader';
+import { ModalPreload } from '@shared/ui/modalPreload';
 
-const withSuspense = (element: ReactElement) => (
-    <Suspense fallback={<Preloader />}>{element}</Suspense>
+const withSuspense = (element: ReactElement, fallback: ReactElement = <Preloader />) => (
+    <Suspense fallback={fallback}>{element}</Suspense>
+);
+
+const AuthModalLazy = lazy(() =>
+    import('@pages/auth').then((module) => ({ default: module.AuthModal })),
 );
 
 const NotFoundPageLazy = lazy(() =>
@@ -51,7 +55,10 @@ export const AppRouter = () => {
 
             {backgroundLocation && (
                 <Routes>
-                    <Route path="/auth" element={<AuthModal />} />
+                    <Route
+                        path="/auth"
+                        element={withSuspense(<AuthModalLazy />, <ModalPreload />)}
+                    />
                 </Routes>
             )}
         </>

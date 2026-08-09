@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"time"
 	"trade-chain/internal/domain"
@@ -28,7 +29,7 @@ func NewChainService(
 // Стороны берутся из самого звена, а не из текущих владельцев товаров:
 // успешный обмен меняет владельцев местами, и вычисление на лету после
 // завершения сделки указывало бы обеими сторонами на одного человека.
-func (s *chainService) dealOf(chain *domain.Chain) exchange.Deal {
+func dealOf(chain *domain.Chain) exchange.Deal {
 	return exchange.Deal{
 		ChainID:     chain.ChainID,
 		InitiatorID: chain.InitiatorID,
@@ -61,6 +62,11 @@ func (s *chainService) Create(ctx context.Context, c *domain.Chain) (*domain.Cha
 		return nil, mapExchangeError(err)
 	}
 
+	c.Surcharge = exchange.NormalizeSurcharge(c.Surcharge)
+	if err := exchange.ValidateSurcharge(deal, c.Surcharge); err != nil {
+		return nil, mapExchangeError(err)
+	}
+
 	// Новое предложение всегда начинается с ожидания ответа: создать сразу
 	// принятым или завершённым нельзя, иначе согласие второй стороны
 	// становится необязательным.
@@ -71,6 +77,11 @@ func (s *chainService) Create(ctx context.Context, c *domain.Chain) (*domain.Cha
 	}
 
 	v, err := s.repo.Create(ctx, c)
+	if errors.Is(err, domain.ErrOfferDuplicate) {
+		// Повторное предложение — не сбой, а вторая попытка человека:
+		// normalizeError свела бы её к внутренней ошибке.
+		return nil, mapExchangeError(err)
+	}
 	return v, normalizeError(err)
 }
 
@@ -138,7 +149,7 @@ func (s *chainService) Decide(ctx context.Context, id string, action exchange.Ac
 	if err != nil {
 		return nil, normalizeError(err)
 	}
-	deal := s.dealOf(chain)
+	deal := dealOf(chain)
 
 	next, err := exchange.Apply(deal, action, actorID, time.Now())
 	if err != nil {
@@ -158,7 +169,7 @@ func (s *chainService) Decide(ctx context.Context, id string, action exchange.Ac
 // Подтверждения перечитываются из базы после записи своего: две стороны могут
 // нажать кнопку одновременно, и решение по локальному списку оставило бы обмен
 // незавершённым, хотя согласились оба.
-func (s *chainService) Confirm(ctx context.Context, id, actorID string, success bool) (*domain.Chain, error) {
+func (s *chainService) Confirm(ctx context.Context, id, actorID string, success bool, reason string) (*domain.Chain, error) {
 	if blank(id) || blank(actorID) {
 		return nil, ErrInvalidInput
 	}
@@ -167,7 +178,7 @@ func (s *chainService) Confirm(ctx context.Context, id, actorID string, success 
 	if err != nil {
 		return nil, normalizeError(err)
 	}
-	deal := s.dealOf(chain)
+	deal := dealOf(chain)
 
 	existing, err := s.negotiations.ListConfirmations(ctx, id)
 	if err != nil {
@@ -177,10 +188,17 @@ func (s *chainService) Confirm(ctx context.Context, id, actorID string, success 
 		return nil, mapExchangeError(err)
 	}
 
+	// Причина нужна только при отказе: у состоявшегося обмена объяснять нечего,
+	// и текст рядом с «да» читался бы как условие.
+	if success {
+		reason = ""
+	}
+
 	err = s.negotiations.Confirm(ctx, &domain.ChainConfirmation{
 		ChainID:    id,
 		CustomerID: actorID,
 		Success:    success,
+		Reason:     strings.TrimSpace(reason),
 	})
 	if err != nil {
 		return nil, normalizeError(err)
@@ -233,7 +251,7 @@ func (s *chainService) Messages(ctx context.Context, id, actorID string) ([]doma
 	if err != nil {
 		return nil, normalizeError(err)
 	}
-	deal := s.dealOf(chain)
+	deal := dealOf(chain)
 	if !deal.Involves(actorID) {
 		return nil, mapExchangeError(domain.ErrNotParticipant)
 	}
@@ -252,7 +270,7 @@ func (s *chainService) SendMessage(ctx context.Context, id, actorID, body string
 	if err != nil {
 		return nil, normalizeError(err)
 	}
-	deal := s.dealOf(chain)
+	deal := dealOf(chain)
 	if err := exchange.CanWrite(deal, actorID); err != nil {
 		return nil, mapExchangeError(err)
 	}
@@ -277,7 +295,7 @@ func (s *chainService) CanReview(ctx context.Context, id, actorID string) (strin
 	if err != nil {
 		return "", normalizeError(err)
 	}
-	deal := s.dealOf(chain)
+	deal := dealOf(chain)
 	if err := exchange.CanReview(deal, actorID); err != nil {
 		return "", mapExchangeError(err)
 	}

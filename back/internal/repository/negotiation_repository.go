@@ -83,21 +83,22 @@ func (r *negotiationRepository) ListMessages(ctx context.Context, chainID string
 // иначе подтверждение перестаёт что-либо значить.
 func (r *negotiationRepository) Confirm(ctx context.Context, confirmation *domain.ChainConfirmation) error {
 	query := `
-		INSERT INTO chain_confirmations (chain_id, customer_id, success)
-		VALUES ($1, $2, $3)
+		INSERT INTO chain_confirmations (chain_id, customer_id, success, reason)
+		VALUES ($1, $2, $3, $4)
 	`
 
 	_, err := r.db.Exec(ctx, query,
 		confirmation.ChainID,
 		confirmation.CustomerID,
 		confirmation.Success,
+		confirmation.Reason,
 	)
 	return err
 }
 
 func (r *negotiationRepository) ListConfirmations(ctx context.Context, chainID string) ([]domain.ChainConfirmation, error) {
 	query := `
-		SELECT chain_id, customer_id, success, created_at
+		SELECT chain_id, customer_id, success, reason, created_at
 		FROM chain_confirmations
 		WHERE chain_id = $1
 		ORDER BY created_at
@@ -116,6 +117,7 @@ func (r *negotiationRepository) ListConfirmations(ctx context.Context, chainID s
 			&confirmation.ChainID,
 			&confirmation.CustomerID,
 			&confirmation.Success,
+			&confirmation.Reason,
 			&confirmation.CreatedAt,
 		); err != nil {
 			return nil, err
