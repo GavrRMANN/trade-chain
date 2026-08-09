@@ -8,7 +8,6 @@ import {
 } from '@entities/product';
 import {useGetCategoriesQuery} from '@entities/category';
 import {useGetCurrentUserQuery} from '@entities/user';
-import {getAuthToken} from '@shared/api';
 import type {TProductStatus} from '@entities/product';
 
 export type TField =
@@ -82,11 +81,8 @@ const statusOptions: {value: TProductStatus; label: string}[] = [
 export const useProductForm = (productId?: string) => {
     const navigate = useNavigate();
     const isEdit = Boolean(productId);
-    const isAuthenticated = Boolean(getAuthToken());
 
-    const {data: user, isLoading: isUserLoading} = useGetCurrentUserQuery(undefined, {
-        skip: !isAuthenticated,
-    });
+    const {data: user, isLoading: isUserLoading} = useGetCurrentUserQuery();
     const productQuery = useGetProductQuery(productId ?? '', {skip: !productId});
     const {data: categories = [], isLoading: isCategoriesLoading, isError: isCategoriesError} =
         useGetCategoriesQuery();
@@ -213,7 +209,6 @@ export const useProductForm = (productId?: string) => {
 
     return {
         isEdit,
-        isAuthenticated,
         categories,
         categoryPath,
         statusOptions,

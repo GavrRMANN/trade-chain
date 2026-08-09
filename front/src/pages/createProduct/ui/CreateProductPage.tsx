@@ -8,33 +8,7 @@ import Styles from './create-product-page.module.css';
 import {useCreateProductPage} from '../lib';
 
 export const CreateProductPage = () => {
-    const {form, openAuth, goBack} = useCreateProductPage();
-
-    // Режим редактирования требует авторизованного пользователя.
-    if (form.isEdit && !form.isAuthenticated) {
-        return (
-            <MainSection>
-                <section className={Styles["page__guest-card"]}>
-                    <h2>Войдите, чтобы редактировать объявление</h2>
-                    <p>Редактировать объявления могут только их авторы.</p>
-                    <Button onClick={openAuth}>Войти или зарегистрироваться</Button>
-                </section>
-            </MainSection>
-        );
-    }
-
-    // Сценарий создания тоже требует авторизации.
-    if (!form.isEdit && !form.isAuthenticated) {
-        return (
-            <MainSection>
-                <section className={Styles["page__guest-card"]}>
-                    <h2>Войдите, чтобы добавить вещь</h2>
-                    <p>Публикация объявлений доступна только авторизованным пользователям.</p>
-                    <Button onClick={openAuth}>Войти или зарегистрироваться</Button>
-                </section>
-            </MainSection>
-        );
-    }
+    const {form, goBack} = useCreateProductPage();
 
     if (form.isCategoriesError) {
         return <PageError message="Не удалось загрузить категории. Обновите страницу." />;

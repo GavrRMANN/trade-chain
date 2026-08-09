@@ -3,7 +3,6 @@ import {useNavigate} from 'react-router-dom';
 
 import {useNotificationsFeed} from '@entities/notification';
 import {usePageTitle} from '@app/providers/pageTitle';
-import {useOpenModalRoute} from '@shared/lib';
 
 /**
  * Управляет данными и навигацией страницы «Уведомления».
@@ -12,10 +11,8 @@ import {useOpenModalRoute} from '@shared/lib';
 export const useNotificationsPage = () => {
     const {setTitle} = usePageTitle();
     const navigate = useNavigate();
-    const openModal = useOpenModalRoute();
 
     const {
-        isAuthenticated,
         notifications,
         unreadCount,
         isLoading,
@@ -35,13 +32,11 @@ export const useNotificationsPage = () => {
     };
 
     return {
-        isAuthenticated,
         notifications,
         unreadCount,
         isLoading,
         isError,
         openExchange,
         openCatalog,
-        openAuthModal: () => openModal('auth'),
     };
 };

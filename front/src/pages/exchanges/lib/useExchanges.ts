@@ -6,8 +6,6 @@ import type {TChain, TChainStatus} from '@entities/chain';
 import {useGetProductsQuery} from '@entities/product';
 import type {TProduct} from '@entities/product';
 import {useGetCurrentUserQuery} from '@entities/user';
-import {getAuthToken} from '@shared/api';
-import {useOpenModalRoute} from '@shared/lib';
 import {usePageTitle} from '@app/providers/pageTitle';
 import {useLayoutEffect} from 'react';
 
@@ -68,17 +66,13 @@ const formatActiveOffers = (count: number): string => {
 export const useExchanges = () => {
     const {setTitle} = usePageTitle();
     const navigate = useNavigate();
-    const openModal = useOpenModalRoute();
-    const isAuthenticated = Boolean(getAuthToken());
 
     // UI-состояние
     const [activeTab, setActiveTab] = useState<TExchangeTab>('active');
     const [activeView, setActiveView] = useState<TExchangeView>('routes');
     const [isBuilderOpen, setIsBuilderOpen] = useState(false);
 
-    const {data: currentUser} = useGetCurrentUserQuery(undefined, {
-        skip: !isAuthenticated,
-    });
+    const {data: currentUser} = useGetCurrentUserQuery();
     const currentUserId = currentUser?.customer_id ?? '';
 
     const {
@@ -86,11 +80,9 @@ export const useExchanges = () => {
         isLoading: isChainsLoading,
         isFetching: isChainsFetching,
         isError: isChainsError,
-    } = useGetMyChainsQuery(undefined, {skip: !isAuthenticated});
+    } = useGetMyChainsQuery();
 
-    const {data: products = []} = useGetProductsQuery(undefined, {
-        skip: !isAuthenticated,
-    });
+    const {data: products = []} = useGetProductsQuery();
 
     const productsById = useMemo(() => {
         const map = new Map<string, TProduct>();
@@ -201,10 +193,7 @@ export const useExchanges = () => {
         navigate(`/route?${params.toString()}`);
     }, [navigate]);
 
-    const openAuth = useCallback(() => openModal('auth'), [openModal]);
-
     return {
-        isAuthenticated,
         currentUserId,
         // UI
         activeTab,
@@ -226,7 +215,6 @@ export const useExchanges = () => {
         // навигация
         openExchange,
         openRoute,
-        openAuth,
         // хелперы
         formatActiveOffers,
     };

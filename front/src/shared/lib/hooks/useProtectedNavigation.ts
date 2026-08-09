@@ -1,7 +1,8 @@
 import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import { getAuthToken } from '@shared/api';
+import { selectIsAuthenticated } from '@entities/user';
+import { useAppSelector } from '@app/redux';
 import { useOpenModalRoute } from '@shared/lib';
 
 /**
@@ -11,15 +12,16 @@ import { useOpenModalRoute } from '@shared/lib';
 export const useProtectedNavigation = () => {
     const navigate = useNavigate();
     const openModal = useOpenModalRoute();
+    const isAuthenticated = useAppSelector(selectIsAuthenticated);
 
     return useCallback(
         (path: string) => {
-            if (getAuthToken()) {
+            if (isAuthenticated) {
                 navigate(path);
                 return;
             }
             openModal('auth');
         },
-        [navigate, openModal],
+        [navigate, openModal, isAuthenticated],
     );
 };

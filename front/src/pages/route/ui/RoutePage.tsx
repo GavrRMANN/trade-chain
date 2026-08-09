@@ -41,7 +41,6 @@ const formatCompletedCount = (count: number): string => {
 export const RoutePage = () => {
     const {
         targetId,
-        isAuthenticated,
         isLoading,
         isError,
         isEmpty,
@@ -64,7 +63,6 @@ export const RoutePage = () => {
         closeOffer,
         handleOfferSuccess,
         goHome,
-        openAuthModal,
     } = useRoute();
 
     if (!targetId) {
@@ -75,23 +73,6 @@ export const RoutePage = () => {
                     <p>Выберите желаемый товар, чтобы построить маршрут обмена.</p>
                     <Button onClick={goHome}>На главную</Button>
                 </div>
-            </MainSection>
-        );
-    }
-
-    if (!isAuthenticated) {
-        return (
-            <MainSection>
-                <section className={Styles['route-page__guest-card']}>
-                    <div>
-                        <h2>Войдите, чтобы построить путь к цели</h2>
-                        <p>
-                            Сервис покажет ближайший обмен и будет пересчитывать путь после каждого
-                            шага.
-                        </p>
-                    </div>
-                    <Button onClick={openAuthModal}>Войти или зарегистрироваться</Button>
-                </section>
             </MainSection>
         );
     }

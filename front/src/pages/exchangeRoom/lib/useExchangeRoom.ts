@@ -13,8 +13,6 @@ import { useGetProductsQuery } from '@entities/product';
 import type { TProduct } from '@entities/product';
 import { useCreateReviewMutation } from '@entities/review';
 import { useGetCurrentUserQuery } from '@entities/user';
-import { getAuthToken } from '@shared/api';
-import { useOpenModalRoute } from '@shared/lib';
 import { usePageTitle } from '@app/providers/pageTitle';
 
 const getErrorMessage = (error: unknown) => {
@@ -35,19 +33,16 @@ const getErrorMessage = (error: unknown) => {
 export const useExchangeRoom = () => {
     const { chainId } = useParams<{ chainId: string }>();
     const navigate = useNavigate();
-    const openModal = useOpenModalRoute();
     const { setTitle } = usePageTitle();
 
     useLayoutEffect(() => {
         setTitle('Сделка обмена');
     }, [setTitle]);
 
-    const isAuthenticated = Boolean(getAuthToken());
-
     const chainQuery = useGetChainQuery(chainId ?? '', { skip: !chainId });
     const messagesQuery = useGetChainMessagesQuery(chainId ?? '', { skip: !chainId });
-    const productsQuery = useGetProductsQuery(undefined, { skip: !isAuthenticated });
-    const currentUserQuery = useGetCurrentUserQuery(undefined, { skip: !isAuthenticated });
+    const productsQuery = useGetProductsQuery();
+    const currentUserQuery = useGetCurrentUserQuery();
 
     const [updateChainStatus, { isLoading: isStatusUpdating }] = useUpdateChainStatusMutation();
     const [confirmChain, { isLoading: isConfirming }] = useConfirmChainMutation();
@@ -157,8 +152,6 @@ export const useExchangeRoom = () => {
         messages: messagesQuery.data ?? [],
         isLoading: chainQuery.isLoading || productsQuery.isLoading,
         isError: chainQuery.isError,
-        isAuthenticated,
-        openAuth: () => openModal('auth'),
         // статусы
         isPendingLike,
         isActive,

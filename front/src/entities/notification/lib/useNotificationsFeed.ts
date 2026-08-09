@@ -2,8 +2,8 @@ import {useMemo} from 'react';
 
 import {useGetMyChainsQuery} from '@entities/chain';
 import {useGetProductsQuery} from '@entities/product';
-import {useGetCurrentUserQuery} from '@entities/user';
-import {getAuthToken} from '@shared/api';
+import {selectIsAuthenticated, useGetCurrentUserQuery} from '@entities/user';
+import {useAppSelector} from '@app/redux';
 
 import {buildNotifications} from './buildNotifications';
 import type {TNotification} from '../types';
@@ -20,7 +20,7 @@ const POLLING_INTERVAL = 30_000;
  *   собственным refetch — например, в комнате обмена).
  */
 export const useNotificationsFeed = (polling = true) => {
-    const isAuthenticated = Boolean(getAuthToken());
+    const isAuthenticated = useAppSelector(selectIsAuthenticated);
 
     const {data: currentUser} = useGetCurrentUserQuery(undefined, {
         skip: !isAuthenticated,

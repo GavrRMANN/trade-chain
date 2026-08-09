@@ -1,13 +1,14 @@
 import { useCallback, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
-import { getAuthToken } from '@shared/api';
+import { selectIsAuthenticated } from '@entities/user';
+import { useAppSelector } from '@app/redux';
 import { getBackgroundRoute } from '@shared/lib';
 
 export const useAuthModal = () => {
     const location = useLocation();
     const navigate = useNavigate();
-    const isAuthenticated = Boolean(getAuthToken());
+    const isAuthenticated = useAppSelector(selectIsAuthenticated);
 
     const closeModal = useCallback(() => {
         const backgroundRoute = getBackgroundRoute(location);

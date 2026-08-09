@@ -9,32 +9,13 @@ import {useNotificationsPage} from '../lib';
 
 export const NotificationsPage = () => {
     const {
-        isAuthenticated,
         notifications,
         unreadCount,
         isLoading,
         isError,
         openExchange,
         openCatalog,
-        openAuthModal,
     } = useNotificationsPage();
-
-    if (!isAuthenticated) {
-        return (
-            <MainSection>
-                <section className={Styles['notifications-page__guest']}>
-                    <div>
-                        <h2>Войдите, чтобы видеть уведомления</h2>
-                        <p>
-                            Здесь появляются предложения обмена, ответы второй
-                            стороны и статусы ваших сделок.
-                        </p>
-                        <Button onClick={openAuthModal}>Войти</Button>
-                    </div>
-                </section>
-            </MainSection>
-        );
-    }
 
     if (isLoading) {
         return <Preloader message={'Загружаем уведомления…'} />;

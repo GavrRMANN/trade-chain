@@ -2,11 +2,13 @@ import { FormEvent, useCallback, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 import {
+    setCredentials,
     useLoginUserMutation,
     useRegisterUserMutation,
 } from '@entities/user';
-import { setAuthToken } from '@shared/api';
-import { getBackgroundRoute, parseApiError } from '@shared/lib';
+import { parseApiError } from '@shared/lib';
+import { useAppDispatch } from '@app/redux';
+import { getBackgroundRoute } from '@shared/lib';
 
 type TMode = 'login' | 'register';
 type TField = 'email' | 'password' | 'confirmPassword';
@@ -37,6 +39,7 @@ const validate = (email: string, password: string, confirmPassword: string, mode
 export const useAuthForm = () => {
     const navigate = useNavigate();
     const location = useLocation();
+    const dispatch = useAppDispatch();
 
     const [mode, setMode] = useState<TMode>('login');
     const [email, setEmail] = useState('');
@@ -80,7 +83,7 @@ export const useAuthForm = () => {
             if (mode === 'login') {
                 const response = await loginUser({email: email.trim(), password}).unwrap();
 
-                setAuthToken(response.token);
+                dispatch(setCredentials(response.token));
                 navigate(getBackgroundRouteCallback(), { replace: true });
 
                 return;
@@ -88,7 +91,7 @@ export const useAuthForm = () => {
 
             const response = await registerUser({email: email.trim(), password}).unwrap();
 
-            setAuthToken(response.token);
+            dispatch(setCredentials(response.token));
             navigate(getBackgroundRouteCallback(), { replace: true });
         } catch (error) {
             setRequestError(parseApiError(error));

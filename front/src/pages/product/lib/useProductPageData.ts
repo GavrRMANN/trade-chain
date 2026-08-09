@@ -10,16 +10,16 @@ import {
     useGetProductsQuery,
 } from '@entities/product';
 import {useGetCustomerRatingQuery, useGetReviewsByCustomerQuery} from '@entities/review';
-import {useGetCurrentUserQuery} from '@entities/user';
+import {selectIsAuthenticated, useGetCurrentUserQuery} from '@entities/user';
 import {useGetWishlistByProductQuery, useGetWishlistOptionsQuery} from '@entities/wishlist';
-import {getAuthToken} from '@shared/api';
+import {useAppSelector} from '@app/redux';
 
 const OPEN_CHAIN_STATUSES = new Set(['pending', 'active', 'countered']);
 
 export const useProductPageData = (productId?: string) => {
     const productQuery = useGetProductQuery(productId ?? '', {skip: !productId});
     const product = productQuery.data;
-    const isAuthenticated = Boolean(getAuthToken());
+    const isAuthenticated = useAppSelector(selectIsAuthenticated);
     const currentUserQuery = useGetCurrentUserQuery(undefined, {skip: !isAuthenticated});
     const currentUserId = currentUserQuery.data?.customer_id;
     const isOwner = Boolean(product && currentUserId && product.customer_id === currentUserId);

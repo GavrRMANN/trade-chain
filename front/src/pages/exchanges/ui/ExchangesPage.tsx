@@ -31,7 +31,6 @@ const formatClasses = (...classes: Array<string | false | undefined>): string =>
 
 export const ExchangesPage = () => {
     const {
-        isAuthenticated,
         activeTab,
         setActiveTab,
         activeView,
@@ -45,26 +44,8 @@ export const ExchangesPage = () => {
         isError,
         openExchange,
         openRoute,
-        openAuth,
         formatActiveOffers,
     } = useExchanges();
-
-    if (!isAuthenticated) {
-        return (
-            <MainSection>
-                <section className={Styles['exchanges-page__guest']}>
-                    <div>
-                        <h2>Войдите, чтобы увидеть свои обмены</h2>
-                        <p>
-                            Отслеживайте входящие и исходящие предложения об обмене
-                            и историю завершённых сделок.
-                        </p>
-                        <Button onClick={openAuth}>Войти</Button>
-                    </div>
-                </section>
-            </MainSection>
-        );
-    }
 
     if (isLoading || isFetching) {
         return <Preloader message={'Загрузка обменов…'} />;

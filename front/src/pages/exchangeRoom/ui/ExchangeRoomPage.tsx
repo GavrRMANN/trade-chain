@@ -27,8 +27,6 @@ export const ExchangeRoomPage = () => {
         messages,
         isLoading,
         isError,
-        isAuthenticated,
-        openAuth,
         isPendingLike,
         isActive,
         isCompleted,
@@ -51,18 +49,6 @@ export const ExchangeRoomPage = () => {
         reviewError,
         isReviewSent,
     } = useExchangeRoom();
-
-    if (!isAuthenticated) {
-        return (
-            <MainSection>
-                <section className={Styles['guest-card']}>
-                    <h2>Войдите, чтобы открыть сделку</h2>
-                    <p>Только авторизованные пользователи могут участвовать в обмене.</p>
-                    <Button onClick={openAuth}>Войти или зарегистрироваться</Button>
-                </section>
-            </MainSection>
-        );
-    }
 
     if (isLoading) {
         return <Preloader message={'Загружаем сделку…'} />;
