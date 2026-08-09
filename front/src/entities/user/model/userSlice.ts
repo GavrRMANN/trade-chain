@@ -37,6 +37,8 @@ export const userSlice = createSlice({
         /** Сохраняет токен авторизации: и в Redux-state, и в localStorage. */
         setCredentials: (state, action: PayloadAction<string>) => {
             state.token = action.payload;
+            // Профиль привязан к предыдущей сессии и не должен переживать логин.
+            removeUserLocalStorage();
 
             setAuthToken(action.payload);
         },
