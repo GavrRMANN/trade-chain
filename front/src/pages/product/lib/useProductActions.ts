@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import {useState} from 'react';
 
-import { useUpdateProductMutation } from '@entities/product';
-import type { TProductStatus } from '@entities/product';
+import {useArchiveProductMutation} from '@entities/product';
+import type {TProductStatus} from '@entities/product';
 
 const getErrorMessage = (error: unknown) => {
     if (typeof error === 'object' && error !== null && 'data' in error) {
@@ -18,42 +18,30 @@ const getErrorMessage = (error: unknown) => {
     return 'Не удалось выполнить действие. Попробуйте ещё раз.';
 };
 
-type TConfirmAction = 'archive' | null;
-
 /**
- * Управление статусом товара владельцем. Действие выполняется после
- * подтверждения пользователя. Удаление товара на бэкенде не предусмотрено —
- * вместо него используется архивация (PATCH status: 'archived').
+ * Архивирование товара владельцем после подтверждения.
  */
 export const useProductActions = (productId?: string) => {
-    const [updateProduct, { isLoading: isArchiving }] = useUpdateProductMutation();
-
-    const [confirmAction, setConfirmAction] = useState<TConfirmAction>(null);
+    const [archiveProduct, {isLoading}] = useArchiveProductMutation();
+    const [confirmAction, setConfirmAction] = useState(false);
     const [error, setError] = useState<string>();
     const [status, setStatus] = useState<TProductStatus>();
 
     const requestArchive = () => {
         setError(undefined);
-        setConfirmAction('archive');
+        setConfirmAction(true);
     };
 
-    const cancelConfirm = () => {
-        setConfirmAction(null);
-    };
+    const cancelConfirm = () => setConfirmAction(false);
 
     const confirm = async () => {
-        if (!productId || !confirmAction) {
-            return;
-        }
+        if (!productId || !confirmAction) return;
 
         setError(undefined);
         try {
-            const updated = await updateProduct({
-                productId,
-                data: { status: 'archived' },
-            }).unwrap();
-            setStatus(updated.status);
-            setConfirmAction(null);
+            await archiveProduct(productId).unwrap();
+            setStatus('archived');
+            setConfirmAction(false);
         } catch (mutationError) {
             setError(getErrorMessage(mutationError));
         }
@@ -65,7 +53,7 @@ export const useProductActions = (productId?: string) => {
         confirmAction,
         confirmText: 'Снять товар с обмена? Он уйдёт в архив и перестанет участвовать в обменах.',
         confirmLabel: 'Снять с обмена',
-        isLoading: isArchiving,
+        isLoading,
         requestArchive,
         cancelConfirm,
         confirm,

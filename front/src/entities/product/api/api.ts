@@ -38,6 +38,12 @@ export const productApi = createApi({
                 body: data,
             }),
         }),
+        archiveProduct: builder.mutation<void, string>({
+            query: (productId) => ({
+                url: `/products/${productId}/archive`,
+                method: 'POST',
+            }),
+        }),
     }),
 });
 
@@ -48,4 +54,5 @@ export const {
     useGetProductQuery,
     useCreateProductMutation,
     useUpdateProductMutation,
+    useArchiveProductMutation,
 } = productApi;
