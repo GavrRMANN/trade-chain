@@ -1,4 +1,4 @@
-import {useMemo} from 'react';
+import {useCallback, useMemo, useState} from 'react';
 import {useNavigate} from 'react-router-dom';
 
 import {useGetMyChainsQuery} from '@entities/chain';
@@ -7,6 +7,7 @@ import {useGetProductsQuery} from '@entities/product';
 import type {TProduct} from '@entities/product';
 import {useGetCurrentUserQuery} from '@entities/user';
 import {getAuthToken} from '@shared/api';
+import {useOpenModalRoute} from '@shared/lib';
 import {usePageTitle} from '@app/providers/pageTitle';
 import {useLayoutEffect} from 'react';
 
@@ -38,6 +39,23 @@ export type TExchangeRouteGroup = {
 
 export type TExchangeTab = 'active' | 'incoming' | 'outgoing' | 'completed';
 
+export type TExchangeView = 'routes' | 'exchanges';
+
+const formatActiveOffers = (count: number): string => {
+    const lastTwo = count % 100;
+    const last = count % 10;
+    const word =
+        lastTwo >= 11 && lastTwo <= 14
+            ? 'активных предложений'
+            : last === 1
+              ? 'активное предложение'
+              : last >= 2 && last <= 4
+                ? 'активных предложения'
+                : 'активных предложений';
+
+    return `${count} ${word}`;
+};
+
 /**
  * Управляет данными, фильтрацией по вкладкам и навигацией страницы «Мои обмены».
  *
@@ -50,7 +68,13 @@ export type TExchangeTab = 'active' | 'incoming' | 'outgoing' | 'completed';
 export const useExchanges = () => {
     const {setTitle} = usePageTitle();
     const navigate = useNavigate();
+    const openModal = useOpenModalRoute();
     const isAuthenticated = Boolean(getAuthToken());
+
+    // UI-состояние
+    const [activeTab, setActiveTab] = useState<TExchangeTab>('active');
+    const [activeView, setActiveView] = useState<TExchangeView>('routes');
+    const [isBuilderOpen, setIsBuilderOpen] = useState(false);
 
     const {data: currentUser} = useGetCurrentUserQuery(undefined, {
         skip: !isAuthenticated,
@@ -154,34 +178,56 @@ export const useExchanges = () => {
         return {active, incoming: inc, outgoing: out, completed: done};
     }, [chains, currentUserId, buildRow]);
 
+    const visibleRows = useMemo(() => {
+        if (activeTab === 'active') return active;
+        if (activeTab === 'incoming') return incoming;
+        if (activeTab === 'outgoing') return outgoing;
+        return completed;
+    }, [activeTab, active, incoming, outgoing, completed]);
+
     useLayoutEffect(() => {
         setTitle('Мои обмены');
     }, [setTitle]);
 
-    const openExchange = (chainId: string) => {
+    const openExchange = useCallback((chainId: string) => {
         navigate(`/exchanges/${chainId}`);
-    };
+    }, [navigate]);
 
-    const openRoute = (goalId: string, sourceId?: string) => {
+    const openRoute = useCallback((goalId: string, sourceId?: string) => {
         const params = new URLSearchParams({target: goalId});
         if (sourceId) {
             params.set('from', sourceId);
         }
         navigate(`/route?${params.toString()}`);
-    };
+    }, [navigate]);
+
+    const openAuth = useCallback(() => openModal('auth'), [openModal]);
 
     return {
         isAuthenticated,
         currentUserId,
+        // UI
+        activeTab,
+        setActiveTab,
+        activeView,
+        setActiveView,
+        isBuilderOpen,
+        setIsBuilderOpen,
+        // данные
         active,
         incoming,
         outgoing,
         completed,
+        visibleRows,
         routeGroups,
         isLoading: isChainsLoading,
         isFetching: isChainsFetching,
         isError: isChainsError,
+        // навигация
         openExchange,
         openRoute,
+        openAuth,
+        // хелперы
+        formatActiveOffers,
     };
 };

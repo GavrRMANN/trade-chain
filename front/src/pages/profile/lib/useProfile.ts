@@ -1,4 +1,5 @@
-import {useMemo, useState} from 'react';
+import {useCallback, useMemo, useState} from 'react';
+import {useNavigate} from 'react-router-dom';
 
 import {useGetProductsByCustomerQuery} from '@entities/product';
 import type {TProduct} from '@entities/product';
@@ -17,7 +18,14 @@ export type TProfileExchange = {
     toProduct?: TProduct;
 };
 
+const maskEmail = (email: string): string => {
+    const [name, domain] = email.split('@');
+    if (!domain) return 'Пользователь';
+    return `${name.slice(0, 2)}***@${domain}`;
+};
+
 export const useProfile = (user?: TUser, isOwner = false) => {
+    const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState<TProfileTab>('products');
     const customerId = user?.customer_id ?? '';
 
@@ -35,7 +43,7 @@ export const useProfile = (user?: TUser, isOwner = false) => {
         [receivedProducts],
     );
 
-    // Резолваем товары сделок пользователя из общего списка.
+    // Резолвим товары сделок пользователя из общего списка.
     const productsById = useMemo(() => {
         const map = new Map<string, TProduct>();
         for (const product of receivedProducts) {
@@ -58,6 +66,39 @@ export const useProfile = (user?: TUser, isOwner = false) => {
             .sort((a, b) => b.chain.updated_at.localeCompare(a.chain.updated_at));
     }, [chainsQuery.data, productsById]);
 
+    const maskedName = useMemo(
+        () => (isOwner && user?.email ? user.email : user?.email ? maskEmail(user.email) : ''),
+        [isOwner, user?.email],
+    );
+
+    const openProduct = useCallback(
+        (productId: string) => navigate(`/product/${productId}`),
+        [navigate],
+    );
+
+    const openEditProduct = useCallback(
+        (productId: string) => navigate(`/product/${productId}/edit`),
+        [navigate],
+    );
+
+    const openExchange = useCallback(
+        (chainId: string) => navigate(`/exchanges/${chainId}`),
+        [navigate],
+    );
+
+    const openExchanges = useCallback(() => navigate('/exchanges'), [navigate]);
+
+    const openCreate = useCallback(() => navigate('/create'), [navigate]);
+
+    const getTabCount = useCallback(
+        (tab: TProfileTab): number => {
+            if (tab === 'products') return products.length;
+            if (tab === 'exchanges') return exchanges.length;
+            return reviews.length;
+        },
+        [products.length, exchanges.length, reviews.length],
+    );
+
     return {
         activeTab,
         setActiveTab,
@@ -72,5 +113,14 @@ export const useProfile = (user?: TUser, isOwner = false) => {
         isReviewsError: reviewsQuery.isError,
         isExchangesLoading: isOwner && (chainsQuery.isLoading || allProductsQuery.isLoading),
         isExchangesError: isOwner && (chainsQuery.isError || allProductsQuery.isError),
+        // представление
+        maskedName,
+        getTabCount,
+        // навигация
+        openProduct,
+        openEditProduct,
+        openExchange,
+        openExchanges,
+        openCreate,
     };
 };

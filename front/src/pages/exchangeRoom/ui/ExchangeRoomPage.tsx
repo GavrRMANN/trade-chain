@@ -1,7 +1,3 @@
-import { useLayoutEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-
-import { usePageTitle } from '@app/providers/pageTitle';
 import { useExchangeRoom } from '../lib';
 
 import { Button } from '@shared/ui/button';
@@ -13,7 +9,7 @@ import { Preloader } from '@shared/ui/preloader';
 import { ProductCard } from '@shared/ui/productCard';
 import { ChainStatusBadge } from '@entities/chain';
 import { Textarea } from '@shared/ui/textarea';
-import { formatDate, useOpenModalRoute } from '@shared/lib';
+import { formatDate } from '@shared/lib';
 
 import StarSVG from '@shared/assets/icons/Star.svg?react';
 
@@ -22,11 +18,6 @@ import Styles from './exchange-room.module.css';
 const STAR_VALUES = [1, 2, 3, 4, 5] as const;
 
 export const ExchangeRoomPage = () => {
-    const { chainId } = useParams<{ chainId: string }>();
-    const navigate = useNavigate();
-    const openModal = useOpenModalRoute();
-    const { setTitle } = usePageTitle();
-
     const {
         chain,
         currentUserId,
@@ -37,6 +28,11 @@ export const ExchangeRoomPage = () => {
         isLoading,
         isError,
         isAuthenticated,
+        openAuth,
+        isPendingLike,
+        isActive,
+        isCompleted,
+        openProduct,
         messageDraft,
         setMessageDraft,
         handleSendMessage,
@@ -46,18 +42,15 @@ export const ExchangeRoomPage = () => {
         handleConfirm,
         isActionLoading,
         statusError,
+        rating,
+        setRating,
+        comment,
+        setComment,
         handleSendReview,
         isReviewCreating,
         reviewError,
         isReviewSent,
-    } = useExchangeRoom(chainId);
-
-    const [rating, setRating] = useState(0);
-    const [comment, setComment] = useState('');
-
-    useLayoutEffect(() => {
-        setTitle('Сделка обмена');
-    }, [setTitle]);
+    } = useExchangeRoom();
 
     if (!isAuthenticated) {
         return (
@@ -65,7 +58,7 @@ export const ExchangeRoomPage = () => {
                 <section className={Styles['guest-card']}>
                     <h2>Войдите, чтобы открыть сделку</h2>
                     <p>Только авторизованные пользователи могут участвовать в обмене.</p>
-                    <Button onClick={() => openModal('auth')}>Войти или зарегистрироваться</Button>
+                    <Button onClick={openAuth}>Войти или зарегистрироваться</Button>
                 </section>
             </MainSection>
         );
@@ -78,17 +71,6 @@ export const ExchangeRoomPage = () => {
     if (isError || !chain) {
         return <PageError message={'Не удалось загрузить сделку'} />;
     }
-
-    const isPendingLike = chain.status === 'pending' || chain.status === 'countered';
-    const isActive = chain.status === 'active';
-    const isCompleted = chain.status === 'completed';
-
-    const handleReviewSubmit = () => {
-        if (rating < 1) {
-            return;
-        }
-        handleSendReview(rating, comment);
-    };
 
     return (
         <MainSection>
@@ -111,7 +93,7 @@ export const ExchangeRoomPage = () => {
                                 price={fromProduct.price}
                                 location={fromProduct.location}
                                 variant="horizontal"
-                                onClick={() => navigate(`/product/${fromProduct.product_id}`)}
+                                onClick={() => openProduct(fromProduct.product_id)}
                             />
                         ) : (
                             <p className={Styles['product-empty']}>Товар недоступен</p>
@@ -126,7 +108,7 @@ export const ExchangeRoomPage = () => {
                                 price={toProduct.price}
                                 location={toProduct.location}
                                 variant="horizontal"
-                                onClick={() => navigate(`/product/${toProduct.product_id}`)}
+                                onClick={() => openProduct(toProduct.product_id)}
                             />
                         ) : (
                             <p className={Styles['product-empty']}>Товар недоступен</p>
@@ -239,7 +221,7 @@ export const ExchangeRoomPage = () => {
                                 className={Styles.review}
                                 onSubmit={(event) => {
                                     event.preventDefault();
-                                    handleReviewSubmit();
+                                    handleSendReview();
                                 }}
                                 noValidate
                             >

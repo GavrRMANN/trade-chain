@@ -1,28 +1,14 @@
-import {useLayoutEffect} from 'react';
-import {useNavigate, useParams} from 'react-router-dom';
-
-import {usePageTitle} from '@app/providers/pageTitle';
 import {MainSection} from '@shared/ui/mainSection';
 import {Preloader} from '@shared/ui/preloader';
 import {PageError} from '@shared/ui/pageError';
 import {Button} from '@shared/ui/button';
-import {useOpenModalRoute} from '@shared/lib';
 
 import {ProductForm} from '@features/productForm';
 import Styles from './create-product-page.module.css';
-import {useProductForm} from '../lib';
+import {useCreateProductPage} from '../lib';
 
 export const CreateProductPage = () => {
-    const {productId} = useParams<{productId: string}>();
-    const {setTitle} = usePageTitle();
-    const openModal = useOpenModalRoute();
-    const navigate = useNavigate();
-
-    const form = useProductForm(productId);
-
-    useLayoutEffect(() => {
-        setTitle(form.isEdit ? 'Редактирование объявления' : 'Новое объявление');
-    }, [setTitle, form.isEdit]);
+    const {form, openAuth, goBack} = useCreateProductPage();
 
     // Режим редактирования требует авторизованного пользователя.
     if (form.isEdit && !form.isAuthenticated) {
@@ -31,7 +17,7 @@ export const CreateProductPage = () => {
                 <section className={Styles["page__guest-card"]}>
                     <h2>Войдите, чтобы редактировать объявление</h2>
                     <p>Редактировать объявления могут только их авторы.</p>
-                    <Button onClick={() => openModal('auth')}>Войти или зарегистрироваться</Button>
+                    <Button onClick={openAuth}>Войти или зарегистрироваться</Button>
                 </section>
             </MainSection>
         );
@@ -44,7 +30,7 @@ export const CreateProductPage = () => {
                 <section className={Styles["page__guest-card"]}>
                     <h2>Войдите, чтобы добавить вещь</h2>
                     <p>Публикация объявлений доступна только авторизованным пользователям.</p>
-                    <Button onClick={() => openModal('auth')}>Войти или зарегистрироваться</Button>
+                    <Button onClick={openAuth}>Войти или зарегистрироваться</Button>
                 </section>
             </MainSection>
         );
@@ -64,7 +50,7 @@ export const CreateProductPage = () => {
                 <section className={Styles["page__guest-card"]}>
                     <h2>Это не ваше объявление</h2>
                     <p>Редактировать объявление может только его автор.</p>
-                    <Button onClick={() => navigate(-1)}>Вернуться назад</Button>
+                    <Button onClick={goBack}>Вернуться назад</Button>
                 </section>
             </MainSection>
         );

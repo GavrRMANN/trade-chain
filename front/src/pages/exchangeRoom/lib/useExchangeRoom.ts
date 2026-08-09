@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useLayoutEffect, useMemo, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 
 import {
     useConfirmChainMutation,
@@ -13,6 +14,8 @@ import type { TProduct } from '@entities/product';
 import { useCreateReviewMutation } from '@entities/review';
 import { useGetCurrentUserQuery } from '@entities/user';
 import { getAuthToken } from '@shared/api';
+import { useOpenModalRoute } from '@shared/lib';
+import { usePageTitle } from '@app/providers/pageTitle';
 
 const getErrorMessage = (error: unknown) => {
     if (typeof error === 'object' && error !== null && 'data' in error) {
@@ -29,7 +32,16 @@ const getErrorMessage = (error: unknown) => {
     return 'Не удалось выполнить действие. Попробуйте ещё раз.';
 };
 
-export const useExchangeRoom = (chainId?: string) => {
+export const useExchangeRoom = () => {
+    const { chainId } = useParams<{ chainId: string }>();
+    const navigate = useNavigate();
+    const openModal = useOpenModalRoute();
+    const { setTitle } = usePageTitle();
+
+    useLayoutEffect(() => {
+        setTitle('Сделка обмена');
+    }, [setTitle]);
+
     const isAuthenticated = Boolean(getAuthToken());
 
     const chainQuery = useGetChainQuery(chainId ?? '', { skip: !chainId });
@@ -48,9 +60,17 @@ export const useExchangeRoom = (chainId?: string) => {
     const [reviewError, setReviewError] = useState<string>();
     const [isReviewSent, setIsReviewSent] = useState(false);
 
+    // Форма отзыва
+    const [rating, setRating] = useState(0);
+    const [comment, setComment] = useState('');
+
     const chain = chainQuery.data;
     const currentUserId = currentUserQuery.data?.customer_id;
     const isInitiator = Boolean(chain && currentUserId && chain.initiator_id === currentUserId);
+
+    const isPendingLike = chain?.status === 'pending' || chain?.status === 'countered';
+    const isActive = chain?.status === 'active';
+    const isCompleted = chain?.status === 'completed';
 
     // Резолвим оба товара цепочки из общего списка продуктов клиентской картой.
     const productsById = useMemo(() => {
@@ -64,40 +84,38 @@ export const useExchangeRoom = (chainId?: string) => {
     const fromProduct = chain ? productsById.get(chain.from_product_id) : undefined;
     const toProduct = chain ? productsById.get(chain.to_product_id) : undefined;
 
-    const handleChangeStatus = async (status: TUpdateChainStatus) => {
-        if (!chainId) {
-            return;
-        }
-        setStatusError(undefined);
-        try {
-            await updateChainStatus({ id: chainId, body: { status } }).unwrap();
-            chainQuery.refetch();
-        } catch (error) {
-            setStatusError(getErrorMessage(error));
-        }
-    };
+    const handleChangeStatus = useCallback(
+        async (status: TUpdateChainStatus) => {
+            if (!chainId) return;
+            setStatusError(undefined);
+            try {
+                await updateChainStatus({ id: chainId, body: { status } }).unwrap();
+                chainQuery.refetch();
+            } catch (error) {
+                setStatusError(getErrorMessage(error));
+            }
+        },
+        [chainId, updateChainStatus, chainQuery],
+    );
 
-    const handleConfirm = async (success: boolean) => {
-        if (!chainId) {
-            return;
-        }
-        setStatusError(undefined);
-        try {
-            await confirmChain({ id: chainId, body: { success } }).unwrap();
-            chainQuery.refetch();
-        } catch (error) {
-            setStatusError(getErrorMessage(error));
-        }
-    };
+    const handleConfirm = useCallback(
+        async (success: boolean) => {
+            if (!chainId) return;
+            setStatusError(undefined);
+            try {
+                await confirmChain({ id: chainId, body: { success } }).unwrap();
+                chainQuery.refetch();
+            } catch (error) {
+                setStatusError(getErrorMessage(error));
+            }
+        },
+        [chainId, confirmChain, chainQuery],
+    );
 
-    const handleSendMessage = async () => {
-        if (!chainId) {
-            return;
-        }
+    const handleSendMessage = useCallback(async () => {
+        if (!chainId) return;
         const body = messageDraft.trim();
-        if (!body) {
-            return;
-        }
+        if (!body) return;
         setMessageError(undefined);
         try {
             await sendChainMessage({ id: chainId, body: { body } }).unwrap();
@@ -106,12 +124,10 @@ export const useExchangeRoom = (chainId?: string) => {
         } catch (error) {
             setMessageError(getErrorMessage(error));
         }
-    };
+    }, [chainId, messageDraft, sendChainMessage, messagesQuery]);
 
-    const handleSendReview = async (rating: number, comment: string) => {
-        if (!chainId) {
-            return;
-        }
+    const handleSendReview = useCallback(async () => {
+        if (!chainId || rating < 1) return;
         setReviewError(undefined);
         try {
             await createReview({
@@ -123,7 +139,12 @@ export const useExchangeRoom = (chainId?: string) => {
         } catch (error) {
             setReviewError(getErrorMessage(error));
         }
-    };
+    }, [chainId, rating, comment, createReview]);
+
+    const openProduct = useCallback(
+        (productId: string) => navigate(`/product/${productId}`),
+        [navigate],
+    );
 
     const isActionLoading = isStatusUpdating || isConfirming;
 
@@ -137,6 +158,13 @@ export const useExchangeRoom = (chainId?: string) => {
         isLoading: chainQuery.isLoading || productsQuery.isLoading,
         isError: chainQuery.isError,
         isAuthenticated,
+        openAuth: () => openModal('auth'),
+        // статусы
+        isPendingLike,
+        isActive,
+        isCompleted,
+        // навигация
+        openProduct,
         // чат
         messageDraft,
         setMessageDraft,
@@ -149,6 +177,10 @@ export const useExchangeRoom = (chainId?: string) => {
         isActionLoading,
         statusError,
         // отзыв
+        rating,
+        setRating,
+        comment,
+        setComment,
         handleSendReview,
         isReviewCreating,
         reviewError,

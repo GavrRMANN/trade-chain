@@ -1,5 +1,3 @@
-import {useState} from 'react';
-
 import {Button} from '@shared/ui/button';
 import {MainSection} from '@shared/ui/mainSection';
 import {PageError} from '@shared/ui/pageError';
@@ -7,7 +5,6 @@ import {Preloader} from '@shared/ui/preloader';
 import {ExchangeRow} from '@widgets/exchangeRow';
 import {ProductImage} from '@shared/ui/productImage';
 import {Modal} from '@shared/ui/modal';
-import {useOpenModalRoute} from '@shared/lib';
 import {formatDate} from '@shared/lib';
 import {RouteBuilder} from '@features/routeBuilder';
 
@@ -32,38 +29,24 @@ const EMPTY_TEXT: Record<TExchangeTab, string> = {
 const formatClasses = (...classes: Array<string | false | undefined>): string =>
     classes.filter(Boolean).join(' ');
 
-const formatActiveOffers = (count: number): string => {
-    const lastTwo = count % 100;
-    const last = count % 10;
-    const word =
-        lastTwo >= 11 && lastTwo <= 14
-            ? 'активных предложений'
-            : last === 1
-              ? 'активное предложение'
-              : last >= 2 && last <= 4
-                ? 'активных предложения'
-                : 'активных предложений';
-
-    return `${count} ${word}`;
-};
-
 export const ExchangesPage = () => {
-    const [activeTab, setActiveTab] = useState<TExchangeTab>('active');
-    const [activeView, setActiveView] = useState<'routes' | 'exchanges'>('routes');
-    const [isBuilderOpen, setIsBuilderOpen] = useState(false);
-    const openModal = useOpenModalRoute();
     const {
         isAuthenticated,
-        active,
-        incoming,
-        outgoing,
-        completed,
+        activeTab,
+        setActiveTab,
+        activeView,
+        setActiveView,
+        isBuilderOpen,
+        setIsBuilderOpen,
+        visibleRows,
         routeGroups,
         isLoading,
         isFetching,
         isError,
         openExchange,
         openRoute,
+        openAuth,
+        formatActiveOffers,
     } = useExchanges();
 
     if (!isAuthenticated) {
@@ -76,7 +59,7 @@ export const ExchangesPage = () => {
                             Отслеживайте входящие и исходящие предложения об обмене
                             и историю завершённых сделок.
                         </p>
-                        <Button onClick={() => openModal('auth')}>Войти</Button>
+                        <Button onClick={openAuth}>Войти</Button>
                     </div>
                 </section>
             </MainSection>
@@ -90,14 +73,6 @@ export const ExchangesPage = () => {
     if (isError) {
         return <PageError message={'Не удалось загрузить обмены'} />;
     }
-
-    const visibleRows = activeTab === 'active'
-        ? active
-        : activeTab === 'incoming'
-            ? incoming
-            : activeTab === 'outgoing'
-                ? outgoing
-                : completed;
 
     return (
         <MainSection>
@@ -234,19 +209,19 @@ export const ExchangesPage = () => {
                     <>
                         <div className={Styles['exchanges-page__tabs']} role="tablist">
                             {TABS.map((tab) => (
-                        <Button
-                            key={tab.id}
-                            variant="text"
-                            active={activeTab === tab.id}
-                            onClick={() => setActiveTab(tab.id)}
-                            ariaLabel={tab.label}
-                            className={formatClasses(
-                                Styles['exchanges-page__tab'],
-                                activeTab === tab.id && Styles['exchanges-page__tab--active'],
-                            )}
-                        >
-                            {tab.label}
-                        </Button>
+                                <Button
+                                    key={tab.id}
+                                    variant="text"
+                                    active={activeTab === tab.id}
+                                    onClick={() => setActiveTab(tab.id)}
+                                    ariaLabel={tab.label}
+                                    className={formatClasses(
+                                        Styles['exchanges-page__tab'],
+                                        activeTab === tab.id && Styles['exchanges-page__tab--active'],
+                                    )}
+                                >
+                                    {tab.label}
+                                </Button>
                             ))}
                         </div>
 
