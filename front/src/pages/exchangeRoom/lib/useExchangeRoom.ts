@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 
 import {
     useConfirmChainMutation,
+    useGetChainDetailsQuery,
     useGetChainMessagesQuery,
     useGetChainQuery,
     useSendChainMessageMutation,
@@ -40,6 +41,7 @@ export const useExchangeRoom = () => {
     }, [setTitle]);
 
     const chainQuery = useGetChainQuery(chainId ?? '', { skip: !chainId });
+    const chainDetailsQuery = useGetChainDetailsQuery(chainId ?? '', { skip: !chainId });
     const messagesQuery = useGetChainMessagesQuery(chainId ?? '', { skip: !chainId });
     const productsQuery = useGetProductsQuery();
     const currentUserQuery = useGetCurrentUserQuery();
@@ -66,6 +68,15 @@ export const useExchangeRoom = () => {
     const isPendingLike = chain?.status === 'pending' || chain?.status === 'countered';
     const isActive = chain?.status === 'active';
     const isCompleted = chain?.status === 'completed';
+    const hasConfirmedSuccessfulOutcome = Boolean(
+        currentUserId &&
+            chainDetailsQuery.data?.confirmations.some(
+                (confirmation) =>
+                    confirmation.customer_id === currentUserId &&
+                    confirmation.result === 'success',
+            ),
+    );
+    const isWaitingForOtherConfirmation = isActive && hasConfirmedSuccessfulOutcome;
 
     // Резолвим оба товара цепочки из общего списка продуктов клиентской картой.
     const productsById = useMemo(() => {
@@ -100,11 +111,12 @@ export const useExchangeRoom = () => {
             try {
                 await confirmChain({ id: chainId, body: { success } }).unwrap();
                 chainQuery.refetch();
+                chainDetailsQuery.refetch();
             } catch (error) {
                 setStatusError(getErrorMessage(error));
             }
         },
-        [chainId, confirmChain, chainQuery],
+        [chainId, confirmChain, chainQuery, chainDetailsQuery],
     );
 
     const handleSendMessage = useCallback(async () => {
@@ -156,6 +168,7 @@ export const useExchangeRoom = () => {
         isPendingLike,
         isActive,
         isCompleted,
+        isWaitingForOtherConfirmation,
         // навигация
         openProduct,
         // чат

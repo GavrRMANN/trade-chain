@@ -28,15 +28,16 @@ export const useRoute = () => {
 
     const routeQuery = useFindChainQuery(
         { target_product_id: targetId },
-        { skip: !targetId },
+        { skip: !targetId, refetchOnMountOrArgChange: true },
     );
     const currentUserQuery = useGetCurrentUserQuery();
     const productsQuery = useGetProductsQuery(
         { limit: 100 },
-        { skip: !targetId },
+        { skip: !targetId, refetchOnMountOrArgChange: true },
     );
     const myChainsQuery = useGetMyChainsQuery(undefined, {
         skip: !targetId,
+        refetchOnMountOrArgChange: true,
     });
     const [createChain, { isLoading: isSubmitting }] = useCreateChainMutation();
 
@@ -82,18 +83,38 @@ export const useRoute = () => {
         requestedSource.status === 'active'
             ? requestedSource
             : undefined;
-    const currentProduct = selectedSource ?? routeSource;
     const goalProduct = productsById.get(targetId) ?? chain[chain.length - 1];
-    const sourceMatchesRoute = currentProduct?.product_id === routeSource?.product_id;
-    const firstHop = sourceMatchesRoute
-        ? chain[1] ?? goalProduct
-        : routeSource?.customer_id === currentCustomerId
-          ? chain[1] ?? goalProduct
-          : routeSource ?? goalProduct;
     const goalId = goalProduct?.product_id ?? targetId;
-    const stepsRemaining = currentProduct?.product_id === goalId
-        ? 0
-        : Math.max(1, chain.length - 1);
+    const lastCompletedRouteStep = useMemo(() => {
+        return [...(myChainsQuery.data ?? [])]
+            .filter(
+                (item) =>
+                    item.status === 'completed' &&
+                    item.initiator_id === currentCustomerId &&
+                    (item.exchange_goal_id === goalId ||
+                        (!item.exchange_goal_id && item.to_product_id === goalId)),
+            )
+            .sort((left, right) => right.updated_at.localeCompare(left.updated_at))[0];
+    }, [currentCustomerId, goalId, myChainsQuery.data]);
+    const completedStepProduct = lastCompletedRouteStep
+        ? productsById.get(lastCompletedRouteStep.to_product_id)
+        : undefined;
+    const currentProduct = completedStepProduct ?? selectedSource ?? routeSource;
+    const currentProductIndex = chain.findIndex(
+        (product) => product.product_id === currentProduct?.product_id,
+    );
+    const firstHop =
+        currentProductIndex >= 0
+            ? chain[currentProductIndex + 1] ?? goalProduct
+            : routeSource?.customer_id === currentCustomerId
+              ? chain[1] ?? goalProduct
+              : routeSource ?? goalProduct;
+    const stepsRemaining =
+        currentProductIndex >= 0
+            ? Math.max(0, chain.length - currentProductIndex - 1)
+            : currentProduct?.product_id === goalId
+              ? 0
+              : Math.max(1, chain.length - 1);
 
     useEffect(() => {
         setSelectedTargetIds([]);
@@ -214,6 +235,7 @@ export const useRoute = () => {
                 createChain({
                     from_product_id: currentProduct.product_id,
                     to_product_id: productId,
+                    previous_chain_id: lastCompletedRouteStep?.chain_id,
                     exchange_goal_id: goalId,
                     route_step_id: currentProduct.product_id,
                     status: 'pending',
@@ -247,7 +269,15 @@ export const useRoute = () => {
         }
 
         setSelectedTargetIds(failedIds);
-    }, [createChain, currentProduct, goalId, goalProduct?.title, myChainsQuery, selectedTargetIds]);
+    }, [
+        createChain,
+        currentProduct,
+        goalId,
+        goalProduct?.title,
+        lastCompletedRouteStep?.chain_id,
+        myChainsQuery,
+        selectedTargetIds,
+    ]);
 
     const openProduct = useCallback(
         (productId: string) => navigate(`/product/${productId}`),

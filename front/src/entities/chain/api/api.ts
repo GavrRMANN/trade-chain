@@ -3,6 +3,7 @@ import { createApi } from '@reduxjs/toolkit/query/react';
 import { apiBaseQuery } from '@shared/api';
 import type {
     TChain,
+    TChainDetails,
     TChainMessage,
     TConfirmChainRequest,
     TCreateChainRequest,
@@ -18,6 +19,9 @@ export const chainApi = createApi({
             query: (body) => ({ url: '/chains', method: 'POST', body }),
         }),
         getChain: builder.query<TChain, string>({ query: (id) => `/chains/${id}` }),
+        getChainDetails: builder.query<TChainDetails, string>({
+            query: (id) => `/exchange-offers/${id}`,
+        }),
         getFullChain: builder.query<TChain[], string>({ query: (id) => `/chains/${id}/full` }),
         getChainsByProduct: builder.query<TChain[], string>({
             query: (productId) => `/chains/by-product/${productId}`,
@@ -47,6 +51,7 @@ export const chainApi = createApi({
 export const {
     useCreateChainMutation,
     useGetChainQuery,
+    useGetChainDetailsQuery,
     useGetFullChainQuery,
     useGetChainsByProductQuery,
     useUpdateChainStatusMutation,

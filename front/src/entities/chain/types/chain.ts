@@ -71,4 +71,15 @@ export type TChainMessage = {
 
 export type TConfirmChainRequest = { success: boolean };
 
+export type TChainConfirmation = {
+    customer_id: string;
+    result: 'success' | 'failed';
+    reason?: string;
+    created_at: string;
+};
+
+export type TChainDetails = {
+    confirmations: TChainConfirmation[];
+};
+
 export type TSendChainMessageRequest = { body: string };
