@@ -5,7 +5,7 @@ import {Input} from '@shared/ui/input';
 import {Selector} from '@shared/ui/selector';
 import {Textarea} from '@shared/ui/textarea';
 import {sanitizePrice} from '@shared/lib';
-import type {Category} from '@entities/category';
+import type {TCategory} from '@entities/category';
 import type {TProductStatus} from '@entities/product';
 
 import {CategoryPicker} from './CategoryPicker';
@@ -17,7 +17,7 @@ type TErrors = Partial<Record<TField, string>>;
 
 type TProductFormProps = {
     isEdit: boolean;
-    categories: Category[];
+    categories: TCategory[];
     statusOptions: {value: TProductStatus; label: string}[];
     title: string;
     categoryId: string;

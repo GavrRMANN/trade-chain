@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { ProductCard } from './ProductCard';
 
 const meta = {
-    title: 'Shared/RpoductCard',
+    title: 'Entities/ProductCard',
     component: ProductCard,
     args: {
         title: 'Игровая приставка Sony PlayStation 4 Slim',

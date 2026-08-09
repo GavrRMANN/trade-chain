@@ -1,6 +1,6 @@
 import {useEffect, useState} from 'react';
 
-import type {Category} from '@entities/category';
+import type {TCategory} from '@entities/category';
 import {
     useAddWishlistOptionMutation,
     useCreateWishlistMutation,
@@ -14,7 +14,7 @@ type TWishlistEditorParams = {
     productId: string;
     productTitle: string;
     wishlist?: TWishlist;
-    options: Category[];
+    options: TCategory[];
 };
 
 export const useWishlistEditor = ({productId, productTitle, wishlist, options}: TWishlistEditorParams) => {

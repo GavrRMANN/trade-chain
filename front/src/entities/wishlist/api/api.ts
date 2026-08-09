@@ -1,7 +1,7 @@
 import { createApi } from '@reduxjs/toolkit/query/react';
 
 import { apiBaseQuery } from '@shared/api';
-import type { Category } from '@entities/category';
+import type { TCategory } from '@entities/category';
 import type {
     TCreateWishlistRequest,
     TWishlist,
@@ -22,7 +22,7 @@ export const wishlistApi = createApi({
         deleteWishlist: builder.mutation<void, string>({
             query: (id) => ({ url: `/wishlists/${id}`, method: 'DELETE' }),
         }),
-        getWishlistOptions: builder.query<Category[], string>({
+        getWishlistOptions: builder.query<TCategory[], string>({
             query: (id) => `/wishlists/${id}/options`,
         }),
         addWishlistOption: builder.mutation<void, { id: string; body: TWishlistOptionRequest }>({

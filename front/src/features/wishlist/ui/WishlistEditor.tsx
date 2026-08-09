@@ -1,4 +1,4 @@
-import type {Category} from '@entities/category';
+import type {TCategory} from '@entities/category';
 import type {TWishlist} from '@entities/wishlist';
 import {Selector} from '@shared/ui/selector';
 import {Button} from '@shared/ui/button';
@@ -10,7 +10,7 @@ type TWishlistEditorProps = {
     productId: string;
     productTitle: string;
     wishlist?: TWishlist;
-    options: Category[];
+    options: TCategory[];
 };
 
 export const WishlistEditor = ({productId, productTitle, wishlist, options}: TWishlistEditorProps) => {

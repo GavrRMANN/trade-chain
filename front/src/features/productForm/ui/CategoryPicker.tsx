@@ -1,11 +1,11 @@
 import {useMemo, useState} from 'react';
 
-import type {Category} from '@entities/category';
+import type {TCategory} from '@entities/category';
 
 import Styles from './CategoryPicker.module.css';
 
 type TCategoryPickerProps = {
-    categories: Category[];
+    categories: TCategory[];
     value: string;
     onChange: (value: string) => void;
     disabled?: boolean;
@@ -66,7 +66,7 @@ export const CategoryPicker = ({
         setExpandedParent((current) => (current === parentId ? null : parentId));
     };
 
-    const handleSelect = (category: Category) => {
+    const handleSelect = (category: TCategory) => {
         if (disabled) {
             return;
         }

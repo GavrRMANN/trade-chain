@@ -10,16 +10,19 @@ import type {TNotification} from '../types';
 
 const POLLING_INTERVAL = 30_000;
 
+type TFeedOptions = {
+    /** Включить периодический опрос. Выключают на страницах с собственным refetch. */
+    polling?: boolean;
+};
+
 /**
  * Общий источник уведомлений для шапки и страницы.
  *
  * Опрашивает «Мои обмены» раз в 30 секунд (бэкенд уведомлений/WebSocket
  * отсутствует — см. docs/PRODUCT_FLOW.md §4) и превращает сделки в ленту событий.
- *
- * @param polling включить периодический опрос (выключают на страницах с
- *   собственным refetch — например, в комнате обмена).
  */
-export const useNotificationsFeed = (polling = true) => {
+export const useNotificationsFeed = (options: TFeedOptions = {}) => {
+    const {polling = true} = options;
     const isAuthenticated = useAppSelector(selectIsAuthenticated);
 
     const {data: currentUser} = useGetCurrentUserQuery(undefined, {
