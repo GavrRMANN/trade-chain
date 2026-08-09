@@ -46,6 +46,7 @@ func main() {
 	categoryService := service.NewCategoryService(categoryRepo)
 	wishlistService := service.NewWishlistService(wishlistRepo, productRepo)
 	chainService := service.NewChainService(chainRepo, productRepo, negotiationRepo)
+	offerService := service.NewOfferService(chainService, chainRepo, negotiationRepo)
 	reviewService := service.NewReviewService(reviewRepo, customerRepo, productRepo, chainService)
 
 	// Сервис поиска
@@ -56,6 +57,7 @@ func main() {
 		Customers:  customerService,
 		Products:   productService,
 		Chains:     chainService,
+		Offers:     offerService,
 		Reviews:    reviewService,
 		Categories: categoryService,
 		Wishlists:  wishlistService,

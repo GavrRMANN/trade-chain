@@ -24,13 +24,15 @@ func mapExchangeError(err error) error {
 		errors.Is(err, domain.ErrWrongActor):
 		return fmt.Errorf("%w: %s", ErrForbidden, err)
 
-	case errors.Is(err, domain.ErrAlreadyConfirmed):
+	case errors.Is(err, domain.ErrAlreadyConfirmed),
+		errors.Is(err, domain.ErrOfferDuplicate):
 		return fmt.Errorf("%w: %s", ErrConflict, err)
 
 	case errors.Is(err, domain.ErrChainFinal),
 		errors.Is(err, domain.ErrInvalidTransition),
 		errors.Is(err, domain.ErrSelfExchange),
-		errors.Is(err, domain.ErrProductUnavailable):
+		errors.Is(err, domain.ErrProductUnavailable),
+		errors.Is(err, domain.ErrInvalidSurcharge):
 		return fmt.Errorf("%w: %s", ErrInvalidInput, err)
 
 	default:

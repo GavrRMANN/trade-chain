@@ -15,9 +15,31 @@ type Chain struct {
 	NextChainID     *string   `json:"next_chain_id,omitempty"`
 	Status          string    `json:"status"`
 	Message         string    `json:"message,omitempty"`
+	ExchangeGoalID  *string   `json:"exchange_goal_id,omitempty"`
+	RouteStepID     *string   `json:"route_step_id,omitempty"`
+	Surcharge       Surcharge `json:"surcharge"`
 	ExpiresAt       time.Time `json:"expires_at"`
 	CreatedAt       time.Time `json:"created_at"`
 	UpdatedAt       time.Time `json:"updated_at"`
+}
+
+// Surcharge — доплата, которой стороны выравнивают разницу в стоимости вещей.
+//
+// Плательщик хранится отдельным полем, а не выводится из знака суммы:
+// «плюс пять тысяч» читается с двух сторон сделки по-разному, и на встрече
+// выясняется, что деньги ждали оба.
+type Surcharge struct {
+	Amount   int     `json:"amount"`
+	Currency string  `json:"currency"`
+	Payer    *string `json:"payer"`
+}
+
+// DefaultCurrency — валюта доплаты, если клиент не указал свою.
+const DefaultCurrency = "RUB"
+
+// IsZero сообщает, что доплаты в предложении нет.
+func (s Surcharge) IsZero() bool {
+	return s.Amount == 0 && s.Payer == nil
 }
 
 // ChainStatus — состояние звена обмена.
@@ -49,6 +71,18 @@ func (s ChainStatus) IsFinal() bool {
 	}
 }
 
+// OfferRole — сторона, с которой человек смотрит на предложение.
+//
+// Одно и то же звено для одного входящее, для другого исходящее, и списки эти
+// живут на разных экранах: отвечать нужно на первое, ждать — по второму.
+type OfferRole string
+
+const (
+	RoleAny      OfferRole = ""         // любая сторона
+	RoleIncoming OfferRole = "incoming" // предложили ему
+	RoleOutgoing OfferRole = "outgoing" // предложил он
+)
+
 // ChainMessage — реплика в переписке по конкретному звену.
 //
 // Чат привязан к сделке, а не к паре пользователей: обсуждение всегда имеет
@@ -62,10 +96,14 @@ type ChainMessage struct {
 }
 
 // ChainConfirmation — подтверждение итога обмена одной из сторон.
+//
+// Reason заполняется только при неудаче: «обмен не состоялся» без объяснения
+// вторая сторона не может ни оспорить, ни исправить.
 type ChainConfirmation struct {
 	ChainID    string    `json:"chain_id"`
 	CustomerID string    `json:"customer_id"`
 	Success    bool      `json:"success"`
+	Reason     string    `json:"reason,omitempty"`
 	CreatedAt  time.Time `json:"created_at"`
 }
 
@@ -79,4 +117,6 @@ var (
 	ErrSelfExchange       = errors.New("нельзя обменяться с самим собой")
 	ErrProductUnavailable = errors.New("товар недоступен для обмена")
 	ErrAlreadyConfirmed   = errors.New("итог обмена уже подтверждён")
+	ErrInvalidSurcharge   = errors.New("доплата указана неверно")
+	ErrOfferDuplicate     = errors.New("предложение по этим товарам уже отправлено")
 )

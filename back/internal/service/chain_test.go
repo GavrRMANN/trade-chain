@@ -3,9 +3,11 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 	"trade-chain/internal/domain"
 	"trade-chain/internal/exchange"
+	"trade-chain/internal/repository"
 )
 
 // Подставные репозитории держат состояние в памяти: правила согласования
@@ -56,14 +58,26 @@ func (f *fakeProductRepo) GetExchangeCandidates(context.Context, string) ([]doma
 }
 
 type fakeChainRepo struct {
-	chains    map[string]domain.Chain
-	products  *fakeProductRepo
-	completed int // сколько раз обмен доводился до конца
+	chains           map[string]domain.Chain
+	products         *fakeProductRepo
+	completed        int  // сколько раз обмен доводился до конца
+	rejectDuplicates bool // повторяет уникальный индекс на предложениях в ожидании
 }
 
 func (f *fakeChainRepo) Create(_ context.Context, c *domain.Chain) (*domain.Chain, error) {
+	if f.rejectDuplicates {
+		for _, existing := range f.chains {
+			if existing.Status == string(domain.ChainPending) &&
+				existing.InitiatorID == c.InitiatorID &&
+				existing.FromProductID == c.FromProductID &&
+				existing.ToProductID == c.ToProductID {
+				return nil, domain.ErrOfferDuplicate
+			}
+		}
+	}
+
 	stored := *c
-	stored.ChainID = chainID
+	stored.ChainID = fmt.Sprintf("chain-%d", len(f.chains)+1)
 	f.chains[stored.ChainID] = stored
 	return &stored, nil
 }
@@ -106,14 +120,70 @@ func (f *fakeChainRepo) CompleteExchange(_ context.Context, id string) error {
 	c.Status = string(domain.ChainCompleted)
 	f.chains[id] = c
 	f.completed++
+
+	// Настоящий репозиторий закрывает конкурирующие предложения по тем же
+	// товарам в этой же транзакции; фейк повторяет это, иначе правило негде
+	// проверить.
+	for otherID, other := range f.chains {
+		if otherID == id || other.Status != string(domain.ChainPending) {
+			continue
+		}
+		if touchesSameProducts(other, c) {
+			other.Status = string(domain.ChainCancelled)
+			f.chains[otherID] = other
+		}
+	}
 	return nil
+}
+
+func touchesSameProducts(a, b domain.Chain) bool {
+	for _, product := range []string{b.FromProductID, b.ToProductID} {
+		if a.FromProductID == product || a.ToProductID == product {
+			return true
+		}
+	}
+	return false
 }
 
 func (f *fakeChainRepo) GetByProductID(context.Context, string) ([]domain.Chain, error) {
 	return nil, nil
 }
-func (f *fakeChainRepo) GetByCustomerID(context.Context, string) ([]domain.Chain, error) {
-	return nil, nil
+func (f *fakeChainRepo) GetByCustomerID(ctx context.Context, customerID string) ([]domain.Chain, error) {
+	return f.List(ctx, repository.ChainFilter{CustomerID: customerID})
+}
+
+func (f *fakeChainRepo) List(_ context.Context, filter repository.ChainFilter) ([]domain.Chain, error) {
+	found := make([]domain.Chain, 0, len(f.chains))
+	for _, c := range f.chains {
+		if !matchesRole(c, filter) || !matchesStatus(c, filter.Statuses) {
+			continue
+		}
+		found = append(found, c)
+	}
+	return found, nil
+}
+
+func matchesRole(c domain.Chain, filter repository.ChainFilter) bool {
+	switch filter.Role {
+	case domain.RoleIncoming:
+		return c.RecipientID == filter.CustomerID
+	case domain.RoleOutgoing:
+		return c.InitiatorID == filter.CustomerID
+	default:
+		return c.InitiatorID == filter.CustomerID || c.RecipientID == filter.CustomerID
+	}
+}
+
+func matchesStatus(c domain.Chain, statuses []domain.ChainStatus) bool {
+	if len(statuses) == 0 {
+		return true
+	}
+	for _, status := range statuses {
+		if c.Status == string(status) {
+			return true
+		}
+	}
+	return false
 }
 func (f *fakeChainRepo) GetFullChain(context.Context, string) ([]domain.Chain, error) {
 	return nil, nil
@@ -254,7 +324,7 @@ func TestCompletedRequiresBothConfirmations(t *testing.T) {
 		t.Fatalf("завершить обмен сменой статуса нельзя, получено: %v", err)
 	}
 
-	chain, err := f.service.Confirm(ctx, chainID, initiator, true)
+	chain, err := f.service.Confirm(ctx, chainID, initiator, true, "")
 	if err != nil {
 		t.Fatalf("неожиданная ошибка: %v", err)
 	}
@@ -265,7 +335,7 @@ func TestCompletedRequiresBothConfirmations(t *testing.T) {
 		t.Error("обмен проведён по одному подтверждению")
 	}
 
-	chain, err = f.service.Confirm(ctx, chainID, recipient, true)
+	chain, err = f.service.Confirm(ctx, chainID, recipient, true, "")
 	if err != nil {
 		t.Fatalf("неожиданная ошибка: %v", err)
 	}
@@ -277,11 +347,38 @@ func TestCompletedRequiresBothConfirmations(t *testing.T) {
 	}
 }
 
+// Состоявшийся обмен закрывает предложения по тем же вещам: принять их уже
+// нельзя, вещи у новых владельцев.
+func TestCompletionClosesCompetingOffers(t *testing.T) {
+	f := newFixture(domain.ChainActive)
+	ctx := context.Background()
+
+	competing, err := f.service.Create(ctx, &domain.Chain{
+		FromProductID: strangerID,
+		ToProductID:   requestedID,
+		InitiatorID:   stranger,
+	})
+	if err != nil {
+		t.Fatalf("неожиданная ошибка: %v", err)
+	}
+
+	if _, err := f.service.Confirm(ctx, chainID, initiator, true, ""); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.service.Confirm(ctx, chainID, recipient, true, ""); err != nil {
+		t.Fatal(err)
+	}
+
+	if got := f.chains.chains[competing.ChainID].Status; got != string(domain.ChainCancelled) {
+		t.Errorf("конкурирующее предложение в статусе %q, ожидался %q", got, domain.ChainCancelled)
+	}
+}
+
 func TestSingleNegativeConfirmationFailsExchange(t *testing.T) {
 	f := newFixture(domain.ChainActive)
 	ctx := context.Background()
 
-	if _, err := f.service.Confirm(ctx, chainID, initiator, false); err != nil {
+	if _, err := f.service.Confirm(ctx, chainID, initiator, false, ""); err != nil {
 		t.Fatalf("неожиданная ошибка: %v", err)
 	}
 
@@ -298,10 +395,10 @@ func TestSecondConfirmationFromSameSideIsConflict(t *testing.T) {
 	f := newFixture(domain.ChainActive)
 	ctx := context.Background()
 
-	if _, err := f.service.Confirm(ctx, chainID, initiator, true); err != nil {
+	if _, err := f.service.Confirm(ctx, chainID, initiator, true, ""); err != nil {
 		t.Fatalf("неожиданная ошибка: %v", err)
 	}
-	if _, err := f.service.Confirm(ctx, chainID, initiator, true); !errors.Is(err, ErrConflict) {
+	if _, err := f.service.Confirm(ctx, chainID, initiator, true, ""); !errors.Is(err, ErrConflict) {
 		t.Fatalf("ошибка %v, ожидалась ErrConflict", err)
 	}
 }
@@ -310,7 +407,7 @@ func TestStrangerCannotConfirmOrRead(t *testing.T) {
 	f := newFixture(domain.ChainActive)
 	ctx := context.Background()
 
-	if _, err := f.service.Confirm(ctx, chainID, stranger, true); !errors.Is(err, ErrForbidden) {
+	if _, err := f.service.Confirm(ctx, chainID, stranger, true, ""); !errors.Is(err, ErrForbidden) {
 		t.Fatalf("ошибка %v, ожидалась ErrForbidden", err)
 	}
 	if _, err := f.service.Messages(ctx, chainID, stranger); !errors.Is(err, ErrForbidden) {
@@ -346,10 +443,10 @@ func TestCanReviewAfterCompletedExchange(t *testing.T) {
 	f := newFixture(domain.ChainActive)
 	ctx := context.Background()
 
-	if _, err := f.service.Confirm(ctx, chainID, initiator, true); err != nil {
+	if _, err := f.service.Confirm(ctx, chainID, initiator, true, ""); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := f.service.Confirm(ctx, chainID, recipient, true); err != nil {
+	if _, err := f.service.Confirm(ctx, chainID, recipient, true, ""); err != nil {
 		t.Fatal(err)
 	}
 
