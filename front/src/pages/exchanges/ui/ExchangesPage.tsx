@@ -4,7 +4,7 @@ import {Button} from '@shared/ui/button';
 import {MainSection} from '@shared/ui/mainSection';
 import {PageError} from '@shared/ui/pageError';
 import {Preloader} from '@shared/ui/preloader';
-import {ExchangeRow} from '@shared/ui/exchangeRow';
+import {ExchangeRow} from '@widgets/exchangeRow';
 import {ProductImage} from '@shared/ui/productImage';
 import {Modal} from '@shared/ui/modal';
 import {useOpenModalRoute} from '@shared/lib';

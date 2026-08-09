@@ -5,11 +5,11 @@ import {useGetChainsByProductQuery} from '@entities/chain';
 import {useGetCustomerQuery} from '@entities/customer';
 import {
     useGetProductQuery,
+    useGetProductRecommendationsQuery,
     useGetProductsByCustomerQuery,
     useGetProductsQuery,
 } from '@entities/product';
 import {useGetCustomerRatingQuery, useGetReviewsByCustomerQuery} from '@entities/review';
-import {useFindChainQuery} from '@entities/search';
 import {useGetCurrentUserQuery} from '@entities/user';
 import {useGetWishlistByProductQuery, useGetWishlistOptionsQuery} from '@entities/wishlist';
 import {getAuthToken} from '@shared/api';
@@ -48,8 +48,8 @@ export const useProductPageData = (productId?: string) => {
     const chainsQuery = useGetChainsByProductQuery(productId ?? '', {
         skip: !productId || !isOwner,
     });
-    const chainQuery = useFindChainQuery(
-        {target_product_id: productId ?? ''},
+    const recommendationsQuery = useGetProductRecommendationsQuery(
+        productId ?? '',
         {skip: !productId || !currentUserId || isOwner},
     );
 
@@ -61,9 +61,9 @@ export const useProductPageData = (productId?: string) => {
     }, [myProductsQuery.data, optionsQuery.data]);
 
     const routeChain = useMemo(() => {
-        const products = chainQuery.data?.chain ?? [];
+        const products = recommendationsQuery.data?.Products ?? [];
         return [...products].reverse();
-    }, [chainQuery.data?.chain]);
+    }, [recommendationsQuery.data?.Products]);
 
     const productOffers = useMemo(() => {
         const productsById = new Map(

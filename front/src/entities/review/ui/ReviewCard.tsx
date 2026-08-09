@@ -1,4 +1,4 @@
-import type {TReview} from '@entities/review';
+import type {TReview} from '../types';
 
 import {Rating} from '@shared/ui/rating';
 import {formatDate} from '@shared/lib';

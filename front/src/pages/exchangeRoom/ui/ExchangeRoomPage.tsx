@@ -11,7 +11,7 @@ import { MessageList } from '@shared/ui/messageList';
 import { PageError } from '@shared/ui/pageError';
 import { Preloader } from '@shared/ui/preloader';
 import { ProductCard } from '@shared/ui/productCard';
-import { StatusBadge } from '@shared/ui/statusBadge';
+import { ChainStatusBadge } from '@entities/chain';
 import { Textarea } from '@shared/ui/textarea';
 import { formatDate, useOpenModalRoute } from '@shared/lib';
 
@@ -95,7 +95,7 @@ export const ExchangeRoomPage = () => {
             <div className={Styles.page}>
                 <header className={Styles.header}>
                     <div className={Styles['header__meta']}>
-                        <StatusBadge status={chain.status} />
+                        <ChainStatusBadge status={chain.status} />
                     </div>
                     <span className={Styles['header__created']}>
                         Создано: {formatDate(chain.created_at)}

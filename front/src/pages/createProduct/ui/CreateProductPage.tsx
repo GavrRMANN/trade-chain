@@ -8,7 +8,7 @@ import {PageError} from '@shared/ui/pageError';
 import {Button} from '@shared/ui/button';
 import {useOpenModalRoute} from '@shared/lib';
 
-import {ProductForm} from './ProductForm';
+import {ProductForm} from '@features/productForm';
 import Styles from './create-product-page.module.css';
 import {useProductForm} from '../lib';
 

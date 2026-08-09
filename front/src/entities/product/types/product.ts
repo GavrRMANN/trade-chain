@@ -71,3 +71,9 @@ export type TProduct = {
     /** Дата последнего обновления товара в ISO 8601. */
     updated_at: string;
 };
+
+/** Результат поиска маршрута обмена для выбранного товара. */
+export type TProductRecommendations = {
+    Products: TProduct[];
+    Length: number;
+};

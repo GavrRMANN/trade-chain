@@ -4,11 +4,12 @@ import type {TProduct} from '@entities/product';
 import type {TReview} from '@entities/review';
 import type {TProfileExchange, TProfileTab} from '@pages/profile/lib/useProfile';
 import {Button} from '@shared/ui/button';
-import {ExchangeRow} from '@shared/ui/exchangeRow';
-import {ProfileSidebar} from '@shared/ui/profileSidebar';
-import {ReviewCard} from '@shared/ui/reviewCard';
+import {ExchangeRow} from '@widgets/exchangeRow';
+import {ProfileSidebar} from '@widgets/profileSidebar';
+import {ReviewCard} from '@entities/review';
+import {ProfileProductRow} from '@widgets/profile';
 
-import {ProfileProductRow} from './ProfileProductRow';
+import {EmptyState} from './EmptyState';
 import Styles from './profile-content.module.css';
 
 type TProfileContentViewModel = {
@@ -215,23 +216,3 @@ export const ProfileContent = ({
         </div>
     );
 };
-
-const EmptyState = ({
-    title,
-    description,
-    actionLabel,
-    onAction,
-}: {
-    title: string;
-    description: string;
-    actionLabel?: string;
-    onAction?: () => void;
-}) => (
-    <div className={Styles.empty}>
-        <div>
-            <h3>{title}</h3>
-            <p>{description}</p>
-        </div>
-        {actionLabel && onAction && <Button variant="secondary" onClick={onAction}>{actionLabel}</Button>}
-    </div>
-);

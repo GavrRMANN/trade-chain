@@ -171,6 +171,10 @@ async function handleProducts(request, response, url) {
         return sendJson(response, 200, list.slice(...sliceBounds(url.searchParams)));
     }
 
+    if (request.method === 'GET' && parts.length === 2 && parts[1] === 'recommendations') {
+        return productRecommendations(request, response, parts[0]);
+    }
+
     // /search и /by-customer на бэкенде не смонтированы — поэтому здесь их нет:
     // такие запросы уходят в ветку {id} и возвращают 404.
 
@@ -1089,6 +1093,26 @@ function findChain(request, response, params) {
           ].filter(Boolean)
         : [];
     return sendJson(response, 200, { chain, length: chain.length });
+}
+
+function productRecommendations(request, response, productId) {
+    const user = requireUser(request);
+    if (!user) return sendError(response, 403, 'operation forbidden');
+
+    const result = chains.find(
+        (item) => item.to_product_id === productId && item.status !== 'cancelled',
+    );
+    const productsInChain = result
+        ? [
+              products.find((item) => item.product_id === result.from_product_id),
+              products.find((item) => item.product_id === result.to_product_id),
+          ].filter(Boolean)
+        : [];
+
+    return sendJson(response, 200, {
+        Products: productsInChain,
+        Length: productsInChain.length,
+    });
 }
 
 // ===== Общие хелперы =======================================================

@@ -1,76 +1,11 @@
 import {MainSection} from '@shared/ui/mainSection';
 import {Preloader} from '@shared/ui/preloader';
 import {PageError} from '@shared/ui/pageError';
-import {StatusBadge} from '@shared/ui/statusBadge';
 import {Button} from '@shared/ui/button';
-import {formatDate} from '@shared/lib';
-
-import type {TNotification, TNotificationKind} from '@entities/notification';
 
 import Styles from './notifications-page.module.css';
+import {NotificationRow} from '@entities/notification';
 import {useNotificationsPage} from '../lib';
-
-const KIND_LABEL: Record<TNotificationKind, string> = {
-    incoming_offer: 'Новое предложение',
-    outgoing_pending: 'Ждёт ответа',
-    in_progress: 'В работе',
-    finished: 'Завершено',
-};
-
-const NotificationRow = ({
-    notification,
-    onOpen,
-}: {
-    notification: TNotification;
-    onOpen: (chainId: string) => void;
-}) => {
-    const {chain_id, title, body, status, updated_at} = notification;
-    const requiresAction = notification.kind === 'incoming_offer';
-
-    const handleOpen = () => onOpen(chain_id);
-    const handleKeyDown = (event: React.KeyboardEvent) => {
-        if (event.key === 'Enter' || event.key === ' ') {
-            event.preventDefault();
-            onOpen(chain_id);
-        }
-    };
-
-    const rowClasses = [
-        Styles['notifications-page__row'],
-        requiresAction && Styles['notifications-page__row--accent'],
-    ]
-        .filter(Boolean)
-        .join(' ');
-
-    return (
-        <div
-            className={rowClasses}
-            role="button"
-            tabIndex={0}
-            onClick={handleOpen}
-            onKeyDown={handleKeyDown}
-        >
-            <div className={Styles['notifications-page__row-body']}>
-                <div className={Styles['notifications-page__row-head']}>
-                    <span className={Styles['notifications-page__row-kind']}>
-                        {KIND_LABEL[notification.kind]}
-                    </span>
-                    {requiresAction && (
-                        <span className={Styles['notifications-page__row-dot']} aria-hidden="true" />
-                    )}
-                </div>
-                <p className={Styles['notifications-page__row-title']}>{title}</p>
-                <p className={Styles['notifications-page__row-text']}>{body}</p>
-            </div>
-            <div className={Styles['notifications-page__row-meta']}>
-                <StatusBadge status={status} />
-                <span className={Styles['notifications-page__row-date']}>
-                    {formatDate(updated_at)}
-                </span>
-            </div>
-        </div>
-    );
-};
 
 export const NotificationsPage = () => {
     const {
