@@ -6,6 +6,7 @@
 
 :root {
     --header-height: 75px;
+    --mobile-nav-height: 0px;
     --max-width: 1200px;
 
     /* Accent */
@@ -175,6 +176,7 @@ main {
 @media (max-width: 768px) {
     :root {
         --header-height: 50px;
+        --mobile-nav-height: 72px;
     }
 
     h3 {

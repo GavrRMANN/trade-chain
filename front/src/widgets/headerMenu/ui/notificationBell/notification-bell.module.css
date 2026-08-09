@@ -33,12 +33,33 @@
 }
 
 /* Активный маршрут /notifications */
-.notification-bell--authed.active {
-    background: var(--bg-disabled);
-}
-
 .notification-bell__label {
     white-space: nowrap;
+}
+
+.notification-bell--compact {
+    justify-content: center;
+
+    width: 40px;
+    height: 40px;
+    padding: 8px;
+}
+
+.notification-bell__icon {
+    width: 24px;
+    height: 24px;
+
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.notification-bell--compact .notification-bell__badge {
+    position: absolute;
+    top: 2px;
+    right: 2px;
 }
 
 .notification-bell__badge {

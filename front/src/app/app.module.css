@@ -22,5 +22,8 @@
 @media (max-width: 768px) {
     .content {
         gap: var(--second-gap);
+        height: auto;
+        min-height: calc(100vh - var(--header-height));
+        padding-bottom: var(--mobile-nav-height);
     }
 }

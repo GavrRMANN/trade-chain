@@ -1,5 +1,6 @@
 .header {
     position: fixed;
+    z-index: 30;
     top: 0;
     left: 0;
 
@@ -12,44 +13,18 @@
 
     padding: 0 32px;
 
-    gap: var(--main-gap);
+    gap: var(--space-3);
 
     height: var(--header-height);
+    border-bottom: 1px solid var(--bg-shadows);
 
     background-color: var(--bg-secondary);
-}
-
-.header__logo {
-    position: relative;
-
-    top: 2px;
-
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-.header__action,
-.header__profile {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0;
-    border: 0;
-    background: transparent;
-    cursor: pointer;
-    color: var(--neutral-primary);
-}
-
-.header__action svg {
-    width: 20px;
-    height: 20px;
+    box-shadow: 0 4px 16px rgba(31, 41, 55, 0.08);
 }
 
 @media (max-width: 768px) {
     .header {
-        padding: var(--space-5);
-        gap: var(--space-5);
-        grid-template-columns: repeat(1, 1fr);
+        padding: var(--space-1) var(--space-3);
+        gap: var(--space-3);
     }
 }
