@@ -55,7 +55,7 @@
     opacity: 0.6;
 }
 
-.message-input__submit {
+.message-input .message-input__submit {
     flex: 0 0 auto;
 
     width: auto;
