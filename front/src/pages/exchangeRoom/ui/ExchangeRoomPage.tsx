@@ -119,25 +119,12 @@ export const ExchangeRoomPage = () => {
                                 </Button>
                             ) : (
                                 <>
-                                    {chain.status === 'countered' && (
-                                        <p className={Styles['actions__note']}>
-                                            Встречное предложение отправлено
-                                        </p>
-                                    )}
                                     <Button
                                         loading={isActionLoading}
                                         disabled={isActionLoading}
                                         onClick={() => handleChangeStatus('active')}
                                     >
                                         Принять
-                                    </Button>
-                                    <Button
-                                        variant="secondary"
-                                        loading={isActionLoading}
-                                        disabled={isActionLoading}
-                                        onClick={() => handleChangeStatus('countered')}
-                                    >
-                                        Встречное
                                     </Button>
                                     <Button
                                         variant="text"
