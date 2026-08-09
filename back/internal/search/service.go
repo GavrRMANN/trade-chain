@@ -2,7 +2,7 @@ package search
 
 import (
 	"context"
-	"errors"
+	"fmt"
 	"trade-chain/internal/domain"
 	"trade-chain/internal/service"
 )
@@ -48,8 +48,11 @@ func (s *SearchService) FindChain(
 		return nil, err
 	}
 
+	// Пустой список своих товаров — это не поломка сервера, а состояние
+	// пользователя: меняться ему пока нечем. Голая errors.New доезжала до
+	// writeError неузнанной и превращалась в 500.
 	if len(myProducts) == 0 {
-		return nil, errors.New("user has no products")
+		return nil, fmt.Errorf("%w: у пользователя нет товаров для обмена", service.ErrInvalidInput)
 	}
 
 	return findChainBFS(

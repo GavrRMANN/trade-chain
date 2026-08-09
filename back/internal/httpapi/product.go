@@ -27,8 +27,10 @@ func mountProductRoutes(r chi.Router, s service.ProductService, w service.Wishli
 	h := productHandler{s, w, ss}
 
 	r.Route("/products", func(r chi.Router) {
-		// Публичные маршруты
+		// Публичные маршруты. Статические сегменты объявлены до {productID}:
+		// иначе «search» приезжает в обработчик товара как идентификатор.
 		r.Get("/", h.list)
+		r.Get("/search", h.searchProducts)
 		r.Get("/by-customer/{customerID}", h.byCustomer)
 		r.Get("/{productID}", h.get)
 
@@ -244,6 +246,44 @@ func (h productHandler) list(w http.ResponseWriter, r *http.Request) {
 		page,
 		limit,
 	)
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+
+	writeJSON(w, http.StatusOK, products)
+}
+
+// searchProducts godoc
+// @Summary Search products
+// @Description Текстовый поиск по каталогу с необязательным фильтром категории
+// @Tags products
+// @Produce json
+// @Param q query string true "Search query"
+// @Param category_id query string false "Category ID"
+// @Success 200 {array} domain.Product
+// @Failure 400 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /products/search [get]
+func (h productHandler) searchProducts(w http.ResponseWriter, r *http.Request) {
+	q := strings.TrimSpace(r.URL.Query().Get("q"))
+	if q == "" {
+		writeError(w, service.ErrInvalidInput)
+		return
+	}
+
+	page, limit, err := pagination(r)
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+
+	var category *string
+	if categoryID := strings.TrimSpace(r.URL.Query().Get("category_id")); categoryID != "" {
+		category = &categoryID
+	}
+
+	products, err := h.s.List(r.Context(), nil, q, category, page, limit)
 	if err != nil {
 		writeError(w, err)
 		return
