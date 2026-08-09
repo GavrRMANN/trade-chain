@@ -166,7 +166,7 @@ export const CategoryPicker = ({
                                 disabled={disabled}
                                 onClick={() =>
                                     handleSelect(
-                                        categories.find((c) => c.category_id === expandedParent) as Category,
+                                        categories.find((c) => c.category_id === expandedParent) as TCategory,
                                     )
                                 }
                             >
