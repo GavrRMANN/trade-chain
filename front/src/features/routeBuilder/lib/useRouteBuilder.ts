@@ -1,12 +1,10 @@
-import { useDeferredValue, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { useGetCategoriesQuery } from '@entities/category';
 import { useGetProductsQuery } from '@entities/product';
 import type { TProduct } from '@entities/product';
 import { useGetCurrentUserQuery } from '@entities/user';
-
-export type TGoalSearchMode = 'product' | 'category';
 
 /** Собирает старт и цель маршрута без привязки к странице конкретного товара. */
 export const useRouteBuilder = () => {
@@ -18,10 +16,6 @@ export const useRouteBuilder = () => {
 
     const [sourceId, setSourceId] = useState('');
     const [targetId, setTargetId] = useState('');
-    const [searchMode, setSearchMode] = useState<TGoalSearchMode>('product');
-    const [searchValue, setSearchValue] = useState('');
-    const [categoryId, setCategoryId] = useState('');
-    const deferredSearch = useDeferredValue(searchValue.trim());
 
     const sourceProducts = useMemo(
         () =>
@@ -32,45 +26,10 @@ export const useRouteBuilder = () => {
         [currentCustomerId, productsQuery.data],
     );
 
-    const targetProducts = useMemo(() => {
-        const normalizedSearch = deferredSearch.toLocaleLowerCase('ru');
-
-        return (productsQuery.data ?? [])
-            .filter((product) => {
-                const isAnotherOwner = product.customer_id !== currentCustomerId;
-                const matchesCategory = !categoryId || product.category_id === categoryId;
-                const matchesSearch =
-                    !normalizedSearch ||
-                    product.title.toLocaleLowerCase('ru').includes(normalizedSearch);
-
-                return (
-                    product.status === 'active' &&
-                    isAnotherOwner &&
-                    (searchMode === 'product' ? matchesSearch : matchesCategory)
-                );
-            })
-            .slice(0, 8);
-    }, [categoryId, currentCustomerId, deferredSearch, productsQuery.data, searchMode]);
-
     const selectedSource = sourceProducts.find((product) => product.product_id === sourceId);
-    const selectedTarget = targetProducts.find((product) => product.product_id === targetId);
-
-    const selectMode = (mode: TGoalSearchMode) => {
-        setSearchMode(mode);
-        setTargetId('');
-        setSearchValue('');
-        setCategoryId('');
-    };
-
-    const selectCategory = (value: string) => {
-        setCategoryId(value);
-        setTargetId('');
-    };
-
-    const search = (value: string) => {
-        setSearchValue(value);
-        setTargetId('');
-    };
+    const selectedTarget = (productsQuery.data ?? []).find(
+        (product) => product.product_id === targetId,
+    );
 
     const buildRoute = () => {
         if (!sourceId || !targetId) {
@@ -83,28 +42,26 @@ export const useRouteBuilder = () => {
 
     return {
         sourceProducts,
-        targetProducts,
+        products: productsQuery.data ?? [],
         categories: categoriesQuery.data ?? [],
+        currentCustomerId,
         sourceId,
         targetId,
         selectedSource,
         selectedTarget,
-        searchMode,
-        searchValue,
-        categoryId,
         isSourcesLoading: currentUserQuery.isLoading || productsQuery.isLoading,
         isTargetsLoading: categoriesQuery.isLoading || productsQuery.isLoading,
         hasTargetError: categoriesQuery.isError || productsQuery.isError,
         setSourceId,
         setTargetId,
-        selectMode,
-        selectCategory,
-        search,
         buildRoute,
     };
 };
 
 export const getProductMeta = (product: TProduct): string =>
-    [product.price === undefined ? undefined : `${product.price.toLocaleString('ru-RU')} ₽`, product.location]
+    [
+        product.price === undefined ? undefined : `${product.price.toLocaleString('ru-RU')} ₽`,
+        product.location,
+    ]
         .filter(Boolean)
         .join(' · ');
