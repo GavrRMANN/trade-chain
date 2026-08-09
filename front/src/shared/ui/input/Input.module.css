@@ -1,0 +1,37 @@
+.input {
+    display: inline-flex;
+    width: 100%;
+    min-height: 48px;
+    padding: 12px 14px;
+    border: 1px solid var(--bg-shadows);
+    border-radius: 4px;
+    background: var(--bg-secondary);
+    color: var(--neutral-primary);
+    font-family: var(--font-text), sans-serif;
+    font-size: 15px;
+    line-height: 1.5;
+    transition: border-color var(--animation-normal), box-shadow var(--animation-normal), background-color var(--animation-normal);
+}
+
+.input:not(.input--disabled):hover {
+    border-color: var(--neutral-disable);
+}
+
+.input:focus {
+    border-color: var(--accent-primary);
+    outline: none;
+    background: var(--bg-secondary);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent-primary) 13%, transparent);
+}
+
+.input::placeholder {
+    color: var(--neutral-disable);
+}
+
+.input--error {
+    border-color: var(--accent-danger);
+}
+
+.input--disabled {
+    cursor: not-allowed;
+}

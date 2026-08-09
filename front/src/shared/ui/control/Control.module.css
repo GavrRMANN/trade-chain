@@ -1,0 +1,24 @@
+.text {
+    color: var(--neutral-primary);
+
+    /* text-sm */
+    font-family: Inter, sans-serif;
+    font-size: 13px;
+    font-style: normal;
+    font-weight: 600;
+    line-height: 1.35;
+}
+
+.text--disabled {
+    color: var(--neutral-disable);
+
+    cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+    .text {
+        /* text-xs */
+        font-size: 12px;
+        line-height: 16px; /* 133.333% */
+    }
+}

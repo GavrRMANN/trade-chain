@@ -1,0 +1,17 @@
+.pagination-block {
+    display: flex;
+    gap: 5px;
+}
+
+.rotate {
+    transform: rotate(180deg);
+}
+
+.number {
+    width: 10px;
+    height: 10px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}

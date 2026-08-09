@@ -1,38 +1,57 @@
-import { memo } from 'react';
-import { Button as AntButton } from 'antd';
-import type { ButtonProps } from 'antd';
-import Styles from './button.module.css';
+import Styles from './Button.module.css';
+import {forwardRef, type MouseEventHandler, type ReactNode} from "react";
+import {Spinner} from "../spinner";
 
-type TButtonView = 'primary' | 'outline' | 'link';
+type TButtonVariant = 'primary' | 'secondary' | 'text' | 'default';
 
-type TButtonProps = ButtonProps & {
-    view?: TButtonView;
-    fullWidth?: boolean;
-};
+type TButtonProps = {
+    type?: 'button' | 'submit' | 'reset';
+    children?: ReactNode;
+    icon?: ReactNode;
+    onClick?: MouseEventHandler<HTMLButtonElement>;
+    active?: boolean;
+    disabled?: boolean;
+    loading?: boolean;
+    variant?: TButtonVariant;
+    ariaLabel?: string;
+    className?: string;
+}
 
-const getViewClassName = (view: TButtonView) => {
-    switch (view) {
-        case 'outline':
-            return Styles['button--outline'];
-        case 'link':
-            return Styles['button--link'];
-        default:
-            return Styles['button--primary'];
-    }
-};
+export const Button = forwardRef<HTMLButtonElement, TButtonProps>(({
+                                                                       type,
+                                                                       children,
+                                                                       icon,
+                                                                       onClick,
+                                                                       active = false,
+                                                                       disabled = false,
+                                                                       loading = false,
+                                                                       variant = 'primary',
+                                                                       ariaLabel,
+                                                                       className,
+                                                                   }, ref) => {
+    const classes = [
+        Styles.button,
+        Styles[`button--${variant}`],
+        className,
+        active && Styles[`button--active`],
+        loading && Styles['button--loading'],
+        icon && Styles['button--icon'],
+    ].filter(Boolean).join(' ');
 
-export const Button = memo(
-    ({ view = 'primary', fullWidth = false, className = '', type, ...props }: TButtonProps) => {
-        const buttonType = type || (view === 'link' ? 'link' : undefined);
-        const classNames = [
-            Styles.button,
-            getViewClassName(view),
-            fullWidth ? Styles['button--fullWidth'] : '',
-            className,
-        ]
-            .filter(Boolean)
-            .join(' ');
+    return (
+        <button
+            type={type}
+            ref={ref}
+            disabled={disabled || loading}
+            className={classes}
+            onClick={onClick}
+            aria-busy={loading}
+            aria-label={ariaLabel}
+        >
+            {loading ? <Spinner/> : icon}
+            {children}
+        </button>
+    );
+});
 
-        return <AntButton {...props} type={buttonType} className={classNames} />;
-    },
-);
+Button.displayName = "Button";

@@ -1,3 +1,14 @@
+.preloader-block {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+
+    gap: var(--main-gap);
+
+    flex-grow: 1;
+}
+
 .preloader {
     margin: 0 auto;
 }

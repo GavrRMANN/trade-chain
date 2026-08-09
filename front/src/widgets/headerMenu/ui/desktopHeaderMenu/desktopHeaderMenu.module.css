@@ -1,0 +1,130 @@
+.header {
+    position: fixed;
+    z-index: 30;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+
+    width: 100%;
+    max-width: var(--max-width);
+    height: var(--header-height);
+
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+
+    padding: 0 32px;
+
+    gap: var(--main-gap);
+
+    background-color: var(--bg-secondary);
+}
+
+.header__logo {
+    position: relative;
+
+    top: 2px;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    border-radius: var(--radius-sm);
+}
+
+.header__logo:focus {
+    outline: none;
+}
+
+.header__logo:focus-visible {
+    outline: 1px solid var(--accent-primary);
+    outline-offset: 2px;
+}
+
+.header__plus-icon {
+    display: inline-flex;
+
+    width: 24px;
+    height: 24px;
+
+    color: currentColor;
+}
+
+.header__plus-icon svg {
+    width: 100%;
+    height: 100%;
+}
+
+.header__action {
+    flex: 0 0 auto;
+
+    width: 40px;
+    height: 40px;
+    padding: var(--space-2);
+    border-radius: var(--radius-sm);
+
+    color: var(--neutral-primary);
+    background: transparent;
+    transition:
+        color var(--animation-fast) ease-in,
+        background-color var(--animation-fast) ease-in;
+}
+
+.header .header__action:hover,
+.header .header__action:focus-visible,
+.header .header__action.header__action--active {
+    color: var(--accent-primary);
+    background: var(--bg-disabled);
+}
+
+.header .header__exchange-icon {
+    width: 24px;
+    height: 24px;
+    border: 0;
+
+    background: transparent;
+    color: inherit;
+    transition: color var(--animation-fast) ease-in;
+}
+
+.header .header__exchange-icon svg {
+    width: 24px;
+    height: 24px;
+}
+
+.header__menu-icon {
+    display: inline-flex;
+
+    width: 24px;
+    height: 24px;
+
+    color: currentColor;
+}
+
+.header__menu-icon svg {
+    width: 100%;
+    height: 100%;
+}
+
+.header__plus-icon {
+    display: inline-flex;
+
+    width: 16px;
+    height: 16px;
+
+    color: currentColor;
+}
+
+.header__plus-icon svg {
+    width: 100%;
+    height: 100%;
+}
+
+@media (max-width: 768px) {
+    .header {
+        padding: var(--space-5);
+        gap: var(--space-5);
+        grid-template-columns: repeat(1, 1fr);
+    }
+}

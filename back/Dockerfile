@@ -7,7 +7,8 @@ RUN go mod download
 
 COPY . .
 
-RUN CGO_ENABLED=0 GOOS=linux go build -o /trade-chain-app ./cmd/app
+RUN CGO_ENABLED=0 GOOS=linux go build -o /trade-chain-back ./cmd/app
+
 
 FROM alpine:3.20
 
@@ -15,8 +16,8 @@ RUN apk --no-cache add ca-certificates
 
 WORKDIR /root/
 
-COPY --from=builder /trade-chain-app .
+COPY --from=builder /trade-chain-back .
 
 EXPOSE 8080
 
-CMD ["./trade-chain-app"]
+CMD ["./trade-chain-back"]
