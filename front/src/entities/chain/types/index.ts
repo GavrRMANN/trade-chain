@@ -1,5 +1,7 @@
 export type {
     TChain,
+    TChainConfirmation,
+    TChainDetails,
     TChainStatus,
     TCreateChainRequest,
     TUpdateChainStatus,

@@ -30,6 +30,7 @@ export const ExchangeRoomPage = () => {
         isPendingLike,
         isActive,
         isCompleted,
+        isWaitingForOtherConfirmation,
         openProduct,
         messageDraft,
         setMessageDraft,
@@ -151,7 +152,13 @@ export const ExchangeRoomPage = () => {
                         </div>
                     )}
 
-                    {isActive && (
+                    {isWaitingForOtherConfirmation && (
+                        <p className={Styles['actions__note']}>
+                            Вы подтвердили, что обмен состоялся. Ожидаем подтверждение второй стороны.
+                        </p>
+                    )}
+
+                    {isActive && !isWaitingForOtherConfirmation && (
                         <div className={Styles.actions}>
                             <Button
                                 loading={isActionLoading}
