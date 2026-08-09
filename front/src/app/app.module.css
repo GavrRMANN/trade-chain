@@ -13,6 +13,7 @@
     gap: var(--main-gap);
 
     height: calc(100vh - var(--header-height));
+    padding-bottom: clamp(var(--space-4), 3vw, var(--space-8));
 }
 
 .content--gradient {
@@ -24,6 +25,6 @@
         gap: var(--second-gap);
         height: auto;
         min-height: calc(100vh - var(--header-height));
-        padding-bottom: var(--mobile-nav-height);
+        padding-bottom: calc(var(--mobile-nav-height) + var(--space-3));
     }
 }
