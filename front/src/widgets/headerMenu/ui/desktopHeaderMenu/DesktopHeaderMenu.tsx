@@ -1,5 +1,5 @@
 import Styles from "./desktopHeaderMenu.module.css";
-import {NavLink, useLocation, useNavigate} from "react-router-dom";
+import {NavLink} from "react-router-dom";
 import LogoSVG from "@shared/assets/logo/logo.svg";
 import LogoNameSVG from "@shared/assets/logo/name.svg";
 import PlusSVG from "@shared/assets/icons/Plus.svg?react";
@@ -8,8 +8,8 @@ import {ExchangeDirection} from "@shared/ui/exchangeDirection";
 import {SearchBox} from "@widgets/headerMenu/ui/searchBox";
 import {NotificationBell} from "@widgets/headerMenu/ui/notificationBell";
 import {Button} from "@shared/ui/button";
-import {useOpenModalRoute} from "@shared/lib";
-import {getAuthToken} from "@shared/api";
+
+import {useDesktopHeaderActions} from "./useDesktopHeaderActions";
 
 type TDesktopHeaderMenuProps = {
     value: string;
@@ -22,10 +22,7 @@ type TDesktopHeaderMenuProps = {
 }
 
 export const DesktopHeaderMenu = ({value, setValue, search, isLoading, isError, suggestions, selectSuggestion}: TDesktopHeaderMenuProps) => {
-    const openModal = useOpenModalRoute();
-    const navigate = useNavigate();
-    const {pathname} = useLocation();
-    const isExchangesPage = pathname.startsWith('/exchanges');
+    const {isExchangesPage, isCreatePage, isProfilePage, onCreate, onExchanges, onProfile} = useDesktopHeaderActions();
     const getActionClassName = (isActive: boolean) => [
         Styles['header__action'],
         isActive && Styles['header__action--active'],
@@ -42,15 +39,15 @@ export const DesktopHeaderMenu = ({value, setValue, search, isLoading, isError, 
                 variant={'default'}
                 icon={<span className={Styles['header__plus-icon']}><PlusSVG/></span>}
                 ariaLabel="Разместить объявление"
-                className={getActionClassName(pathname === '/create')}
-                onClick={() => getAuthToken() ? navigate('/create') : openModal('auth')}
+                className={getActionClassName(isCreatePage)}
+                onClick={onCreate}
             />
             <Button
                 variant={'default'}
                 icon={<ExchangeDirection className={Styles['header__exchange-icon']}/>}
                 ariaLabel="Мои обмены"
                 className={getActionClassName(isExchangesPage)}
-                onClick={() => getAuthToken() ? navigate('/exchanges') : openModal('auth')}
+                onClick={onExchanges}
             />
             <NotificationBell
                 compact
@@ -61,8 +58,8 @@ export const DesktopHeaderMenu = ({value, setValue, search, isLoading, isError, 
                 variant={'default'}
                 icon={<span className={Styles['header__menu-icon']}><UserSVG/></span>}
                 ariaLabel="Открыть профиль"
-                className={getActionClassName(pathname.startsWith('/profile'))}
-                onClick={() => getAuthToken() ? navigate('/profile') : openModal('auth')}
+                className={getActionClassName(isProfilePage)}
+                onClick={onProfile}
             />
         </div>
     );

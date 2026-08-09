@@ -1,5 +1,4 @@
 import type { TChain } from '@entities/chain';
-import { useGetCustomerQuery } from '@entities/customer';
 import type { TProduct } from '@entities/product';
 import { ChainStatusBadge } from '@entities/chain';
 import { ExchangeDirection } from '@shared/ui/exchangeDirection';
@@ -7,6 +6,7 @@ import { formatDate } from '@shared/lib';
 
 import Styles from './ExchangeRow.module.css';
 import { ProductCard } from './ProductCard';
+import { useExchangeSeller } from './useExchangeSeller';
 
 export type TExchangeRowData = {
     chain: TChain;
@@ -27,9 +27,7 @@ type TExchangeRowProps = {
  */
 export const ExchangeRow = ({ row, onOpen, className }: TExchangeRowProps) => {
     const { chain, fromProduct, toProduct, goalProduct } = row;
-    const { data: toProductSeller } = useGetCustomerQuery(toProduct?.customer_id ?? '', {
-        skip: !toProduct?.customer_id,
-    });
+    const { sellerEmail } = useExchangeSeller(toProduct?.customer_id);
     const classes = [Styles['exchange-row'], className].filter(Boolean).join(' ');
 
     const interactive = Boolean(onOpen);
@@ -66,7 +64,7 @@ export const ExchangeRow = ({ row, onOpen, className }: TExchangeRowProps) => {
                 <ProductCard
                     product={toProduct}
                     label="Получаю"
-                    sellerEmail={toProductSeller?.email}
+                    sellerEmail={sellerEmail}
                     tone="target"
                 />
                 <div className={Styles['exchange-row__connector']}>
