@@ -19,6 +19,8 @@ definitions:
         type: string
       created_at:
         type: string
+      exchange_goal_id:
+        type: string
       expires_at:
         type: string
       from_product_id:
@@ -33,8 +35,12 @@ definitions:
         type: string
       recipient_id:
         type: string
+      route_step_id:
+        type: string
       status:
         type: string
+      surcharge:
+        $ref: '#/definitions/domain.Surcharge'
       to_product_id:
         type: string
       updated_at:
@@ -196,6 +202,15 @@ definitions:
       updated_at:
         type: string
     type: object
+  domain.Surcharge:
+    properties:
+      amount:
+        type: integer
+      currency:
+        type: string
+      payer:
+        type: string
+    type: object
   domain.UpdateCustomerDTO:
     properties:
       email:
@@ -246,14 +261,73 @@ definitions:
       status:
         $ref: '#/definitions/domain.ChainStatus'
     type: object
+  httpapi.ConfirmExchangeRequest:
+    properties:
+      reason:
+        type: string
+      result:
+        type: string
+    type: object
   httpapi.ConfirmRequest:
     properties:
       success:
         type: boolean
     type: object
+  httpapi.ConfirmationResponse:
+    properties:
+      created_at:
+        type: string
+      customer_id:
+        type: string
+      reason:
+        type: string
+      result:
+        type: string
+    type: object
+  httpapi.CreateOfferRequest:
+    properties:
+      comment:
+        type: string
+      exchange_goal_id:
+        type: string
+      offered_product_id:
+        type: string
+      requested_product_id:
+        type: string
+      route_step_id:
+        type: string
+      surcharge:
+        $ref: '#/definitions/httpapi.SurchargeBody'
+    type: object
+  httpapi.CreatedOfferResponse:
+    properties:
+      conversation_id:
+        type: string
+      expires_at:
+        type: string
+      id:
+        type: string
+      status:
+        type: string
+    type: object
   httpapi.ErrorResponse:
     properties:
       error:
+        type: string
+    type: object
+  httpapi.ExchangeResponse:
+    properties:
+      goal_id:
+        type: string
+      id:
+        type: string
+      offer_status:
+        type: string
+      offered_product_id:
+        type: string
+      requested_product_id:
+        type: string
+      status:
         type: string
     type: object
   httpapi.LoginRequest:
@@ -266,6 +340,88 @@ definitions:
   httpapi.MessageRequest:
     properties:
       body:
+        type: string
+    type: object
+  httpapi.OfferDetailsResponse:
+    properties:
+      comment:
+        type: string
+      confirmations:
+        items:
+          $ref: '#/definitions/httpapi.ConfirmationResponse'
+        type: array
+      conversation_id:
+        type: string
+      created_at:
+        type: string
+      exchange_goal_id:
+        type: string
+      exchange_id:
+        type: string
+      exchange_status:
+        type: string
+      expires_at:
+        type: string
+      id:
+        type: string
+      initiator_id:
+        type: string
+      messages:
+        items:
+          $ref: '#/definitions/domain.ChainMessage'
+        type: array
+      offered_product_id:
+        type: string
+      recipient_id:
+        type: string
+      requested_product_id:
+        type: string
+      role:
+        type: string
+      route_step_id:
+        type: string
+      status:
+        type: string
+      surcharge:
+        $ref: '#/definitions/httpapi.SurchargeBody'
+      updated_at:
+        type: string
+    type: object
+  httpapi.OfferResponse:
+    properties:
+      comment:
+        type: string
+      conversation_id:
+        type: string
+      created_at:
+        type: string
+      exchange_goal_id:
+        type: string
+      exchange_id:
+        type: string
+      exchange_status:
+        type: string
+      expires_at:
+        type: string
+      id:
+        type: string
+      initiator_id:
+        type: string
+      offered_product_id:
+        type: string
+      recipient_id:
+        type: string
+      requested_product_id:
+        type: string
+      role:
+        type: string
+      route_step_id:
+        type: string
+      status:
+        type: string
+      surcharge:
+        $ref: '#/definitions/httpapi.SurchargeBody'
+      updated_at:
         type: string
     type: object
   httpapi.OptionRequest:
@@ -283,6 +439,15 @@ definitions:
         type: string
       rating:
         type: integer
+    type: object
+  httpapi.SurchargeBody:
+    properties:
+      amount:
+        type: integer
+      currency:
+        type: string
+      payer:
+        type: string
     type: object
 host: localhost:8080
 info:
@@ -1085,6 +1250,330 @@ paths:
       summary: Update customer
       tags:
       - customers
+  /exchange-offers:
+    get:
+      description: |-
+        Предложения текущего пользователя. Без параметров возвращает
+        обе стороны и все состояния.
+      parameters:
+      - description: Сторона
+        enum:
+        - incoming
+        - outgoing
+        in: query
+        name: role
+        type: string
+      - description: Состояния через запятую
+        enum:
+        - pending
+        - accepted
+        - declined
+        - cancelled
+        - expired
+        - completed
+        - failed
+        in: query
+        name: status
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/httpapi.OfferResponse'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/httpapi.ErrorResponse'
+        "401":
+          description: unauthorized
+          schema:
+            type: string
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/httpapi.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpapi.ErrorResponse'
+      summary: Входящие и исходящие предложения
+      tags:
+      - exchange-offers
+    post:
+      consumes:
+      - application/json
+      description: |-
+        Двустороннее предложение владельцу запрошенного товара. Сервер
+        проверяет, что оба товара активны, принадлежат разным людям и
+        инициатор владеет предложенным. Поле exchange_goal_id
+        необязательно: без него это прямой обмен из карточки товара.
+        Повторное предложение по той же паре товаров отдаёт 409.
+      parameters:
+      - description: Предложение
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/httpapi.CreateOfferRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/httpapi.CreatedOfferResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/httpapi.ErrorResponse'
+        "401":
+          description: unauthorized
+          schema:
+            type: string
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/httpapi.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/httpapi.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/httpapi.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpapi.ErrorResponse'
+      summary: Отправить предложение обмена
+      tags:
+      - exchange-offers
+  /exchange-offers/{offerID}:
+    get:
+      description: |-
+        Карточка предложения целиком. Доступна только его сторонам:
+        внутри переписка о встрече.
+      parameters:
+      - description: Offer ID
+        in: path
+        name: offerID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/httpapi.OfferDetailsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/httpapi.ErrorResponse'
+        "401":
+          description: unauthorized
+          schema:
+            type: string
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/httpapi.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/httpapi.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpapi.ErrorResponse'
+      summary: Детали предложения, чат и состояние
+      tags:
+      - exchange-offers
+  /exchange-offers/{offerID}/accept:
+    post:
+      description: |-
+        Принять может только владелец запрошенного товара. Принятие
+        создаёт обмен в состоянии awaiting_initiator и не меняет
+        владение товарами — для этого нужны подтверждения обеих сторон.
+      parameters:
+      - description: Offer ID
+        in: path
+        name: offerID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/httpapi.OfferResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/httpapi.ErrorResponse'
+        "401":
+          description: unauthorized
+          schema:
+            type: string
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/httpapi.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/httpapi.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpapi.ErrorResponse'
+      summary: Принять предложение
+      tags:
+      - exchange-offers
+  /exchange-offers/{offerID}/cancel:
+    post:
+      description: |-
+        Отозвать предложение может только отправитель и только пока
+        на него не ответили.
+      parameters:
+      - description: Offer ID
+        in: path
+        name: offerID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/httpapi.OfferResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/httpapi.ErrorResponse'
+        "401":
+          description: unauthorized
+          schema:
+            type: string
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/httpapi.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/httpapi.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpapi.ErrorResponse'
+      summary: Отозвать своё предложение
+      tags:
+      - exchange-offers
+  /exchange-offers/{offerID}/decline:
+    post:
+      description: |-
+        Отказ доступен владельцу запрошенного товара и не отменяет
+        остальные предложения по этим вещам.
+      parameters:
+      - description: Offer ID
+        in: path
+        name: offerID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/httpapi.OfferResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/httpapi.ErrorResponse'
+        "401":
+          description: unauthorized
+          schema:
+            type: string
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/httpapi.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/httpapi.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpapi.ErrorResponse'
+      summary: Отклонить предложение
+      tags:
+      - exchange-offers
+  /exchanges/{exchangeID}/confirm:
+    post:
+      consumes:
+      - application/json
+      description: |-
+        Обмен считается состоявшимся только после двух подтверждений:
+        при первом success сервер ждёт второго, при втором меняет
+        владельцев товаров и закрывает конкурирующие предложения по тем
+        же вещам. Для failed достаточно одной стороны — тот, кто приехал
+        впустую, не должен зависеть от согласия второй.
+      parameters:
+      - description: Exchange ID (совпадает с ID предложения)
+        in: path
+        name: exchangeID
+        required: true
+        type: string
+      - description: Итог встречи
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/httpapi.ConfirmExchangeRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/httpapi.ExchangeResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/httpapi.ErrorResponse'
+        "401":
+          description: unauthorized
+          schema:
+            type: string
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/httpapi.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/httpapi.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/httpapi.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpapi.ErrorResponse'
+      summary: Подтвердить результат обмена
+      tags:
+      - exchanges
   /products:
     get:
       consumes:
@@ -1100,13 +1589,21 @@ paths:
         in: query
         name: category_id
         type: string
-      - default: 0
-        description: Offset
+      - description: Search query
         in: query
-        name: offset
+        name: q
+        type: string
+      - description: Category ID
+        in: query
+        name: category_id
+        type: string
+      - default: 1
+        description: Page number
+        in: query
+        name: page
         type: integer
       - default: 20
-        description: Limit
+        description: Items per page
         in: query
         maximum: 100
         name: limit
@@ -1261,6 +1758,40 @@ paths:
       summary: Update product
       tags:
       - products
+  /products/{productID}/images:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Upload an image for a specific product
+      parameters:
+      - description: Product ID
+        in: path
+        name: productID
+        required: true
+        type: string
+      - description: Image file
+        in: formData
+        name: image
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.Product'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/httpapi.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpapi.ErrorResponse'
+      summary: Upload image for product
+      tags:
+      - products
   /products/by-customer/{customerID}:
     get:
       consumes:
@@ -1290,41 +1821,6 @@ paths:
           schema:
             $ref: '#/definitions/httpapi.ErrorResponse'
       summary: Get products by customer
-      tags:
-      - products
-  /products/search:
-    get:
-      consumes:
-      - application/json
-      description: Search products by text query and optionally filter by category
-      parameters:
-      - description: Search query
-        in: query
-        name: q
-        required: true
-        type: string
-      - description: Category ID
-        in: query
-        name: category_id
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/domain.Product'
-            type: array
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/httpapi.ErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/httpapi.ErrorResponse'
-      summary: Search products
       tags:
       - products
   /reviews:

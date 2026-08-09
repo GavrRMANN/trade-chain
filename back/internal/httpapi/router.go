@@ -19,6 +19,7 @@ type Dependencies struct {
 	Customers  service.CustomerService
 	Products   service.ProductService
 	Chains     service.ChainService
+	Offers     service.OfferService
 	Reviews    service.ReviewService
 	Categories service.CategoryService
 	Wishlists  service.WishlistService
@@ -48,7 +49,8 @@ func NewRouter(d Dependencies) http.Handler {
 		},
 	}))
 
-	// Middleware
+	// Middleware. Объявляются до первого маршрута: chi не разрешает добавлять
+	// их после и падает при старте, если раздача файлов встаёт выше.
 	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
 	r.Use(middleware.Logger)
