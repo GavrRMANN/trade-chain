@@ -4,6 +4,7 @@ import LogoSVG from "@shared/assets/logo/logo.svg";
 import LogoNameSVG from "@shared/assets/logo/name.svg";
 import PlusSVG from "@shared/assets/icons/Plus.svg?react";
 import {SearchBox} from "@widgets/headerMenu/ui/searchBox";
+import {NotificationBell} from "@widgets/headerMenu/ui/notificationBell";
 import {Button} from "@shared/ui/button";
 import {useOpenModalRoute} from "@shared/lib";
 import {getAuthToken} from "@shared/api";
@@ -39,6 +40,7 @@ export const DesktopHeaderMenu = ({value, setValue, search, isLoading, isError, 
             <Button variant={'default'} onClick={() => getAuthToken() ? navigate('/exchanges') : openModal('auth')}>
                 Обмены
             </Button>
+            <NotificationBell />
             <Button variant={'default'} onClick={() => getAuthToken() ? navigate('/profile') : openModal('auth')}>
                 Профиль
             </Button>

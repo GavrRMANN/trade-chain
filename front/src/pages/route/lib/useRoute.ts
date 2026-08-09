@@ -1,4 +1,4 @@
-import { useFindChainQuery } from '@entities/search';
+import { useGetRecommendationsQuery } from '@entities/product';
 import { useGetCurrentUserQuery } from '@entities/user';
 import { getAuthToken } from '@shared/api';
 import { useOpenModalRoute } from '@shared/lib';
@@ -21,10 +21,9 @@ export const useRoute = () => {
     const targetId = searchParams.get('target')?.trim() ?? '';
     const isAuthenticated = Boolean(getAuthToken());
 
-    const { data, isLoading, isError } = useFindChainQuery(
-        { target_product_id: targetId },
-        { skip: !targetId },
-    );
+    const { data, isLoading, isError } = useGetRecommendationsQuery(targetId, {
+        skip: !targetId,
+    });
 
     const { data: currentUser } = useGetCurrentUserQuery(undefined, {
         skip: !isAuthenticated,
@@ -37,8 +36,10 @@ export const useRoute = () => {
         setTitle('Маршрут обмена');
     }, [setTitle]);
 
-    const chain = useMemo(() => data?.chain ?? [], [data?.chain]);
-    const length = data?.length ?? 0;
+    // Бекенд отдаёт цепочку сверху вниз: желанный товар вверху, наш — внизу.
+    // Приводим к порядку «от нашего (первый) к желанному (последний)».
+    const chain = useMemo(() => [...(data?.Products ?? [])].reverse(), [data?.Products]);
+    const length = data?.Length ?? 0;
 
     const nodes = useMemo<TChainNode[]>(() => {
         if (chain.length === 0) {
@@ -84,11 +85,14 @@ export const useRoute = () => {
         setDirectTarget(undefined);
     }, []);
 
-    const handleOfferSuccess = useCallback(() => {
-        setFirstHopTarget(undefined);
-        setDirectTarget(undefined);
-        navigate('/exchanges');
-    }, [navigate]);
+    const handleOfferSuccess = useCallback(
+        (chainId?: string) => {
+            setFirstHopTarget(undefined);
+            setDirectTarget(undefined);
+            navigate(chainId ? `/exchanges/${chainId}` : '/exchanges');
+        },
+        [navigate],
+    );
 
     const goHome = useCallback(() => {
         navigate('/');

@@ -1,0 +1,105 @@
+.exchange-row {
+    display: flex;
+    align-items: center;
+    gap: var(--main-gap);
+
+    padding: var(--space-4);
+
+    border: 1px solid var(--bg-shadows);
+    border-radius: var(--radius-md);
+
+    background: var(--bg-secondary);
+
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.exchange-row[role='button'] {
+    cursor: pointer;
+}
+
+.exchange-row[role='button']:hover {
+    border-color: var(--accent-primary);
+    box-shadow: 0 2px 8px var(--bg-shadows);
+}
+
+.exchange-row[role='button']:focus-visible {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: 2px;
+}
+
+.exchange-row__products {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.exchange-row__product {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    min-width: 0;
+}
+
+.exchange-row__product-info {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    min-width: 0;
+}
+
+.exchange-row__product-title {
+    margin: 0;
+
+    font-size: var(--text-base-font-size);
+    line-height: var(--text-base-line-height);
+
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.exchange-row__product-fallback {
+    margin: 0;
+
+    font-size: var(--text-sm-font-size);
+    line-height: var(--text-sm-line-height);
+    color: var(--neutral-secondary);
+}
+
+.exchange-row__arrow {
+    flex: 0 0 auto;
+
+    color: var(--neutral-disable);
+    font-size: var(--text-base-font-size);
+}
+
+.exchange-row__meta {
+    flex: 0 0 auto;
+
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: var(--space-2);
+}
+
+.exchange-row__date {
+    font-size: var(--text-sm-font-size);
+    line-height: var(--text-sm-line-height);
+    color: var(--neutral-secondary);
+}
+
+@media (max-width: 768px) {
+    .exchange-row {
+        flex-direction: column;
+        align-items: stretch;
+        gap: var(--space-3);
+    }
+
+    .exchange-row__meta {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+    }
+}

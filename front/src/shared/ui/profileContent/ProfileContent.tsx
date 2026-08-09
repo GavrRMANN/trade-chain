@@ -1,14 +1,17 @@
-import { Empty, Tabs } from 'antd';
-import { useNavigate } from 'react-router-dom';
+import {Tabs} from 'antd';
+import {useNavigate} from 'react-router-dom';
 
-import type { TProduct } from '@entities/product';
-import type { TUser } from '@entities/user';
-import { ProductCard } from '@shared/ui/productCard';
-import { ProfileSidebar } from '@shared/ui/profileSidebar';
+import type {TProduct} from '@entities/product';
+import type {TReview} from '@entities/review';
+import type {TProfileExchange} from '@pages/profile/lib/useProfile';
+import {ProfileSidebar} from '@shared/ui/profileSidebar';
+import {ListingsPane} from '@shared/ui/profileContent/ListingsPane';
+import {ExchangesPane} from '@shared/ui/profileContent/ExchangesPane';
+import {ReviewsPane} from '@shared/ui/profileContent/ReviewsPane';
 
 import Styles from './profileContent.module.css';
 
-export type TProfileTab = 'active' | 'archived';
+export type TProfileTab = 'active' | 'archived' | 'exchanges' | 'reviews';
 
 export type TProfileContentViewModel = {
     activeTab: TProfileTab;
@@ -16,6 +19,8 @@ export type TProfileContentViewModel = {
     activeProducts: TProduct[];
     archivedProducts: TProduct[];
     visibleProducts: TProduct[];
+    reviews: TReview[];
+    exchanges: TProfileExchange[];
     rating: number;
     reviewsCount: number;
     isLoading: boolean;
@@ -24,13 +29,19 @@ export type TProfileContentViewModel = {
 };
 
 type TProfileContentProps = {
-    user: TUser;
+    user: {email: string};
     isPublic?: boolean;
     viewModel: TProfileContentViewModel;
 };
 
-export const ProfileContent = ({ user, isPublic = false, viewModel }: TProfileContentProps) => {
+/**
+ * Составной блок профиля: сайдбар + вкладки (объявления / обмены / отзывы).
+ * Вкладки рендерятся отдельными pane-компонентами.
+ */
+export const ProfileContent = ({user, isPublic = false, viewModel}: TProfileContentProps) => {
     const navigate = useNavigate();
+    const isListingsTab =
+        viewModel.activeTab === 'active' || viewModel.activeTab === 'archived';
 
     return (
         <div className={Styles.layout}>
@@ -44,30 +55,38 @@ export const ProfileContent = ({ user, isPublic = false, viewModel }: TProfileCo
             />
             <div className={Styles.content}>
                 <section id="listings" className={Styles.listingsSection}>
-                    <div className={Styles.headingRow}><h2>{isPublic ? 'Объявления пользователя' : 'Мои объявления'}</h2></div>
+                    <div className={Styles.headingRow}>
+                        <h2>{isPublic ? 'Профиль пользователя' : 'Мой профиль'}</h2>
+                    </div>
                     <Tabs
                         activeKey={viewModel.activeTab}
                         onChange={(key) => viewModel.setActiveTab(key as TProfileTab)}
                         items={[
-                            { key: 'active', label: `Активные ${viewModel.activeProducts.length}` },
-                            { key: 'archived', label: `В архиве ${viewModel.archivedProducts.length}` },
+                            {key: 'active', label: `Активные ${viewModel.activeProducts.length}`},
+                            {key: 'archived', label: `В архиве ${viewModel.archivedProducts.length}`},
+                            {key: 'exchanges', label: `Обмены ${viewModel.exchanges.length}`},
+                            {key: 'reviews', label: `Отзывы ${viewModel.reviews.length}`},
                         ]}
                     />
-                    {viewModel.isLoading && <div className={Styles.state}>Загружаем объявления…</div>}
-                    {viewModel.isError && <div className={Styles.state}>Не удалось загрузить объявления.</div>}
-                    {!viewModel.isLoading && !viewModel.isError && viewModel.visibleProducts.length === 0 && <Empty description="В этой вкладке пока нет объявлений" />}
-                    {viewModel.visibleProducts.map((product) => (
-                        <ProductCard
-                            key={product.product_id}
-                            variant="horizontal"
-                            title={product.title}
-                            img={product.image}
-                            price={product.price}
-                            location={product.location}
-                            description={product.description}
-                            onClick={() => navigate(`/product/${product.product_id}`)}
+
+                    {isListingsTab && (
+                        <ListingsPane
+                            isLoading={viewModel.isLoading}
+                            isError={viewModel.isError}
+                            products={viewModel.visibleProducts}
+                            onOpen={(id) => navigate(`/product/${id}`)}
+                            onAdd={() => navigate('/create')}
                         />
-                    ))}
+                    )}
+
+                    {viewModel.activeTab === 'exchanges' && (
+                        <ExchangesPane
+                            exchanges={viewModel.exchanges}
+                            onOpen={(chainId) => navigate(`/exchanges/${chainId}`)}
+                        />
+                    )}
+
+                    {viewModel.activeTab === 'reviews' && <ReviewsPane reviews={viewModel.reviews}/>}
                 </section>
             </div>
         </div>

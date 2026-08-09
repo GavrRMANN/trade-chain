@@ -9,12 +9,14 @@ import { MainSection } from '@shared/ui/mainSection';
 import { Preloader } from '@shared/ui/preloader';
 import { ProductCard } from '@shared/ui/productCard';
 import { Button } from '@shared/ui/button';
+import { Modal } from '@shared/ui/modal';
 import { Rating } from '@shared/ui/rating';
+import { ReviewCard } from '@shared/ui/reviewCard';
 import { OfferExchangeModal } from '@features/exchange';
 import { WishlistEditor } from '@features/wishlist';
 import { ChainRow } from '@shared/ui/chainRow';
-import { formatAmount, formatDate } from '@shared/lib';
-import { useProductPageData } from '../lib';
+import { formatAmount } from '@shared/lib';
+import { useProductPageData, useProductActions } from '../lib';
 
 import Styles from './product-page.module.css';
 import { PageError } from '@shared/ui/pageError';
@@ -48,6 +50,18 @@ export const ProductPage = () => {
     } = useProductPageData(productId);
 
     const [isOfferOpen, setIsOfferOpen] = useState(false);
+
+    const {
+        requestArchive,
+        requestDelete,
+        cancelConfirm,
+        confirm,
+        confirmAction,
+        confirmText,
+        confirmLabel,
+        isLoading: isActionLoading,
+        error: actionError,
+    } = useProductActions(product?.product_id);
 
     useLayoutEffect(() => {
         setTitle('');
@@ -110,10 +124,22 @@ export const ProductPage = () => {
                                     <span className={Styles.offersCount}>
                                         Входящих предложений: {incomingOffers}
                                     </span>
-                                    <Button variant="text" onClick={() => navigate('/')}>
+                                    <Button variant="text" onClick={() => navigate('/exchanges')}>
                                         Перейти к предложениям
                                     </Button>
                                 </div>
+                                {product.status === 'active' ? (
+                                    <div className={Styles.management}>
+                                        <Button variant="secondary" onClick={requestArchive}>
+                                            Снять с обмена
+                                        </Button>
+                                        <Button variant="text" onClick={requestDelete}>
+                                            Удалить
+                                        </Button>
+                                    </div>
+                                ) : (
+                                    <p className={Styles.muted}>Товар снят с обмена</p>
+                                )}
                             </>
                         ) : (
                             <>
@@ -124,6 +150,7 @@ export const ProductPage = () => {
                                 <OfferExchangeModal
                                     isOpen={isOfferOpen}
                                     onClose={() => setIsOfferOpen(false)}
+                                    onSuccess={(chainId) => navigate(`/exchanges/${chainId}`)}
                                     targetProductId={product.product_id}
                                     currentCustomerId={currentUserId}
                                 />
@@ -140,14 +167,8 @@ export const ProductPage = () => {
                                 <h2>Отзывы</h2>
                                 <ul className={Styles.reviewsList}>
                                     {reviews.slice(0, 3).map((review) => (
-                                        <li key={review.review_id} className={Styles.review}>
-                                            <div className={Styles.reviewHead}>
-                                                <Rating value={review.rating} />
-                                                <span className={Styles.reviewDate}>
-                                                    {formatDate(review.created_at)}
-                                                </span>
-                                            </div>
-                                            {review.comment && <p className={Styles.reviewComment}>{review.comment}</p>}
+                                        <li key={review.review_id}>
+                                            <ReviewCard review={review} />
                                         </li>
                                     ))}
                                 </ul>
@@ -178,11 +199,18 @@ export const ProductPage = () => {
                             <section className={Styles.recommendations} aria-label="Подходящие вещи">
                                 <h2>Ваши подходящие вещи</h2>
                                 {matchingProducts.length ? (
-                                    <div className={Styles.matches}>
-                                        {matchingProducts.map((match) => (
-                                            <ProductCard key={match.product_id} title={match.title} img={match.image} price={match.price} location={match.location} onClick={() => navigate(`/product/${match.product_id}`)} />
-                                        ))}
-                                    </div>
+                                    <>
+                                        <div className={Styles.matches}>
+                                            {matchingProducts.map((match) => (
+                                                <ProductCard key={match.product_id} title={match.title} img={match.image} price={match.price} location={match.location} onClick={() => navigate(`/product/${match.product_id}`)} />
+                                            ))}
+                                        </div>
+                                        {routeChain.length > 1 && (
+                                            <Button variant="text" onClick={() => navigate(`/route?target=${product.product_id}`)}>
+                                                Построить маршрут обмена
+                                            </Button>
+                                        )}
+                                    </>
                                 ) : routeChain.length > 1 ? (
                                     <div className={Styles.routePreview}>
                                         <p className={Styles.routeHint}>
@@ -213,6 +241,30 @@ export const ProductPage = () => {
                 </div>
 
             </div>
+
+            <Modal
+                title="Подтвердите действие"
+                isOpen={Boolean(confirmAction)}
+                onClose={cancelConfirm}
+            >
+                <div className={Styles.confirm}>
+                    <p className={Styles.confirmText}>{confirmText}</p>
+                    {actionError && <p className={Styles.actionError}>{actionError}</p>}
+                    <div className={Styles.confirmActions}>
+                        <Button
+                            variant="primary"
+                            loading={isActionLoading}
+                            disabled={isActionLoading}
+                            onClick={confirm}
+                        >
+                            {confirmLabel}
+                        </Button>
+                        <Button variant="text" onClick={cancelConfirm} disabled={isActionLoading}>
+                            Отмена
+                        </Button>
+                    </div>
+                </div>
+            </Modal>
         </MainSection>
     );
 };

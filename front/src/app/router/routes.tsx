@@ -23,6 +23,9 @@ const ExchangeRoomPageLazy = lazy(() =>
 const RoutePageLazy = lazy(() =>
     import('@pages/route').then((module) => ({ default: module.RoutePage })),
 );
+const NotificationsPageLazy = lazy(() =>
+    import('@pages/notifications').then((module) => ({ default: module.NotificationsPage })),
+);
 
 export const AppRouter = () => {
     const location = useLocation();
@@ -41,6 +44,7 @@ export const AppRouter = () => {
                     <Route path="exchanges" element={<ExchangesPage />} />
                     <Route path="exchanges/:chainId" element={withSuspense(<ExchangeRoomPageLazy />)} />
                     <Route path="route" element={withSuspense(<RoutePageLazy />)} />
+                    <Route path="notifications" element={withSuspense(<NotificationsPageLazy />)} />
                     <Route path="*" element={withSuspense(<NotFoundPageLazy />)} />
                 </Route>
             </Routes>

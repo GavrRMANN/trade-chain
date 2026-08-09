@@ -1,11 +1,10 @@
 import { useMemo } from 'react';
 
 import { useGetCustomerQuery } from '@entities/customer';
-import { useGetProductQuery, useGetProductsQuery } from '@entities/product';
+import { useGetProductQuery, useGetProductsQuery, useGetRecommendationsQuery } from '@entities/product';
 import { useGetReviewsByCustomerQuery, useGetCustomerRatingQuery } from '@entities/review';
 import { useGetWishlistByProductQuery, useGetWishlistOptionsQuery } from '@entities/wishlist';
 import { useGetChainsByProductQuery } from '@entities/chain';
-import { useFindChainQuery } from '@entities/search';
 import { useGetCurrentUserQuery } from '@entities/user';
 import { getAuthToken } from '@shared/api';
 
@@ -29,15 +28,19 @@ export const useProductPageData = (productId?: string) => {
         product && currentUserQuery.data && product.customer_id === currentUserQuery.data.customer_id,
     );
     const canFindChain = Boolean(productId) && !isOwner;
-    const findChainQuery = useFindChainQuery(
-        { target_product_id: productId ?? '' },
-        { skip: !canFindChain },
-    );
+    const recommendationsQuery = useGetRecommendationsQuery(productId ?? '', { skip: !canFindChain });
 
     const matchingProducts = useMemo(() => {
         const categoryIds = new Set((optionsQuery.data ?? []).map((item) => item.category_id));
         return (productsQuery.data ?? []).filter((item) => item.product_id !== productId && categoryIds.has(item.category_id ?? ''));
     }, [optionsQuery.data, productId, productsQuery.data]);
+
+    // Бекенд отдаёт цепочку сверху вниз: желанный товар вверху, наш — внизу.
+    // Для отрисовки приводим к порядку «от нашего (первый) к желанному (последний)».
+    const routeChain = useMemo(() => {
+        const products = recommendationsQuery.data?.Products ?? [];
+        return [...products].reverse();
+    }, [recommendationsQuery.data?.Products]);
 
     // Входящие предложения обмена (цепочки) по этому товару.
     const incomingOffers = (chainsQuery.data ?? []).length;
@@ -48,7 +51,7 @@ export const useProductPageData = (productId?: string) => {
         wishlist: wishlistQuery.data,
         wishlistOptions: optionsQuery.data ?? [],
         matchingProducts,
-        routeChain: findChainQuery.data?.chain ?? [],
+        routeChain,
         reviews: reviewsQuery.data ?? [],
         averageRating: ratingQuery.data?.average_rating,
         incomingOffers,

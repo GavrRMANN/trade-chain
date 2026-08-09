@@ -1,0 +1,68 @@
+.notification-bell {
+    position: relative;
+
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+
+    padding: 8px 16px;
+
+    border: 1px solid transparent;
+    border-radius: 6px;
+
+    color: var(--neutral-primary);
+    background: transparent;
+
+    font-family: Inter, sans-serif;
+    font-size: 16px;
+    line-height: 24px;
+    font-weight: 700;
+    text-decoration: none;
+
+    cursor: pointer;
+    transition: color var(--animation-normal) ease-in, border-color var(--animation-normal) ease-in;
+}
+
+.notification-bell:hover {
+    color: var(--accent-secondary);
+}
+
+.notification-bell:focus-visible {
+    outline: none;
+    border-color: var(--accent-primary);
+}
+
+/* Активный маршрут /notifications */
+.notification-bell--authed.active {
+    background: var(--bg-disabled);
+}
+
+.notification-bell__label {
+    white-space: nowrap;
+}
+
+.notification-bell__badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    min-width: 20px;
+    height: 20px;
+    padding: 0 6px;
+
+    border-radius: 10px;
+
+    background: var(--accent-danger);
+    color: var(--neutral-white);
+
+    font-size: 12px;
+    line-height: 1;
+    font-weight: 700;
+}
+
+@media (max-width: 768px) {
+    .notification-bell {
+        font-size: 14px;
+        line-height: 20px;
+    }
+}

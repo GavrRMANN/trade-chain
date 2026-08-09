@@ -5,6 +5,7 @@ import UserSVG from "@shared/assets/icons/User.svg";
 import PlusSVG from "@shared/assets/icons/Plus.svg?react";
 
 import {SearchBox} from "@widgets/headerMenu/ui/searchBox";
+import {NotificationBell} from "@widgets/headerMenu/ui/notificationBell";
 import {NavLink, useNavigate} from "react-router-dom";
 import {useOpenModalRoute} from "@shared/lib";
 import {getAuthToken} from "@shared/api";
@@ -45,6 +46,7 @@ export const MobileHeaderMenu = ({value, setValue, search, isLoading, isError, s
             >
                 Обмены
             </button>
+            <NotificationBell />
             <button
                 className={Styles['header__profile']}
                 type="button"

@@ -4,14 +4,12 @@ import {Button} from '@shared/ui/button';
 import {MainSection} from '@shared/ui/mainSection';
 import {PageError} from '@shared/ui/pageError';
 import {Preloader} from '@shared/ui/preloader';
-import {ProductImage} from '@shared/ui/productImage';
-import {StatusBadge} from '@shared/ui/statusBadge';
-import {formatDate} from '@shared/lib';
+import {ExchangeRow} from '@shared/ui/exchangeRow';
 import {useOpenModalRoute} from '@shared/lib';
 
 import Styles from './exchanges-page.module.css';
 import {useExchanges} from '../lib';
-import type {TExchangeRow, TExchangeTab} from '../lib/useExchanges';
+import type {TExchangeTab} from '../lib/useExchanges';
 
 const TABS: {id: TExchangeTab; label: string}[] = [
     {id: 'incoming', label: 'Входящие'},
@@ -27,65 +25,6 @@ const EMPTY_TEXT: Record<TExchangeTab, string> = {
 
 const formatClasses = (...classes: Array<string | false | undefined>): string =>
     classes.filter(Boolean).join(' ');
-
-const ProductThumb = ({product}: {product?: TExchangeRow['fromProduct']}) => {
-    if (!product) {
-        return (
-            <div className={Styles['exchanges-page__product']}>
-                <ProductImage title="?" alt="Товар недоступен" />
-                <div className={Styles['exchanges-page__product-info']}>
-                    <p className={Styles['exchanges-page__product-fallback']}>Товар недоступен</p>
-                </div>
-            </div>
-        );
-    }
-
-    return (
-        <div className={Styles['exchanges-page__product']}>
-            <ProductImage src={product.image} alt={product.title} title={product.title} />
-            <div className={Styles['exchanges-page__product-info']}>
-                <p className={Styles['exchanges-page__product-title']}>{product.title}</p>
-            </div>
-        </div>
-    );
-};
-
-const ExchangeRow = ({
-    row,
-    onOpen,
-}: {
-    row: TExchangeRow;
-    onOpen: (chainId: string) => void;
-}) => {
-    const {chain, fromProduct, toProduct} = row;
-
-    return (
-        <div
-            className={Styles['exchanges-page__row']}
-            role="button"
-            tabIndex={0}
-            onClick={() => onOpen(chain.chain_id)}
-            onKeyDown={(event) => {
-                if (event.key === 'Enter' || event.key === ' ') {
-                    event.preventDefault();
-                    onOpen(chain.chain_id);
-                }
-            }}
-        >
-            <div className={Styles['exchanges-page__products']}>
-                <ProductThumb product={fromProduct} />
-                <span className={Styles['exchanges-page__arrow']} aria-hidden="true">→</span>
-                <ProductThumb product={toProduct} />
-            </div>
-            <div className={Styles['exchanges-page__meta']}>
-                <StatusBadge status={chain.status} />
-                <span className={Styles['exchanges-page__date']}>
-                    {formatDate(chain.created_at)}
-                </span>
-            </div>
-        </div>
-    );
-};
 
 export const ExchangesPage = () => {
     const [activeTab, setActiveTab] = useState<TExchangeTab>('incoming');

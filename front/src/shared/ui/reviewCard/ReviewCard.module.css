@@ -1,0 +1,33 @@
+.review-card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+
+    padding: var(--space-4);
+
+    border: 1px solid var(--bg-shadows);
+    border-radius: var(--radius-md);
+
+    background: var(--bg-secondary);
+}
+
+.review-card__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+}
+
+.review-card__date {
+    font-size: var(--text-sm-font-size);
+    line-height: var(--text-sm-line-height);
+    color: var(--neutral-secondary);
+}
+
+.review-card__comment {
+    margin: 0;
+
+    font-size: var(--text-base-font-size);
+    line-height: var(--text-base-line-height);
+    color: var(--neutral-primary);
+}
