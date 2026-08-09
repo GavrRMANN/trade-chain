@@ -46,8 +46,8 @@ func (f *fakeProductRepo) GetByCustomerID(context.Context, string) ([]domain.Pro
 func (f *fakeProductRepo) Update(context.Context, string, *domain.UpdateProductDTO) (*domain.Product, error) {
 	return nil, nil
 }
-func (f *fakeProductRepo) Delete(context.Context, string) error { return nil }
-func (f *fakeProductRepo) List(ctx context.Context, q string, categoryID *string, page int, limit int) ([]domain.Product, error) {
+func (f *fakeProductRepo) Delete(context.Context, string, string) error { return nil }
+func (f *fakeProductRepo) List(ctx context.Context, customerID *string, q string, categoryID *string, page int, limit int) ([]domain.Product, error) {
 	return nil, nil
 }
 func (f *fakeProductRepo) Search(context.Context, string, *string) ([]domain.Product, error) {
