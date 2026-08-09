@@ -14,7 +14,6 @@ import {Preloader} from '@shared/ui/preloader';
 import {ProductCard} from '@shared/ui/productCard';
 import {ProductImage} from '@shared/ui/productImage';
 import {Rating} from '@shared/ui/rating';
-import {ReviewCard} from '@shared/ui/reviewCard';
 import {SellerInfo} from '@shared/ui/sellerInfo';
 import {formatAmount, formatDate, useOpenModalRoute} from '@shared/lib';
 import {useProductActions, useProductPageData} from '../lib';
@@ -113,10 +112,6 @@ export const ProductPage = () => {
                             </div>
                             <div className={Styles['product-page__details']}>
                                 <section className={Styles['product-page__section']}>
-                                    <h2>Описание</h2>
-                                    <p>{product.description || 'Владелец пока не добавил описание.'}</p>
-                                </section>
-                                <section className={Styles['product-page__section']}>
                                     <h2>О товаре</h2>
                                     <dl className={Styles['product-page__facts']}>
                                         <div><dt>Категория</dt><dd>{category?.name || 'Не указана'}</dd></div>
@@ -130,6 +125,27 @@ export const ProductPage = () => {
                                 </dl>
                             </div>
                         </div>
+
+                        <section className={`${Styles['product-page__section']} ${Styles['product-page__description']}`}>
+                            <h2>Описание</h2>
+                            <p>{product.description || 'Владелец пока не добавил описание.'}</p>
+                        </section>
+
+                        {isOwner && (
+                            <section className={Styles['product-page__wide-section']}>
+                                <div className={Styles['product-page__section-heading']}>
+                                    <div><h2>Предложения по этому товару</h2><p>Все цепочки, в которых ваш товар указан целью обмена.</p></div>
+                                    <Button variant="text" onClick={() => navigate('/exchanges')}>Все предложения</Button>
+                                </div>
+                                {productOffers.length ? (
+                                    <div className={Styles['product-page__offers']}>
+                                        {productOffers.slice(0, 3).map((row) => (
+                                            <ExchangeRow key={row.chain.chain_id} row={row} onOpen={(chainId) => navigate(`/exchanges/${chainId}`)} />
+                                        ))}
+                                    </div>
+                                ) : <div className={Styles['product-page__empty']}>Пока никто не предложил обмен на этот товар.</div>}
+                            </section>
+                        )}
                     </div>
 
                     <aside className={Styles['product-page__aside']}>
@@ -170,15 +186,22 @@ export const ProductPage = () => {
                         </section>
 
                         <section className={Styles['product-page__panel']}>
-                            <h2>{isOwner ? 'Хочу взамен' : 'Что хочет взамен'}</h2>
                             {isOwner ? (
                                 <WishlistEditor productId={product.product_id} productTitle={product.title} wishlist={wishlist} options={wishlistOptions} />
-                            ) : wishlistOptions.length ? (
-                                <div className={Styles['product-page__wishlist']}>
-                                    {wishlistOptions.map((option) => <span key={option.category_id}>{option.name}</span>)}
-                                </div>
                             ) : (
-                                <p className={Styles['product-page__muted']}>Владелец не указал желаемые категории — можно предложить любой свой товар.</p>
+                                <>
+                                    <h2>Хочу взамен</h2>
+                                    {wishlistOptions.length ? (
+                                        <>
+                                            <p className={Styles['product-page__wishlist-label']}>Интересуют следующие категории:</p>
+                                            <div className={Styles['product-page__wishlist']}>
+                                                {wishlistOptions.map((option) => <span key={option.category_id}>{option.name}</span>)}
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <p className={Styles['product-page__muted']}>Владелец не указал желаемые категории — можно предложить любой свой товар.</p>
+                                    )}
+                                </>
                             )}
                         </section>
 
@@ -212,32 +235,6 @@ export const ProductPage = () => {
                     </aside>
                 </div>
 
-                {isOwner && (
-                    <section className={Styles['product-page__wide-section']}>
-                        <div className={Styles['product-page__section-heading']}>
-                            <div><h2>Предложения по этому товару</h2><p>Все цепочки, в которых ваш товар указан целью обмена.</p></div>
-                            <Button variant="text" onClick={() => navigate('/exchanges')}>Все предложения</Button>
-                        </div>
-                        {productOffers.length ? (
-                            <div className={Styles['product-page__offers']}>
-                                {productOffers.slice(0, 3).map((row) => (
-                                    <ExchangeRow key={row.chain.chain_id} row={row} onOpen={(chainId) => navigate(`/exchanges/${chainId}`)} />
-                                ))}
-                            </div>
-                        ) : <div className={Styles['product-page__empty']}>Пока никто не предложил обмен на этот товар.</div>}
-                    </section>
-                )}
-
-                <section className={Styles['product-page__wide-section']}>
-                    <div className={Styles['product-page__section-heading']}>
-                        <div><h2>Отзывы о продавце</h2><p>{ratingText}</p></div>
-                    </div>
-                    {reviews.length ? (
-                        <ul className={Styles['product-page__reviews']}>
-                            {reviews.slice(0, 4).map((review) => <li key={review.review_id}><ReviewCard review={review} /></li>)}
-                        </ul>
-                    ) : <div className={Styles['product-page__empty']}>У продавца пока нет отзывов.</div>}
-                </section>
             </article>
 
             <OfferExchangeModal

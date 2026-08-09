@@ -88,10 +88,6 @@ export const useProductPageData = (productId?: string) => {
         OPEN_CHAIN_STATUSES.has(row.chain.status),
     ).length;
 
-    const isOwner = Boolean(
-        product && currentUserQuery.data && product.customer_id === currentUserQuery.data.customer_id,
-    );
-
     return {
         product,
         customer: customerQuery.data,

@@ -33,6 +33,7 @@ const getErrorMessage = (error: unknown) => {
 export const WishlistEditor = ({productId, productTitle, wishlist, options}: TWishlistEditorProps) => {
     const [selectedCategoryId, setSelectedCategoryId] = useState('');
     const [requestError, setRequestError] = useState<string>();
+    const [isEditing, setIsEditing] = useState(false);
 
     const {data: categories = []} = useGetCategoriesQuery();
     const [createWishlist, {isLoading: isCreatingWishlist}] = useCreateWishlistMutation();
@@ -85,20 +86,31 @@ export const WishlistEditor = ({productId, productTitle, wishlist, options}: TWi
 
     return (
         <div className={Styles.editor}>
+            <div className={Styles['editor__title-row']}>
+                <h2>Хочу взамен</h2>
+                <button type="button" className={Styles['editor__edit']} onClick={() => setIsEditing((value) => !value)}>
+                    {isEditing ? 'Готово' : 'Редактировать'} {!isEditing && '✎'}
+                </button>
+            </div>
+            <p className={Styles['editor__label']}>Интересуют следующие категории:</p>
+
             {options.length > 0 ? (
                 <div className={Styles['editor__tags']}>
                     {options.map((option) => (
-                        <span key={option.category_id} className={Styles['editor__tag']}>
+                        <span key={option.category_id} className={`${Styles['editor__tag']} ${!isEditing ? Styles['editor__tag--readonly'] : ''}`}>
                             {option.name}
-                            <button
-                                type="button"
-                                className={Styles['editor__tag-remove']}
-                                aria-label={`Убрать ${option.name}`}
-                                disabled={isLoading}
-                                onClick={() => handleRemove(option.category_id)}
-                            >
-                                ✕
-                            </button>
+                            {isEditing && (
+                                <button
+                                    type="button"
+                                    className={Styles['editor__tag-remove']}
+                                    aria-label={`Убрать ${option.name}`}
+                                    disabled={isLoading}
+                                    onClick={() => handleRemove(option.category_id)}
+                                >
+                                    ✕
+                                </button>
+                            )}
+                            {!isEditing && <span aria-hidden="true" className={Styles['editor__tag-close']}>×</span>}
                         </span>
                     ))}
                 </div>
@@ -108,27 +120,33 @@ export const WishlistEditor = ({productId, productTitle, wishlist, options}: TWi
                 </p>
             )}
 
-            <div className={Styles['editor__add']}>
-                <div className={Styles['editor__selector']}>
-                    <Selector
-                        label="Добавить категорию"
-                        name="wishlist-category"
-                        value={selectedCategoryId}
-                        options={availableOptions}
-                        onSelect={setSelectedCategoryId}
-                        disabled={isLoading || availableOptions.length === 0}
-                    />
+            {!isEditing ? (
+                <button type="button" className={Styles['editor__add-link']} onClick={() => setIsEditing(true)}>
+                    <span aria-hidden="true">＋</span> Добавить категорию
+                </button>
+            ) : (
+                <div className={Styles['editor__add']}>
+                    <div className={Styles['editor__selector']}>
+                        <Selector
+                            label="Добавить категорию"
+                            name="wishlist-category"
+                            value={selectedCategoryId}
+                            options={availableOptions}
+                            onSelect={setSelectedCategoryId}
+                            disabled={isLoading || availableOptions.length === 0}
+                        />
+                    </div>
+                    <Button
+                        type="button"
+                        variant="secondary"
+                        disabled={!selectedCategoryId || isLoading}
+                        loading={isAdding || isCreatingWishlist}
+                        onClick={handleAdd}
+                    >
+                        Добавить
+                    </Button>
                 </div>
-                <Button
-                    type="button"
-                    variant="secondary"
-                    disabled={!selectedCategoryId || isLoading}
-                    loading={isAdding || isCreatingWishlist}
-                    onClick={handleAdd}
-                >
-                    Добавить
-                </Button>
-            </div>
+            )}
 
             {requestError && <p className={Styles['editor__error']}>{requestError}</p>}
         </div>
