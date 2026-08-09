@@ -6,18 +6,21 @@ import {Selector} from '@shared/ui/selector';
 import {Textarea} from '@shared/ui/textarea';
 import {sanitizePrice} from '@shared/lib';
 import type {TCategory} from '@entities/category';
-import type {TProductStatus} from '@entities/product';
+import { TargetProductPicker } from '@entities/product';
+import type {TProduct, TProductStatus} from '@entities/product';
 
 import {CategoryPicker} from './CategoryPicker';
 import Styles from './product-form.module.css';
 import {useImageUpload} from './useImageUpload';
 
-type TField = 'title' | 'categoryId' | 'description' | 'price' | 'location';
+type TField = 'title' | 'categoryId' | 'description' | 'price' | 'location' | 'targetProductId';
 type TErrors = Partial<Record<TField, string>>;
 
 type TProductFormProps = {
     isEdit: boolean;
     categories: TCategory[];
+    targetProducts: TProduct[];
+    currentCustomerId: string;
     statusOptions: {value: TProductStatus; label: string}[];
     title: string;
     categoryId: string;
@@ -26,9 +29,12 @@ type TProductFormProps = {
     price: string;
     location: string;
     status: TProductStatus;
+    targetProductId: string;
     errors: TErrors;
     requestError?: string;
     isLoading: boolean;
+    isTargetProductsLoading: boolean;
+    isTargetProductsError: boolean;
     setTitle: (value: string) => void;
     setCategoryId: (value: string) => void;
     setDescription: (value: string) => void;
@@ -36,12 +42,15 @@ type TProductFormProps = {
     setPrice: (value: string) => void;
     setLocation: (value: string) => void;
     setStatus: (value: TProductStatus) => void;
+    setTargetProductId: (value: string) => void;
     handleSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
 };
 
 export const ProductForm = ({
     isEdit,
     categories,
+    targetProducts,
+    currentCustomerId,
     statusOptions,
     title,
     categoryId,
@@ -50,9 +59,12 @@ export const ProductForm = ({
     price,
     location,
     status,
+    targetProductId,
     errors,
     requestError,
     isLoading,
+    isTargetProductsLoading,
+    isTargetProductsError,
     setTitle,
     setCategoryId,
     setDescription,
@@ -60,6 +72,7 @@ export const ProductForm = ({
     setPrice,
     setLocation,
     setStatus,
+    setTargetProductId,
     handleSubmit,
 }: TProductFormProps) => {
     const { fileInputRef, imageError, handleImageChange, handleRemoveImage } = useImageUpload({
@@ -135,14 +148,16 @@ export const ProductForm = ({
                     />
                 </div>
 
-                <Selector
-                    label="Статус"
-                    name="status"
-                    value={status}
-                    options={statusOptions}
-                    onSelect={(value) => setStatus(value as TProductStatus)}
-                    disabled={isLoading}
-                />
+                {isEdit && (
+                    <Selector
+                        label="Статус"
+                        name="status"
+                        value={status}
+                        options={statusOptions}
+                        onSelect={(value) => setStatus(value as TProductStatus)}
+                        disabled={isLoading}
+                    />
+                )}
             </div>
 
             <aside className={Styles['form__sidebar']}>
@@ -186,10 +201,28 @@ export const ProductForm = ({
                 </div>
             </aside>
 
+            {!isEdit && (
+                <div className={`${Styles['form__field']} ${Styles['form__target']}`}>
+                    <TargetProductPicker
+                        products={targetProducts}
+                        categories={categories}
+                        currentCustomerId={currentCustomerId}
+                        value={targetProductId}
+                        disabled={isLoading}
+                        isLoading={isTargetProductsLoading}
+                        isError={isTargetProductsError}
+                        onChange={setTargetProductId}
+                    />
+                    {errors.targetProductId && (
+                        <p className={Styles['form__error-text']}>{errors.targetProductId}</p>
+                    )}
+                </div>
+            )}
+
             {requestError && <p className={Styles['form__error']}>{requestError}</p>}
 
             <div className={Styles['form__actions']}>
-                <Button type="submit" loading={isLoading}>
+                <Button type="submit" className={Styles['form__submit']} loading={isLoading}>
                     {isEdit ? 'Сохранить изменения' : 'Опубликовать объявление'}
                 </Button>
             </div>

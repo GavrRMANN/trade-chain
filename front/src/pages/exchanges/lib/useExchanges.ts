@@ -37,6 +37,8 @@ export type TExchangeRouteGroup = {
 
 export type TExchangeTab = 'active' | 'incoming' | 'outgoing' | 'completed';
 
+export type TExchangeRouteTab = 'active' | 'completed';
+
 export type TExchangeView = 'routes' | 'exchanges';
 
 const formatActiveOffers = (count: number): string => {
@@ -69,6 +71,7 @@ export const useExchanges = () => {
 
     // UI-состояние
     const [activeTab, setActiveTab] = useState<TExchangeTab>('active');
+    const [activeRouteTab, setActiveRouteTab] = useState<TExchangeRouteTab>('active');
     const [activeView, setActiveView] = useState<TExchangeView>('routes');
     const [isBuilderOpen, setIsBuilderOpen] = useState(false);
 
@@ -170,6 +173,12 @@ export const useExchanges = () => {
         return {active, incoming: inc, outgoing: out, completed: done};
     }, [chains, currentUserId, buildRow]);
 
+    const visibleRouteGroups = useMemo(() => {
+        return routeGroups.filter((group) =>
+            activeRouteTab === 'active' ? group.openOffersCount > 0 : group.openOffersCount === 0,
+        );
+    }, [activeRouteTab, routeGroups]);
+
     const visibleRows = useMemo(() => {
         if (activeTab === 'active') return active;
         if (activeTab === 'incoming') return incoming;
@@ -198,6 +207,8 @@ export const useExchanges = () => {
         // UI
         activeTab,
         setActiveTab,
+        activeRouteTab,
+        setActiveRouteTab,
         activeView,
         setActiveView,
         isBuilderOpen,
@@ -209,6 +220,7 @@ export const useExchanges = () => {
         completed,
         visibleRows,
         routeGroups,
+        visibleRouteGroups,
         isLoading: isChainsLoading,
         isFetching: isChainsFetching,
         isError: isChainsError,

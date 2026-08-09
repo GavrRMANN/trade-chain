@@ -4,8 +4,10 @@ import {useNavigate} from 'react-router-dom';
 import {
     useCreateProductMutation,
     useGetProductQuery,
+    useGetProductsQuery,
     useUpdateProductMutation,
 } from '@entities/product';
+import { useCreateChainMutation } from '@entities/chain';
 import {useGetCategoriesQuery} from '@entities/category';
 import {useGetCurrentUserQuery} from '@entities/user';
 import type {TProductStatus} from '@entities/product';
@@ -15,7 +17,8 @@ export type TField =
     | 'categoryId'
     | 'description'
     | 'price'
-    | 'location';
+    | 'location'
+    | 'targetProductId';
 
 export type TErrors = Partial<Record<TField, string>>;
 
@@ -35,6 +38,8 @@ const validate = (
     description: string,
     price: string,
     location: string,
+    targetProductId: string,
+    isEdit: boolean,
 ): TErrors => {
     const errors: TErrors = {};
 
@@ -46,6 +51,10 @@ const validate = (
 
     if (!categoryId) {
         errors.categoryId = 'Выберите категорию';
+    }
+
+    if (!isEdit && !targetProductId) {
+        errors.targetProductId = 'Выберите объявление, к которому хотите прийти';
     }
 
     if (description.length > 5000) {
@@ -84,10 +93,15 @@ export const useProductForm = (productId?: string) => {
 
     const {data: user, isLoading: isUserLoading} = useGetCurrentUserQuery();
     const productQuery = useGetProductQuery(productId ?? '', {skip: !productId});
+    const targetProductsQuery = useGetProductsQuery(
+        {offset: 0, limit: 100},
+        {skip: isEdit},
+    );
     const {data: categories = [], isLoading: isCategoriesLoading, isError: isCategoriesError} =
         useGetCategoriesQuery();
 
     const [createProduct, {isLoading: isCreating}] = useCreateProductMutation();
+    const [createChain, {isLoading: isChainCreating}] = useCreateChainMutation();
     const [updateProduct, {isLoading: isUpdating}] = useUpdateProductMutation();
 
     const [title, setTitle] = useState('');
@@ -97,6 +111,8 @@ export const useProductForm = (productId?: string) => {
     const [price, setPrice] = useState('');
     const [location, setLocation] = useState('');
     const [status, setStatus] = useState<TProductStatus>('active');
+    const [targetProductId, setTargetProductId] = useState('');
+    const [createdProductId, setCreatedProductId] = useState<string>();
 
     const [errors, setErrors] = useState<TErrors>({});
     const [requestError, setRequestError] = useState<string>();
@@ -133,7 +149,7 @@ export const useProductForm = (productId?: string) => {
         setIsInitialized(true);
     }, [isEdit, isInitialized, editableProduct, user]);
 
-    const isLoading = isCreating || isUpdating;
+    const isLoading = isCreating || isUpdating || isChainCreating;
     const isProductLoading = isEdit && productQuery.isLoading;
     const isFetchingUser = isEdit && !isOwnerError && !editableProduct && isUserLoading;
 
@@ -157,7 +173,15 @@ export const useProductForm = (productId?: string) => {
         event.preventDefault();
         setRequestError(undefined);
 
-        const validationErrors = validate(title, categoryId, description, price, location);
+        const validationErrors = validate(
+            title,
+            categoryId,
+            description,
+            price,
+            location,
+            targetProductId,
+            isEdit,
+        );
         setErrors(validationErrors);
 
         if (Object.keys(validationErrors).length > 0) {
@@ -190,26 +214,46 @@ export const useProductForm = (productId?: string) => {
                 return;
             }
 
-            const created = await createProduct({
-                customer_id: user.customer_id,
-                category_id: categoryId,
-                title: title.trim(),
-                description: description.trim(),
-                image: image.trim(),
-                price: numericPrice,
-                location: location.trim(),
-                status,
+            let sourceProductId = createdProductId;
+
+            if (!sourceProductId) {
+                const created = await createProduct({
+                    customer_id: user.customer_id,
+                    category_id: categoryId,
+                    title: title.trim(),
+                    description: description.trim(),
+                    image: image.trim(),
+                    price: numericPrice,
+                    location: location.trim(),
+                }).unwrap();
+                sourceProductId = created.product_id;
+                setCreatedProductId(sourceProductId);
+            }
+
+            const chain = await createChain({
+                from_product_id: sourceProductId,
+                to_product_id: targetProductId,
+                exchange_goal_id: targetProductId,
+                route_step_id: sourceProductId,
+                status: 'pending',
+                message: `Предложение по новому объявлению «${title.trim()}»`,
             }).unwrap();
 
-            navigate(`/product/${created.product_id}`, {replace: true});
+            navigate(`/exchanges/${chain.chain_id}`, {replace: true});
         } catch (error) {
-            setRequestError(getErrorMessage(error));
+            setRequestError(
+                createdProductId
+                    ? `Объявление уже создано. ${getErrorMessage(error)} Повторите отправку предложения.`
+                    : getErrorMessage(error),
+            );
         }
     };
 
     return {
         isEdit,
         categories,
+        targetProducts: targetProductsQuery.data ?? [],
+        currentCustomerId: user?.customer_id ?? '',
         categoryPath,
         statusOptions,
         // данные товара для экранов загрузки/ошибки
@@ -219,6 +263,8 @@ export const useProductForm = (productId?: string) => {
         isFetchingUser,
         isCategoriesLoading,
         isCategoriesError,
+        isTargetProductsLoading: isUserLoading || targetProductsQuery.isLoading,
+        isTargetProductsError: targetProductsQuery.isError,
         isOwnerError,
         // поля формы
         title,
@@ -228,6 +274,7 @@ export const useProductForm = (productId?: string) => {
         price,
         location,
         status,
+        targetProductId,
         errors,
         requestError,
         isLoading,
@@ -239,6 +286,7 @@ export const useProductForm = (productId?: string) => {
         setPrice,
         setLocation,
         setStatus,
+        setTargetProductId,
         handleSubmit,
     };
 };

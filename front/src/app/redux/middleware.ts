@@ -1,17 +1,33 @@
-import {isRejectedWithValue, type Middleware} from '@reduxjs/toolkit';
-import {logout} from '@/entities/user';
+import {isAnyOf, isRejectedWithValue, type Middleware} from '@reduxjs/toolkit';
+import {categoryApi} from '@/entities/category';
+import {chainApi} from '@/entities/chain';
+import {customerApi} from '@/entities/customer';
+import {productApi} from '@/entities/product';
+import {reviewApi} from '@/entities/review';
+import {searchApi} from '@/entities/search';
+import {logout, setCredentials, userApi} from '@/entities/user';
+import {wishlistApi} from '@/entities/wishlist';
+
+const apiSlices = [
+    userApi,
+    productApi,
+    categoryApi,
+    chainApi,
+    customerApi,
+    reviewApi,
+    searchApi,
+    wishlistApi,
+];
 
 /**
  * Перехватывает неудачные запросы RTK Query.
  *
- * При ответе 401 (токен недействителен/протух) выполняет логаут: очищает токен
- * из Redux/localStorage. Защищённые роуты через {@link selectIsAuthenticated}
- * реактивно показывают экран входа, а skip-флаги ({@code skip: !isAuthenticated})
- * останавливают дальнейшие запросы с устаревшими данными.
+ * При смене сессии очищает кеши RTK Query, чтобы ответы с прежним токеном не
+ * были показаны новому пользователю. Это применяется и к logout, и к успешному
+ * login/register через setCredentials.
  *
- * Сброс кэша RTK Query не делается здесь намеренно: после logout селектор
- * isAuthenticated становится false, все защищённые запросы получают skip и не
- * возвращают данные, а соответствующие страницы перемонтируются в гостевой вид.
+ * При ответе 401 (токен недействителен/протух) выполняет логаут: очищает токен
+ * из Redux/localStorage и все кеши RTK Query.
  *
  * Примечание: 401 на самих /auth/login/ register безвреден — токена ещё нет,
  * logout() оставляет состояние guest-экрана без изменений.
@@ -21,6 +37,12 @@ import {logout} from '@/entities/user';
  */
 export const rtkQueryAuthMiddleware: Middleware =
     (api) => (next) => (action) => {
+        if (isAnyOf(setCredentials, logout)(action)) {
+            for (const apiSlice of apiSlices) {
+                api.dispatch(apiSlice.util.resetApiState());
+            }
+        }
+
         if (isRejectedWithValue(action)) {
             const status = (action.payload as {status?: number} | undefined)?.status;
 

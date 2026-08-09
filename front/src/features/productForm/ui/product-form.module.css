@@ -3,6 +3,7 @@
     grid-template-columns: minmax(0, 1fr) 320px;
     grid-template-areas:
         'main sidebar'
+        'target target'
         'actions actions';
     gap: var(--main-gap);
     align-items: start;
@@ -20,12 +21,20 @@
     grid-area: sidebar;
 }
 
+.form__target {
+    grid-area: target;
+}
+
 .form__actions {
     grid-area: actions;
 
     display: flex;
-    justify-content: flex-end;
+    justify-content: flex-start;
     gap: 12px;
+}
+
+.form__actions .form__submit {
+    width: fit-content;
 }
 
 .form__field {
@@ -132,6 +141,7 @@
         grid-template-areas:
             'sidebar'
             'main'
+            'target'
             'actions';
     }
 

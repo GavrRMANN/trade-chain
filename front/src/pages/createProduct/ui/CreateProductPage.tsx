@@ -44,6 +44,8 @@ export const CreateProductPage = () => {
                 <ProductForm
                     isEdit={form.isEdit}
                     categories={form.categories}
+                    targetProducts={form.targetProducts}
+                    currentCustomerId={form.currentCustomerId}
                     statusOptions={form.statusOptions}
                     title={form.title}
                     categoryId={form.categoryId}
@@ -52,9 +54,12 @@ export const CreateProductPage = () => {
                     price={form.price}
                     location={form.location}
                     status={form.status}
+                    targetProductId={form.targetProductId}
                     errors={form.errors}
                     requestError={form.requestError}
                     isLoading={form.isLoading}
+                    isTargetProductsLoading={form.isTargetProductsLoading}
+                    isTargetProductsError={form.isTargetProductsError}
                     setTitle={form.setTitle}
                     setCategoryId={form.setCategoryId}
                     setDescription={form.setDescription}
@@ -62,6 +67,7 @@ export const CreateProductPage = () => {
                     setPrice={form.setPrice}
                     setLocation={form.setLocation}
                     setStatus={form.setStatus}
+                    setTargetProductId={form.setTargetProductId}
                     handleSubmit={form.handleSubmit}
                 />
             </div>

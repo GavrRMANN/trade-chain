@@ -1,9 +1,8 @@
 import { useState } from 'react';
 
 import { Button } from '@shared/ui/button';
-import { Input } from '@shared/ui/input';
 import { ProductImage } from '@entities/product';
-import { Selector } from '@shared/ui/selector';
+import { TargetProductPicker } from '@entities/product';
 
 import { getProductMeta, useRouteBuilder } from '../lib/useRouteBuilder';
 import Styles from './route-builder.module.css';
@@ -17,33 +16,20 @@ export const RouteBuilder = ({ onCancel, variant = 'card' }: TRouteBuilderProps)
     const [mobileStep, setMobileStep] = useState<1 | 2>(1);
     const {
         sourceProducts,
-        targetProducts,
+        products,
         categories,
+        currentCustomerId,
         sourceId,
         targetId,
         selectedSource,
         selectedTarget,
-        searchMode,
-        searchValue,
-        categoryId,
         isSourcesLoading,
         isTargetsLoading,
         hasTargetError,
         setSourceId,
         setTargetId,
-        selectMode,
-        selectCategory,
-        search,
         buildRoute,
     } = useRouteBuilder();
-
-    const categoryOptions = [
-        { value: '', label: 'Выберите категорию' },
-        ...categories.map((category) => ({
-            value: category.category_id,
-            label: category.name,
-        })),
-    ];
 
     return (
         <section
@@ -136,84 +122,15 @@ export const RouteBuilder = ({ onCancel, variant = 'card' }: TRouteBuilderProps)
                         mobileStep !== 2 ? Styles['builder__step--mobile-hidden'] : ''
                     }`}
                 >
-                    <div className={Styles.builder__stepHeading}>
-                        <span>2</span>
-                        <div>
-                            <h3>Куда хотим прийти</h3>
-                            <p>Найдите товар или откройте категорию</p>
-                        </div>
-                    </div>
-
-                    <div className={Styles.builder__mode} role="tablist" aria-label="Способ поиска цели">
-                        <Button
-                            variant="text"
-                            active={searchMode === 'product'}
-                            className={searchMode === 'product' ? Styles['builder__mode--active'] : ''}
-                            onClick={() => selectMode('product')}
-                        >
-                            По товару
-                        </Button>
-                        <Button
-                            variant="text"
-                            active={searchMode === 'category'}
-                            className={searchMode === 'category' ? Styles['builder__mode--active'] : ''}
-                            onClick={() => selectMode('category')}
-                        >
-                            По категории
-                        </Button>
-                    </div>
-
-                    <div className={Styles.builder__filter}>
-                        {searchMode === 'product' ? (
-                            <Input
-                                value={searchValue}
-                                placeholder="Например, iPhone 15"
-                                onChange={search}
-                            />
-                        ) : (
-                            <Selector
-                                value={categoryId}
-                                label="Категория цели"
-                                options={categoryOptions}
-                                onSelect={selectCategory}
-                                loading={isTargetsLoading && categories.length === 0}
-                            />
-                        )}
-                    </div>
-
-                    {hasTargetError ? (
-                        <p className={Styles.builder__state}>Не удалось загрузить варианты цели.</p>
-                    ) : isTargetsLoading ? (
-                        <p className={Styles.builder__state}>Ищем подходящие товары…</p>
-                    ) : searchMode === 'category' && !categoryId ? (
-                        <p className={Styles.builder__state}>Выберите категорию, чтобы увидеть товары.</p>
-                    ) : targetProducts.length === 0 ? (
-                        <p className={Styles.builder__state}>По этому запросу ничего не найдено.</p>
-                    ) : (
-                        <div className={Styles.builder__targetGrid}>
-                            {targetProducts.map((product) => (
-                                <button
-                                    key={product.product_id}
-                                    type="button"
-                                    className={`${Styles.builder__target} ${
-                                        targetId === product.product_id
-                                            ? Styles['builder__target--selected']
-                                            : ''
-                                    }`}
-                                    aria-pressed={targetId === product.product_id}
-                                    onClick={() => setTargetId(product.product_id)}
-                                >
-                                    <span className={Styles.builder__targetMedia}>
-                                        <ProductImage src={product.image} alt="" title={product.title} />
-                                    </span>
-                                    <span>
-                                        <strong>{product.title}</strong>
-                                        <small>{getProductMeta(product) || 'Можно предложить обмен'}</small>
-                                    </span>
-                                </button>
-                            ))}
-                        </div>
-                    )}
+                    <TargetProductPicker
+                        products={products}
+                        categories={categories}
+                        currentCustomerId={currentCustomerId}
+                        value={targetId}
+                        isLoading={isTargetsLoading}
+                        isError={hasTargetError}
+                        onChange={setTargetId}
+                    />
                 </div>
             </div>
 
