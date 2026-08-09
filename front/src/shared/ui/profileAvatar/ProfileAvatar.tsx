@@ -2,7 +2,7 @@ import { memo } from 'react';
 import { Avatar } from 'antd';
 import Styles from './profileAvatar.module.css';
 import ProfileIconFallback from './assets/profileIcon.svg?react';
-import type { TAvatarSize } from '@/shared/ui/profileAvatar/type.ts';
+import type { TAvatarSize } from './type.ts';
 
 type TProfileAvatarProps = {
     useIcon?: boolean;

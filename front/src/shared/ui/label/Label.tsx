@@ -2,11 +2,7 @@ import {forwardRef, type LabelHTMLAttributes, type ReactNode} from "react";
 
 import Styles from './Label.module.css';
 import ControlStyles from '../control/Control.module.css';
-
-type TError = {
-    showError: boolean;
-    errorMessage: string;
-};
+import type {TFormError} from '@shared/lib/form';
 
 type TPosition = "before" | "after";
 
@@ -15,7 +11,7 @@ type TLabelPropsComp = {
     label?: string;
     position?: TPosition;
     disabled?: boolean;
-    error?: TError;
+    error?: TFormError;
 }
 
 type TLabelProps = LabelHTMLAttributes<HTMLLabelElement> & TLabelPropsComp;

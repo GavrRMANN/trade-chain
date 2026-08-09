@@ -1,6 +1,6 @@
-import Styles from './Button.module.css';
 import {forwardRef, type MouseEventHandler, type ReactNode} from "react";
 import {Spinner} from "../spinner";
+import {useButton} from './useButton';
 
 type TButtonVariant = 'primary' | 'secondary' | 'text' | 'default';
 
@@ -29,21 +29,14 @@ export const Button = forwardRef<HTMLButtonElement, TButtonProps>(({
                                                                        ariaLabel,
                                                                        className,
                                                                    }, ref) => {
-    const classes = [
-        Styles.button,
-        Styles[`button--${variant}`],
-        className,
-        active && Styles[`button--active`],
-        loading && Styles['button--loading'],
-        icon && Styles['button--icon'],
-    ].filter(Boolean).join(' ');
+    const {className: buttonClassName} = useButton({variant, active, loading, icon, className});
 
     return (
         <button
             type={type}
             ref={ref}
             disabled={disabled || loading}
-            className={classes}
+            className={buttonClassName}
             onClick={onClick}
             aria-busy={loading}
             aria-label={ariaLabel}

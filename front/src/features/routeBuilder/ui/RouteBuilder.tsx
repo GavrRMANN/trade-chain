@@ -2,7 +2,7 @@ import { useState } from 'react';
 
 import { Button } from '@shared/ui/button';
 import { Input } from '@shared/ui/input';
-import { ProductImage } from '@shared/ui/productImage';
+import { ProductImage } from '@entities/product';
 import { Selector } from '@shared/ui/selector';
 
 import { getProductMeta, useRouteBuilder } from '../lib/useRouteBuilder';

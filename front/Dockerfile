@@ -3,6 +3,8 @@ FROM node:22-alpine AS builder
 WORKDIR /app
 
 COPY package*.json ./
+# В Docker-контексте нет .git, поэтому Git-хуки здесь не устанавливаются.
+ENV HUSKY=0
 RUN npm ci 
 
 COPY . .

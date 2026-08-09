@@ -9,6 +9,7 @@ import { ProductPage } from '@pages/product';
 import { ProfilePage } from '@pages/profile';
 import { Preloader } from '@shared/ui/preloader';
 import { ModalPreload } from '@shared/ui/modalPreload';
+import { ProtectedRoute } from './ProtectedRoute';
 
 const withSuspense = (element: ReactElement, fallback: ReactElement = <Preloader />) => (
     <Suspense fallback={fallback}>{element}</Suspense>
@@ -40,15 +41,17 @@ export const AppRouter = () => {
             <Routes location={backgroundLocation || location}>
                 <Route element={<App />}>
                     <Route index element={<CatalogPage />} />
-                    <Route path="create" element={<CreateProductPage />} />
                     <Route path="product/:productId" element={<ProductPage />} />
-                    <Route path="product/:productId/edit" element={<CreateProductPage />} />
-                    <Route path="profile" element={<ProfilePage />} />
-                    <Route path="profile/:customerId" element={<ProfilePage />} />
-                    <Route path="exchanges" element={<ExchangesPage />} />
-                    <Route path="exchanges/:chainId" element={withSuspense(<ExchangeRoomPageLazy />)} />
-                    <Route path="route" element={withSuspense(<RoutePageLazy />)} />
-                    <Route path="notifications" element={withSuspense(<NotificationsPageLazy />)} />
+                    <Route element={<ProtectedRoute />}>
+                        <Route path="create" element={<CreateProductPage />} />
+                        <Route path="product/:productId/edit" element={<CreateProductPage />} />
+                        <Route path="profile" element={<ProfilePage />} />
+                        <Route path="profile/:customerId" element={<ProfilePage />} />
+                        <Route path="exchanges" element={<ExchangesPage />} />
+                        <Route path="exchanges/:chainId" element={withSuspense(<ExchangeRoomPageLazy />)} />
+                        <Route path="route" element={withSuspense(<RoutePageLazy />)} />
+                        <Route path="notifications" element={withSuspense(<NotificationsPageLazy />)} />
+                    </Route>
                     <Route path="*" element={withSuspense(<NotFoundPageLazy />)} />
                 </Route>
             </Routes>

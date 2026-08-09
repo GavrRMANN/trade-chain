@@ -9,8 +9,6 @@ import type { TProduct } from '@entities/product';
 import { useFindChainQuery } from '@entities/search';
 import { useGetCurrentUserQuery } from '@entities/user';
 import type { TRouteRecommendation } from '@features/routeRecommendations';
-import { getAuthToken } from '@shared/api';
-import { useOpenModalRoute } from '@shared/lib';
 
 const OPEN_OFFER_STATUSES = new Set<TChain['status']>(['pending', 'active']);
 
@@ -23,26 +21,22 @@ type TRouteHistoryItem = {
 export const useRoute = () => {
     const { setTitle } = usePageTitle();
     const navigate = useNavigate();
-    const openModal = useOpenModalRoute();
     const [searchParams] = useSearchParams();
 
     const targetId = searchParams.get('target')?.trim() ?? '';
     const sourceId = searchParams.get('from')?.trim() ?? '';
-    const isAuthenticated = Boolean(getAuthToken());
 
     const routeQuery = useFindChainQuery(
         { target_product_id: targetId },
-        { skip: !targetId || !isAuthenticated },
+        { skip: !targetId },
     );
-    const currentUserQuery = useGetCurrentUserQuery(undefined, {
-        skip: !isAuthenticated,
-    });
+    const currentUserQuery = useGetCurrentUserQuery();
     const productsQuery = useGetProductsQuery(
         { limit: 100 },
-        { skip: !targetId || !isAuthenticated },
+        { skip: !targetId },
     );
     const myChainsQuery = useGetMyChainsQuery(undefined, {
-        skip: !targetId || !isAuthenticated,
+        skip: !targetId,
     });
     const [createChain, { isLoading: isSubmitting }] = useCreateChainMutation();
 
@@ -284,7 +278,6 @@ export const useRoute = () => {
 
     return {
         targetId,
-        isAuthenticated,
         isLoading,
         isError,
         isEmpty,
@@ -308,6 +301,5 @@ export const useRoute = () => {
         closeOffer,
         handleOfferSuccess,
         goHome,
-        openAuthModal: () => openModal('auth'),
     };
 };

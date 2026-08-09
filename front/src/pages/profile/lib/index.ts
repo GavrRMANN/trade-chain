@@ -1,1 +1,2 @@
-export * from './useProfile.ts';
+export * from './useProfile';
+export * from './useProfilePage';

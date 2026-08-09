@@ -1,6 +1,7 @@
 import {NavLink} from 'react-router-dom';
 
 import {useNotificationsFeed} from '@entities/notification';
+import {BellIcon} from '@shared/ui/bellIcon';
 
 import Styles from './notification-bell.module.css';
 
@@ -9,12 +10,6 @@ type TNotificationBellProps = {
     className?: string;
     activeClassName?: string;
 };
-
-const BellIcon = () => (
-    <svg className={Styles['notification-bell__icon']} viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M18 9A6 6 0 0 0 6 9c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4" />
-    </svg>
-);
 
 /**
  * Кнопка-уведомления в шапке: ведёт на центр уведомлений и показывает
@@ -48,7 +43,7 @@ export const NotificationBell = ({
                     : 'Уведомления'
             }
         >
-            {compact ? <BellIcon /> : <span className={Styles['notification-bell__label']}>Уведомления</span>}
+            {compact ? <BellIcon className={Styles['notification-bell__icon']} /> : <span className={Styles['notification-bell__label']}>Уведомления</span>}
             {isAuthenticated && unreadCount > 0 && (
                 <span
                     className={Styles['notification-bell__badge']}

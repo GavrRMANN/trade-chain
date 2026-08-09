@@ -2,6 +2,12 @@ import type {TChain, TChainStatus} from '@entities/chain';
 import type {TProduct} from '@entities/product';
 import type {TNotification, TNotificationKind} from '../types';
 
+function assertNever(x: never, hint?: string): never {
+    throw new Error(
+        `Unhandled variant${hint ? ` in ${hint}` : ''}: ${JSON.stringify(x)}`,
+    );
+}
+
 /** Терминальные статусы сделки — обмен больше не активен. */
 const FINAL_STATUSES: ReadonlySet<TChainStatus> = new Set<TChainStatus>([
     'completed',
@@ -17,12 +23,11 @@ const FINAL_STATUSES: ReadonlySet<TChainStatus> = new Set<TChainStatus>([
  */
 const resolveKind = (chain: TChain, currentUserId: string): TNotificationKind | null => {
     const isIncoming = chain.initiator_id !== currentUserId;
-    const isOutgoing = chain.initiator_id === currentUserId;
 
     if ((chain.status === 'pending' || chain.status === 'countered') && isIncoming) {
         return 'incoming_offer';
     }
-    if ((chain.status === 'pending' || chain.status === 'countered') && isOutgoing) {
+    if ((chain.status === 'pending' || chain.status === 'countered') && !isIncoming) {
         return 'outgoing_pending';
     }
     if (chain.status === 'active') {
@@ -109,5 +114,7 @@ const describe = (
                 title: 'Обмен завершён',
                 body: `«${from}» → «${to}». Сделка больше не активна.`,
             };
+        default:
+            return assertNever(kind, 'describe');
     }
 };

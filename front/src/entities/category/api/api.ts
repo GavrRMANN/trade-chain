@@ -1,7 +1,7 @@
 import { createApi } from '@reduxjs/toolkit/query/react';
 import { apiBaseQuery } from '@shared/api';
 import type {
-    Category,
+    TCategory,
     TCreateCategoryRequest,
     TUpdateCategoryRequest,
 } from '../types';
@@ -15,19 +15,19 @@ export const categoryApi = createApi({
     reducerPath: 'categoryApi',
     baseQuery: apiBaseQuery,
     endpoints: (builder) => ({
-        getCategories: builder.query<Category[], void>({
+        getCategories: builder.query<TCategory[], void>({
             query: () => '/categories',
         }),
-        getCategory: builder.query<Category, string>({
+        getCategory: builder.query<TCategory, string>({
             query: (categoryId) => `/categories/${categoryId}`,
         }),
-        getSubcategories: builder.query<Category[], string>({
+        getSubcategories: builder.query<TCategory[], string>({
             query: (categoryId) => `/categories/${categoryId}/subcategories`,
         }),
-        createCategory: builder.mutation<Category, TCreateCategoryRequest>({
+        createCategory: builder.mutation<TCategory, TCreateCategoryRequest>({
             query: (body) => ({url: '/categories', method: 'POST', body}),
         }),
-        updateCategory: builder.mutation<Category, TUpdateCategoryArgs>({
+        updateCategory: builder.mutation<TCategory, TUpdateCategoryArgs>({
             query: ({categoryId, data}) => ({
                 url: `/categories/${categoryId}`,
                 method: 'PUT',
