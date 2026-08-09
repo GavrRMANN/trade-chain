@@ -33,11 +33,26 @@ type ChainService interface {
 	GetFullChain(context.Context, string) ([]domain.Chain, error)
 	UpdateStatus(context.Context, string, domain.ChainStatus, string) error // добавили userID
 	Decide(context.Context, string, exchange.Action, string) (*domain.Chain, error)
-	Confirm(ctx context.Context, chainID, actorID string, success bool) (*domain.Chain, error)
+	Confirm(ctx context.Context, chainID, actorID string, success bool, reason string) (*domain.Chain, error)
 	Messages(ctx context.Context, chainID, actorID string) ([]domain.ChainMessage, error)
 	SendMessage(ctx context.Context, chainID, actorID, body string) (*domain.ChainMessage, error)
 	CanReview(ctx context.Context, chainID, actorID string) (string, error)
 	Delete(context.Context, string) error
+}
+
+// OfferService — экран предложений: отправить, ответить, довести до итога.
+//
+// Отдельный интерфейс от ChainService нужен транспорту: маршруты
+// /exchange-offers работают в терминах предложения и обмена, а не звена,
+// и не должны иметь доступа к операциям вроде удаления цепочки.
+type OfferService interface {
+	Create(ctx context.Context, in CreateOfferInput) (*Offer, error)
+	List(ctx context.Context, actorID string, role domain.OfferRole, statuses []exchange.OfferStatus) ([]Offer, error)
+	Details(ctx context.Context, offerID, actorID string) (*OfferDetails, error)
+	Accept(ctx context.Context, offerID, actorID string) (*Offer, error)
+	Decline(ctx context.Context, offerID, actorID string) (*Offer, error)
+	Cancel(ctx context.Context, offerID, actorID string) (*Offer, error)
+	Confirm(ctx context.Context, exchangeID, actorID string, success bool, reason string) (*Offer, error)
 }
 
 type ReviewService interface {

@@ -45,11 +45,22 @@ type WishlistRepository interface {
 	Delete(ctx context.Context, id string) error
 }
 
+// ChainFilter — отбор сделок для списков предложений.
+//
+// Пустые поля означают «без ограничения»: так один запрос покрывает и экран
+// «мои обмены» целиком, и входящие в ожидании ответа.
+type ChainFilter struct {
+	CustomerID string
+	Role       domain.OfferRole
+	Statuses   []domain.ChainStatus
+}
+
 type ChainRepository interface {
 	Create(ctx context.Context, chain *domain.Chain) (*domain.Chain, error)
 	GetByID(ctx context.Context, id string) (*domain.Chain, error)
 	GetByProductID(ctx context.Context, productID string) ([]domain.Chain, error)
 	GetByCustomerID(ctx context.Context, customerID string) ([]domain.Chain, error)
+	List(ctx context.Context, filter ChainFilter) ([]domain.Chain, error)
 	GetFullChain(ctx context.Context, chainID string) ([]domain.Chain, error)
 	UpdateStatus(ctx context.Context, id string, status domain.ChainStatus) error
 	CompleteExchange(ctx context.Context, chainID string) error // добавить

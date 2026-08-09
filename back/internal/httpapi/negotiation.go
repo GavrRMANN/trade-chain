@@ -72,7 +72,7 @@ func (h chainHandler) confirm(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	v, err := h.s.Confirm(r.Context(), chi.URLParam(r, "id"), userID, req.Success)
+	v, err := h.s.Confirm(r.Context(), chi.URLParam(r, "id"), userID, req.Success, "")
 	if err != nil {
 		writeError(w, err)
 		return
