@@ -308,14 +308,18 @@ func (r *chainRepository) CompleteExchange(ctx context.Context, chainID string) 
 
 	// 3. Обменять владельцев
 	_, err = tx.Exec(ctx, `
-			UPDATE products SET customer_id = $1 WHERE product_id = $2
-		`, toOwner, chain.FromProductID)
+			UPDATE products
+			SET customer_id = $1, status = $3
+			WHERE product_id = $2
+		`, toOwner, chain.FromProductID, string(domain.ProductExchanged))
 	if err != nil {
 		return err
 	}
 	_, err = tx.Exec(ctx, `
-			UPDATE products SET customer_id = $1 WHERE product_id = $2
-		`, fromOwner, toProductID)
+			UPDATE products
+			SET customer_id = $1, status = $3
+			WHERE product_id = $2
+		`, fromOwner, toProductID, string(domain.ProductExchanged))
 	if err != nil {
 		return err
 	}
