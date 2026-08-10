@@ -8,6 +8,12 @@ import './index.css';
 import { StoreProvider } from '@app/providers';
 import { AppRouter } from '@app/router';
 import {PageTitleProvider} from "@app/providers/pageTitle";
+import { store } from '@app/redux';
+import { initAuth } from '@entities/user';
+
+// Гидрируем токен из localStorage в Redux до первого рендера,
+// чтобы ProtectedRoute сразу знал об авторизации.
+store.dispatch(initAuth());
 
 createRoot(document.getElementById('root')!).render(
     <StrictMode>

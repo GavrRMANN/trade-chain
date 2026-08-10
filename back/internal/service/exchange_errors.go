@@ -3,6 +3,7 @@ package service
 import (
 	"errors"
 	"fmt"
+
 	"trade-chain/internal/domain"
 )
 
@@ -25,13 +26,13 @@ func mapExchangeError(err error) error {
 		return fmt.Errorf("%w: %s", ErrForbidden, err)
 
 	case errors.Is(err, domain.ErrAlreadyConfirmed),
-		errors.Is(err, domain.ErrOfferDuplicate):
+		errors.Is(err, domain.ErrOfferDuplicate),
+		errors.Is(err, domain.ErrProductUnavailable):
 		return fmt.Errorf("%w: %s", ErrConflict, err)
 
 	case errors.Is(err, domain.ErrChainFinal),
 		errors.Is(err, domain.ErrInvalidTransition),
 		errors.Is(err, domain.ErrSelfExchange),
-		errors.Is(err, domain.ErrProductUnavailable),
 		errors.Is(err, domain.ErrInvalidSurcharge):
 		return fmt.Errorf("%w: %s", ErrInvalidInput, err)
 

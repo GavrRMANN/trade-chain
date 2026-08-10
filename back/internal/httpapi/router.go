@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 	"time"
+
 	"trade-chain/internal/search"
 	"trade-chain/internal/service"
 
@@ -97,6 +98,9 @@ func NewRouter(d Dependencies) http.Handler {
 		}
 		if d.Wishlists != nil {
 			mountWishlistRoutes(r, d.Wishlists)
+		}
+		if d.Search != nil {
+			mountSearchRoutes(r, d.Search)
 		}
 
 	})

@@ -1,12 +1,10 @@
-import { useState } from 'react';
-
 import { Button } from '@shared/ui/button';
-import { Input } from '@shared/ui/input';
-import { ProductImage } from '@shared/ui/productImage';
-import { Selector } from '@shared/ui/selector';
+import { ProductImage } from '@entities/product';
+import { TargetProductPicker } from '@entities/product';
 
-import { getProductMeta, useRouteBuilder } from '../lib/useRouteBuilder';
+import {useRouteBuilder} from '../lib/useRouteBuilder';
 import Styles from './route-builder.module.css';
+import {useMobileRouteStep} from './useMobileRouteStep';
 
 type TRouteBuilderProps = {
     onCancel?: () => void;
@@ -14,36 +12,25 @@ type TRouteBuilderProps = {
 };
 
 export const RouteBuilder = ({ onCancel, variant = 'card' }: TRouteBuilderProps) => {
-    const [mobileStep, setMobileStep] = useState<1 | 2>(1);
+    const {mobileStep, goToNextStep, goToPreviousStep} = useMobileRouteStep();
     const {
         sourceProducts,
-        targetProducts,
+        products,
         categories,
+        currentCustomerId,
         sourceId,
-        targetId,
+        targetGoal,
         selectedSource,
-        selectedTarget,
-        searchMode,
-        searchValue,
-        categoryId,
+        targetLabel,
+        sourceProductMeta,
+        hasTarget,
         isSourcesLoading,
         isTargetsLoading,
         hasTargetError,
         setSourceId,
-        setTargetId,
-        selectMode,
-        selectCategory,
-        search,
+        setTargetGoal,
         buildRoute,
     } = useRouteBuilder();
-
-    const categoryOptions = [
-        { value: '', label: 'Выберите категорию' },
-        ...categories.map((category) => ({
-            value: category.category_id,
-            label: category.name,
-        })),
-    ];
 
     return (
         <section
@@ -113,7 +100,7 @@ export const RouteBuilder = ({ onCancel, variant = 'card' }: TRouteBuilderProps)
                                     </span>
                                     <span className={Styles.builder__productBody}>
                                         <strong>{product.title}</strong>
-                                        <small>{getProductMeta(product) || 'Активное объявление'}</small>
+                                        <small>{sourceProductMeta.get(product.product_id)}</small>
                                     </span>
                                     <span className={Styles.builder__check} aria-hidden="true">✓</span>
                                 </button>
@@ -136,84 +123,15 @@ export const RouteBuilder = ({ onCancel, variant = 'card' }: TRouteBuilderProps)
                         mobileStep !== 2 ? Styles['builder__step--mobile-hidden'] : ''
                     }`}
                 >
-                    <div className={Styles.builder__stepHeading}>
-                        <span>2</span>
-                        <div>
-                            <h3>Куда хотим прийти</h3>
-                            <p>Найдите товар или откройте категорию</p>
-                        </div>
-                    </div>
-
-                    <div className={Styles.builder__mode} role="tablist" aria-label="Способ поиска цели">
-                        <Button
-                            variant="text"
-                            active={searchMode === 'product'}
-                            className={searchMode === 'product' ? Styles['builder__mode--active'] : ''}
-                            onClick={() => selectMode('product')}
-                        >
-                            По товару
-                        </Button>
-                        <Button
-                            variant="text"
-                            active={searchMode === 'category'}
-                            className={searchMode === 'category' ? Styles['builder__mode--active'] : ''}
-                            onClick={() => selectMode('category')}
-                        >
-                            По категории
-                        </Button>
-                    </div>
-
-                    <div className={Styles.builder__filter}>
-                        {searchMode === 'product' ? (
-                            <Input
-                                value={searchValue}
-                                placeholder="Например, iPhone 15"
-                                onChange={search}
-                            />
-                        ) : (
-                            <Selector
-                                value={categoryId}
-                                label="Категория цели"
-                                options={categoryOptions}
-                                onSelect={selectCategory}
-                                loading={isTargetsLoading && categories.length === 0}
-                            />
-                        )}
-                    </div>
-
-                    {hasTargetError ? (
-                        <p className={Styles.builder__state}>Не удалось загрузить варианты цели.</p>
-                    ) : isTargetsLoading ? (
-                        <p className={Styles.builder__state}>Ищем подходящие товары…</p>
-                    ) : searchMode === 'category' && !categoryId ? (
-                        <p className={Styles.builder__state}>Выберите категорию, чтобы увидеть товары.</p>
-                    ) : targetProducts.length === 0 ? (
-                        <p className={Styles.builder__state}>По этому запросу ничего не найдено.</p>
-                    ) : (
-                        <div className={Styles.builder__targetGrid}>
-                            {targetProducts.map((product) => (
-                                <button
-                                    key={product.product_id}
-                                    type="button"
-                                    className={`${Styles.builder__target} ${
-                                        targetId === product.product_id
-                                            ? Styles['builder__target--selected']
-                                            : ''
-                                    }`}
-                                    aria-pressed={targetId === product.product_id}
-                                    onClick={() => setTargetId(product.product_id)}
-                                >
-                                    <span className={Styles.builder__targetMedia}>
-                                        <ProductImage src={product.image} alt="" title={product.title} />
-                                    </span>
-                                    <span>
-                                        <strong>{product.title}</strong>
-                                        <small>{getProductMeta(product) || 'Можно предложить обмен'}</small>
-                                    </span>
-                                </button>
-                            ))}
-                        </div>
-                    )}
+                    <TargetProductPicker
+                        products={products}
+                        categories={categories}
+                        currentCustomerId={currentCustomerId}
+                        value={targetGoal}
+                        isLoading={isTargetsLoading}
+                        isError={hasTargetError}
+                        onChange={setTargetGoal}
+                    />
                 </div>
             </div>
 
@@ -221,7 +139,7 @@ export const RouteBuilder = ({ onCancel, variant = 'card' }: TRouteBuilderProps)
                 <div className={Styles.builder__summary}>
                     <span>{selectedSource?.title ?? 'Выберите стартовый товар'}</span>
                     <b aria-hidden="true">→</b>
-                    <span>{selectedTarget?.title ?? 'Выберите цель'}</span>
+                    <span>{targetLabel}</span>
                 </div>
                 <div className={`${Styles.builder__actions} ${Styles.builder__desktopActions}`}>
                     {onCancel && (
@@ -229,7 +147,7 @@ export const RouteBuilder = ({ onCancel, variant = 'card' }: TRouteBuilderProps)
                             Отмена
                         </Button>
                     )}
-                    <Button disabled={!sourceId || !targetId} onClick={buildRoute}>
+                    <Button disabled={!sourceId || !hasTarget} onClick={buildRoute}>
                         Построить цепочку
                     </Button>
                 </div>
@@ -241,16 +159,16 @@ export const RouteBuilder = ({ onCancel, variant = 'card' }: TRouteBuilderProps)
                                     Отмена
                                 </Button>
                             )}
-                            <Button disabled={!sourceId} onClick={() => setMobileStep(2)}>
+                            <Button disabled={!sourceId} onClick={goToNextStep}>
                                 Продолжить
                             </Button>
                         </>
                     ) : (
                         <>
-                            <Button variant="text" onClick={() => setMobileStep(1)}>
+                            <Button variant="text" onClick={goToPreviousStep}>
                                 Назад
                             </Button>
-                            <Button disabled={!targetId} onClick={buildRoute}>
+                            <Button disabled={!hasTarget} onClick={buildRoute}>
                                 Построить цепочку
                             </Button>
                         </>

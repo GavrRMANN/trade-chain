@@ -1,24 +1,26 @@
-import {useState} from 'react';
-
 import {Button} from '@shared/ui/button';
 import {MainSection} from '@shared/ui/mainSection';
 import {PageError} from '@shared/ui/pageError';
 import {Preloader} from '@shared/ui/preloader';
-import {ExchangeRow} from '@shared/ui/exchangeRow';
-import {ProductImage} from '@shared/ui/productImage';
+import {ExchangeRow} from '@widgets/exchangeRow';
+import {ProductImage} from '@entities/product';
 import {Modal} from '@shared/ui/modal';
-import {useOpenModalRoute} from '@shared/lib';
 import {formatDate} from '@shared/lib';
 import {RouteBuilder} from '@features/routeBuilder';
 
 import Styles from './exchanges-page.module.css';
 import {useExchanges} from '../lib';
-import type {TExchangeTab} from '../lib/useExchanges';
+import type {TExchangeRouteTab, TExchangeTab} from '../lib/useExchanges';
 
 const TABS: {id: TExchangeTab; label: string}[] = [
     {id: 'active', label: 'Активные'},
     {id: 'incoming', label: 'Входящие'},
     {id: 'outgoing', label: 'Исходящие'},
+    {id: 'completed', label: 'Завершённые'},
+];
+
+const ROUTE_TABS: {id: TExchangeRouteTab; label: string}[] = [
+    {id: 'active', label: 'Активные'},
     {id: 'completed', label: 'Завершённые'},
 ];
 
@@ -29,59 +31,34 @@ const EMPTY_TEXT: Record<TExchangeTab, string> = {
     completed: 'Завершённых обменов пока нет',
 };
 
+const ROUTE_EMPTY_TEXT: Record<TExchangeRouteTab, string> = {
+    active: 'Активных цепочек обменов пока нет',
+    completed: 'Завершённых цепочек обменов пока нет',
+};
+
 const formatClasses = (...classes: Array<string | false | undefined>): string =>
     classes.filter(Boolean).join(' ');
 
-const formatActiveOffers = (count: number): string => {
-    const lastTwo = count % 100;
-    const last = count % 10;
-    const word =
-        lastTwo >= 11 && lastTwo <= 14
-            ? 'активных предложений'
-            : last === 1
-              ? 'активное предложение'
-              : last >= 2 && last <= 4
-                ? 'активных предложения'
-                : 'активных предложений';
-
-    return `${count} ${word}`;
-};
-
 export const ExchangesPage = () => {
-    const [activeTab, setActiveTab] = useState<TExchangeTab>('active');
-    const [activeView, setActiveView] = useState<'routes' | 'exchanges'>('routes');
-    const [isBuilderOpen, setIsBuilderOpen] = useState(false);
-    const openModal = useOpenModalRoute();
     const {
-        isAuthenticated,
-        active,
-        incoming,
-        outgoing,
-        completed,
+        activeTab,
+        setActiveTab,
+        activeRouteTab,
+        setActiveRouteTab,
+        activeView,
+        setActiveView,
+        isBuilderOpen,
+        setIsBuilderOpen,
+        visibleRows,
         routeGroups,
+        visibleRouteGroups,
         isLoading,
         isFetching,
         isError,
         openExchange,
         openRoute,
+        formatActiveOffers,
     } = useExchanges();
-
-    if (!isAuthenticated) {
-        return (
-            <MainSection>
-                <section className={Styles['exchanges-page__guest']}>
-                    <div>
-                        <h2>Войдите, чтобы увидеть свои обмены</h2>
-                        <p>
-                            Отслеживайте входящие и исходящие предложения об обмене
-                            и историю завершённых сделок.
-                        </p>
-                        <Button onClick={() => openModal('auth')}>Войти</Button>
-                    </div>
-                </section>
-            </MainSection>
-        );
-    }
 
     if (isLoading || isFetching) {
         return <Preloader message={'Загрузка обменов…'} />;
@@ -90,14 +67,6 @@ export const ExchangesPage = () => {
     if (isError) {
         return <PageError message={'Не удалось загрузить обмены'} />;
     }
-
-    const visibleRows = activeTab === 'active'
-        ? active
-        : activeTab === 'incoming'
-            ? incoming
-            : activeTab === 'outgoing'
-                ? outgoing
-                : completed;
 
     return (
         <MainSection>
@@ -139,7 +108,25 @@ export const ExchangesPage = () => {
                             </Button>
                         </div>
 
-                        {routeGroups.length === 0 ? (
+                        <div className={Styles['exchanges-page__tabs']} role="tablist">
+                            {ROUTE_TABS.map((tab) => (
+                                <Button
+                                    key={tab.id}
+                                    variant="text"
+                                    active={activeRouteTab === tab.id}
+                                    onClick={() => setActiveRouteTab(tab.id)}
+                                    ariaLabel={tab.label}
+                                    className={formatClasses(
+                                        Styles['exchanges-page__tab'],
+                                        activeRouteTab === tab.id && Styles['exchanges-page__tab--active'],
+                                    )}
+                                >
+                                    {tab.label}
+                                </Button>
+                            ))}
+                        </div>
+
+                        {visibleRouteGroups.length === 0 && routeGroups.length === 0 ? (
                             <div className={Styles['exchanges-page__routes-empty']}>
                                 <span aria-hidden="true">↗</span>
                                 <div>
@@ -149,15 +136,19 @@ export const ExchangesPage = () => {
                                         следующего обмена.
                                     </p>
                                 </div>
-                                {!isBuilderOpen && (
+                                {activeRouteTab === 'active' && !isBuilderOpen && (
                                     <Button variant="secondary" onClick={() => setIsBuilderOpen(true)}>
                                         Построить первую
                                     </Button>
                                 )}
                             </div>
+                        ) : visibleRouteGroups.length === 0 ? (
+                            <div className={Styles['exchanges-page__empty']}>
+                                {ROUTE_EMPTY_TEXT[activeRouteTab]}
+                            </div>
                         ) : (
                             <div className={Styles['exchanges-page__routes-list']}>
-                                {routeGroups.map((group) => (
+                                {visibleRouteGroups.map((group) => (
                                     <article
                                         key={group.goalId}
                                         className={Styles['exchanges-page__route-card']}
@@ -218,7 +209,8 @@ export const ExchangesPage = () => {
                                                 onClick={() =>
                                                     openRoute(
                                                         group.goalId,
-                                                        group.sourceProduct?.product_id,
+                                                        group.sourceProductId,
+                                                        group.goalCategoryId,
                                                     )
                                                 }
                                             >
@@ -234,19 +226,19 @@ export const ExchangesPage = () => {
                     <>
                         <div className={Styles['exchanges-page__tabs']} role="tablist">
                             {TABS.map((tab) => (
-                        <Button
-                            key={tab.id}
-                            variant="text"
-                            active={activeTab === tab.id}
-                            onClick={() => setActiveTab(tab.id)}
-                            ariaLabel={tab.label}
-                            className={formatClasses(
-                                Styles['exchanges-page__tab'],
-                                activeTab === tab.id && Styles['exchanges-page__tab--active'],
-                            )}
-                        >
-                            {tab.label}
-                        </Button>
+                                <Button
+                                    key={tab.id}
+                                    variant="text"
+                                    active={activeTab === tab.id}
+                                    onClick={() => setActiveTab(tab.id)}
+                                    ariaLabel={tab.label}
+                                    className={formatClasses(
+                                        Styles['exchanges-page__tab'],
+                                        activeTab === tab.id && Styles['exchanges-page__tab--active'],
+                                    )}
+                                >
+                                    {tab.label}
+                                </Button>
                             ))}
                         </div>
 

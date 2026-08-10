@@ -2,6 +2,7 @@ package httpapi
 
 import (
 	"net/http"
+
 	"trade-chain/internal/auth"
 	"trade-chain/internal/domain"
 	"trade-chain/internal/service"
@@ -25,7 +26,7 @@ type ReviewRequest struct {
 func mountReviewRoutes(r chi.Router, s service.ReviewService) {
 	h := reviewHandler{s}
 	r.Route("/reviews", func(r chi.Router) {
-		r.Post("/", h.create)
+		r.With(auth.AuthMiddleware).Post("/", h.create)
 		r.Get("/{id}", h.get)
 		r.Delete("/{id}", h.delete)
 		r.Get("/by-customer/{customerID}", h.byCustomer)

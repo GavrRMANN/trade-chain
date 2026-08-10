@@ -4,6 +4,7 @@ import type {
     TCreateProductRequest,
     TProduct,
     TProductListRequest,
+    TProductRecommendations,
     TUpdateProductRequest,
 } from '../types';
 
@@ -27,6 +28,9 @@ export const productApi = createApi({
         }),
         getProduct: builder.query<TProduct, string>({
             query: (productId) => `/products/${productId}`,
+        }),
+        getProductRecommendations: builder.query<TProductRecommendations, string>({
+            query: (productId) => `/products/${productId}/recommendations`,
         }),
         createProduct: builder.mutation<TProduct, TCreateProductRequest>({
             query: (body) => ({ url: '/products', method: 'POST', body }),
@@ -52,6 +56,7 @@ export const {
     useGetProductsByCustomerQuery,
     useLazyGetProductsQuery,
     useGetProductQuery,
+    useGetProductRecommendationsQuery,
     useCreateProductMutation,
     useUpdateProductMutation,
     useArchiveProductMutation,

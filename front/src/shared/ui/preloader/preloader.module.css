@@ -7,6 +7,7 @@
     gap: var(--main-gap);
 
     flex-grow: 1;
+    width: 100%;
 }
 
 .preloader {

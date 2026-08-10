@@ -2,6 +2,7 @@ package search
 
 import (
 	"context"
+
 	"trade-chain/internal/domain"
 	"trade-chain/internal/service"
 )
@@ -14,20 +15,14 @@ type queueNode struct {
 func findChainBFS(
 	ctx context.Context,
 	service service.ProductService,
+	source domain.Product,
 	target domain.Product,
-	userProducts []domain.Product,
 	maxDepth int,
 ) (*ProductSearchResult, error) {
 
-	myProducts := make(map[string]domain.Product)
-
-	for _, product := range userProducts {
-		myProducts[product.ProductID] = product
-	}
-
 	queue := []queueNode{
 		{
-			Product: target,
+			Product: source,
 			Depth:   0,
 		},
 	}
@@ -36,15 +31,15 @@ func findChainBFS(
 	parent := make(map[string]string)
 	productMap := make(map[string]domain.Product)
 
-	visited[target.ProductID] = true
-	productMap[target.ProductID] = target
+	visited[source.ProductID] = true
+	productMap[source.ProductID] = source
 
 	for len(queue) > 0 {
 
 		current := queue[0]
 		queue = queue[1:]
 
-		if _, ok := myProducts[current.Product.ProductID]; ok {
+		if current.Product.ProductID == target.ProductID {
 
 			path := restorePath(
 				current.Product.ProductID,
@@ -53,7 +48,7 @@ func findChainBFS(
 			)
 
 			return &ProductSearchResult{
-				Products: reverse(path),
+				Products: path,
 				Length:   len(path) - 1,
 			}, nil
 		}
@@ -92,6 +87,50 @@ func findChainBFS(
 	return nil, nil
 }
 
+func findLegacyChainBFS(
+	ctx context.Context,
+	service service.ProductService,
+	target domain.Product,
+	userProducts []domain.Product,
+	maxDepth int,
+) (*ProductSearchResult, error) {
+	myProducts := make(map[string]domain.Product)
+	for _, product := range userProducts {
+		myProducts[product.ProductID] = product
+	}
+
+	queue := []queueNode{{Product: target, Depth: 0}}
+	visited := map[string]bool{target.ProductID: true}
+	parent := make(map[string]string)
+	productMap := map[string]domain.Product{target.ProductID: target}
+
+	for len(queue) > 0 {
+		current := queue[0]
+		queue = queue[1:]
+		if _, ok := myProducts[current.Product.ProductID]; ok {
+			path := restorePath(current.Product.ProductID, parent, productMap)
+			return &ProductSearchResult{Products: reverseProducts(path), Length: len(path) - 1}, nil
+		}
+		if current.Depth >= maxDepth {
+			continue
+		}
+		neighbors, err := service.GetExchangeCandidates(ctx, current.Product.ProductID)
+		if err != nil {
+			return nil, err
+		}
+		for _, next := range neighbors {
+			if visited[next.ProductID] {
+				continue
+			}
+			visited[next.ProductID] = true
+			parent[next.ProductID] = current.Product.ProductID
+			productMap[next.ProductID] = next
+			queue = append(queue, queueNode{Product: next, Depth: current.Depth + 1})
+		}
+	}
+	return nil, nil
+}
+
 func restorePath(
 	productID string,
 	parent map[string]string,
@@ -122,11 +161,9 @@ func restorePath(
 	return path
 }
 
-func reverse(products []domain.Product) []domain.Product {
-
+func reverseProducts(products []domain.Product) []domain.Product {
 	for i, j := 0, len(products)-1; i < j; i, j = i+1, j-1 {
 		products[i], products[j] = products[j], products[i]
 	}
-
 	return products
 }

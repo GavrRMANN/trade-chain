@@ -2,6 +2,7 @@ package httpapi
 
 import (
 	"net/http"
+
 	"trade-chain/internal/auth"
 	"trade-chain/internal/service"
 

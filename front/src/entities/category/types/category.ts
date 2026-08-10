@@ -1,4 +1,4 @@
-export interface Category {
+export type TCategory = {
     /** Уникальный идентификатор категории. */
     category_id: string;
     /** Название категории. */

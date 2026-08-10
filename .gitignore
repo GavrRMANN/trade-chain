@@ -30,6 +30,7 @@ yarn-error.log*
 pnpm-debug.log*
 dist/
 build/
+storybook-static/
 .next/
 .nuxt/
 .turbo/
@@ -47,6 +48,15 @@ build/
 go.work
 go.work.sum
 
+# Vercel: локальная привязка проекта и токены — не в репозиторий
+.vercel/
+
+# Скомпилированный бинарь бэкенда из локальной сборки
+/back/app
+
+# Локальное состояние оркестратора
+.omc/
+
 # env file
 .env
 
@@ -55,3 +65,4 @@ go.work.sum
 # .vscode/
 .idea/
 .vscode/
+/docs/CODE_CHECK.md

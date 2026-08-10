@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+
 	"trade-chain/internal/domain"
 
 	"github.com/jackc/pgx/v5"
@@ -276,7 +277,7 @@ func (r *productRepository) List(
 			created_at,
 			updated_at
 		FROM products
-		WHERE status != 'archived'
+		WHERE status NOT IN ('archived', 'exchanged')
 	`
 
 	args := []interface{}{}

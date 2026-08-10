@@ -1,95 +1,65 @@
-import {useLayoutEffect, useState} from 'react';
-import {useNavigate, useParams} from 'react-router-dom';
-
-import {usePageTitle} from '@app/providers/pageTitle';
 import {OfferExchangeModal} from '@features/exchange';
 import {WishlistEditor} from '@features/wishlist';
 import {Button} from '@shared/ui/button';
-import {ChainRow} from '@shared/ui/chainRow';
-import {ExchangeRow} from '@shared/ui/exchangeRow';
+import {ChainRow} from '@widgets/chainRow';
+import {ExchangeRow} from '@widgets/exchangeRow';
 import {MainSection} from '@shared/ui/mainSection';
 import {Modal} from '@shared/ui/modal';
 import {PageError} from '@shared/ui/pageError';
 import {Preloader} from '@shared/ui/preloader';
-import {ProductCard} from '@shared/ui/productCard';
-import {ProductImage} from '@shared/ui/productImage';
+import {ProductCard, ProductImage} from '@entities/product';
 import {Rating} from '@shared/ui/rating';
-import {ReviewCard} from '@shared/ui/reviewCard';
-import {SellerInfo} from '@shared/ui/sellerInfo';
-import {formatAmount, formatDate, useOpenModalRoute} from '@shared/lib';
-import {useProductActions, useProductPageData} from '../lib';
+import {SellerInfo} from '@widgets/sellerInfo';
+import {formatAmount, formatDate} from '@shared/lib';
+
+import {useProductPage} from '../lib';
 
 import Styles from './product-page.module.css';
 
-const statusLabels = {
-    active: 'Активен',
-    reserved: 'Зарезервирован',
-    exchanged: 'Обменян',
-    archived: 'В архиве',
-} as const;
-
 export const ProductPage = () => {
-    const {productId} = useParams<{productId: string}>();
-    const navigate = useNavigate();
-    const openModalRoute = useOpenModalRoute();
-    const {setTitle} = usePageTitle();
-    const [isOfferOpen, setIsOfferOpen] = useState(false);
-
     const {
         product,
-        customer,
         category,
         wishlist,
         wishlistOptions,
         matchingProducts,
         routeChain,
-        reviews,
         averageRating,
         incomingOffers,
         productOffers,
+        targetChain,
         isOwner,
         isAuthenticated,
         currentUserId,
         isLoading,
         isError,
-    } = useProductPageData(productId);
-
-    const {
-        status: actionStatus,
+        status,
+        statusLabels,
+        sellerName,
+        hasRating,
+        ratingText,
+        canOffer,
+        isOfferOpen,
+        openOffer,
+        closeOffer,
+        onOfferSuccess,
         requestArchive,
         cancelConfirm,
         confirm,
         confirmAction,
         confirmText,
         confirmLabel,
-        isLoading: isActionLoading,
-        error: actionError,
-    } = useProductActions(product?.product_id);
-
-    useLayoutEffect(() => {
-        setTitle('');
-    }, [setTitle]);
+        isActionLoading,
+        actionError,
+        openProduct,
+        openEditProduct,
+        openExchanges,
+        openRoute,
+        openExchangeRoom,
+    } = useProductPage();
 
     if (isLoading) return <Preloader />;
     if (isError || !product) return <PageError message="Не удалось загрузить товар" />;
-
-    const status = actionStatus ?? product.status;
-    const sellerName = customer?.email || 'Email не указан';
-    const hasRating = typeof averageRating === 'number' && averageRating > 0;
-    const ratingText = hasRating
-        ? `${averageRating.toFixed(1)} · Отзывов: ${reviews.length}`
-        : reviews.length
-            ? `Отзывов: ${reviews.length}`
-            : 'Пока без отзывов';
-    const canOffer = status === 'active' && !isOwner && isAuthenticated;
-
-    const openOffer = () => {
-        if (!isAuthenticated) {
-            openModalRoute('auth');
-            return;
-        }
-        if (status === 'active') setIsOfferOpen(true);
-    };
 
     return (
         <MainSection>
@@ -113,10 +83,6 @@ export const ProductPage = () => {
                             </div>
                             <div className={Styles['product-page__details']}>
                                 <section className={Styles['product-page__section']}>
-                                    <h2>Описание</h2>
-                                    <p>{product.description || 'Владелец пока не добавил описание.'}</p>
-                                </section>
-                                <section className={Styles['product-page__section']}>
                                     <h2>О товаре</h2>
                                     <dl className={Styles['product-page__facts']}>
                                         <div><dt>Категория</dt><dd>{category?.name || 'Не указана'}</dd></div>
@@ -130,6 +96,27 @@ export const ProductPage = () => {
                                 </dl>
                             </div>
                         </div>
+
+                        <section className={`${Styles['product-page__section']} ${Styles['product-page__description']}`}>
+                            <h2>Описание</h2>
+                            <p>{product.description || 'Владелец пока не добавил описание.'}</p>
+                        </section>
+
+                        {isOwner && (
+                            <section className={Styles['product-page__wide-section']}>
+                                <div className={Styles['product-page__section-heading']}>
+                                    <div><h2>Предложения по этому товару</h2><p>Все цепочки, в которых ваш товар указан целью обмена.</p></div>
+                                    <Button variant="text" onClick={openExchanges}>Все предложения</Button>
+                                </div>
+                                {productOffers.length ? (
+                                    <div className={Styles['product-page__offers']}>
+                                        {productOffers.slice(0, 3).map((row) => (
+                                            <ExchangeRow key={row.chain.chain_id} row={row} onOpen={openExchangeRoom} />
+                                        ))}
+                                    </div>
+                                ) : <div className={Styles['product-page__empty']}>Пока никто не предложил обмен на этот товар.</div>}
+                            </section>
+                        )}
                     </div>
 
                     <aside className={Styles['product-page__aside']}>
@@ -137,7 +124,7 @@ export const ProductPage = () => {
                             <h2>{isOwner ? 'Управление объявлением' : 'Обмен'}</h2>
                             {isOwner ? (
                                 <div className={Styles['product-page__actions']}>
-                                    <Button variant="secondary" onClick={() => navigate(`/product/${product.product_id}/edit`)}>
+                                    <Button variant="secondary" onClick={() => openEditProduct(product.product_id)}>
                                         Редактировать
                                     </Button>
                                     {status === 'active' ? (
@@ -148,7 +135,7 @@ export const ProductPage = () => {
                                     <div className={Styles['product-page__offer-summary']}>
                                         <span>Активных предложений</span>
                                         <strong>{incomingOffers}</strong>
-                                        <Button variant="text" onClick={() => navigate('/exchanges')}>Смотреть предложения</Button>
+                                        <Button variant="text" onClick={openExchanges}>Смотреть предложения</Button>
                                     </div>
                                 </div>
                             ) : (
@@ -156,6 +143,21 @@ export const ProductPage = () => {
                                     <Button onClick={openOffer} disabled={isAuthenticated && !canOffer}>
                                         {isAuthenticated ? 'Предложить обмен' : 'Войти, чтобы предложить обмен'}
                                     </Button>
+                                    {isAuthenticated && targetChain ? (
+                                        <Button
+                                            variant="secondary"
+                                            onClick={() => openRoute(product.product_id, targetChain.from_product_id)}
+                                        >
+                                            К цепочке
+                                        </Button>
+                                    ) : isAuthenticated && (
+                                        <Button
+                                            variant="secondary"
+                                            onClick={() => openRoute(product.product_id)}
+                                        >
+                                            Построить цепочку обменов
+                                        </Button>
+                                    )}
                                     {status !== 'active' && (
                                         <p className={Styles['product-page__muted']}>Владелец временно не принимает новые предложения.</p>
                                     )}
@@ -170,15 +172,22 @@ export const ProductPage = () => {
                         </section>
 
                         <section className={Styles['product-page__panel']}>
-                            <h2>{isOwner ? 'Хочу взамен' : 'Что хочет взамен'}</h2>
                             {isOwner ? (
                                 <WishlistEditor productId={product.product_id} productTitle={product.title} wishlist={wishlist} options={wishlistOptions} />
-                            ) : wishlistOptions.length ? (
-                                <div className={Styles['product-page__wishlist']}>
-                                    {wishlistOptions.map((option) => <span key={option.category_id}>{option.name}</span>)}
-                                </div>
                             ) : (
-                                <p className={Styles['product-page__muted']}>Владелец не указал желаемые категории — можно предложить любой свой товар.</p>
+                                <>
+                                    <h2>Хочу взамен</h2>
+                                    {wishlistOptions.length ? (
+                                        <>
+                                            <p className={Styles['product-page__wishlist-label']}>Интересуют следующие категории:</p>
+                                            <div className={Styles['product-page__wishlist']}>
+                                                {wishlistOptions.map((option) => <span key={option.category_id}>{option.name}</span>)}
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <p className={Styles['product-page__muted']}>Владелец не указал желаемые категории — можно предложить любой свой товар.</p>
+                                    )}
+                                </>
                             )}
                         </section>
 
@@ -202,9 +211,9 @@ export const ProductPage = () => {
                                         <h3>Маршрут через цепочку</h3>
                                         <ChainRow
                                             nodes={routeChain.map((item, index) => ({product: item, isCurrent: index === 0, isGoal: index === routeChain.length - 1}))}
-                                            onNodeClick={(id) => navigate(`/product/${id}`)}
+                                            onNodeClick={openProduct}
                                         />
-                                        <Button variant="text" onClick={() => navigate(`/route?target=${product.product_id}`)}>Открыть маршрут обмена</Button>
+                                        <Button variant="text" onClick={() => openRoute(product.product_id)}>Открыть маршрут обмена</Button>
                                     </div>
                                 )}
                             </section>
@@ -212,38 +221,12 @@ export const ProductPage = () => {
                     </aside>
                 </div>
 
-                {isOwner && (
-                    <section className={Styles['product-page__wide-section']}>
-                        <div className={Styles['product-page__section-heading']}>
-                            <div><h2>Предложения по этому товару</h2><p>Все цепочки, в которых ваш товар указан целью обмена.</p></div>
-                            <Button variant="text" onClick={() => navigate('/exchanges')}>Все предложения</Button>
-                        </div>
-                        {productOffers.length ? (
-                            <div className={Styles['product-page__offers']}>
-                                {productOffers.slice(0, 3).map((row) => (
-                                    <ExchangeRow key={row.chain.chain_id} row={row} onOpen={(chainId) => navigate(`/exchanges/${chainId}`)} />
-                                ))}
-                            </div>
-                        ) : <div className={Styles['product-page__empty']}>Пока никто не предложил обмен на этот товар.</div>}
-                    </section>
-                )}
-
-                <section className={Styles['product-page__wide-section']}>
-                    <div className={Styles['product-page__section-heading']}>
-                        <div><h2>Отзывы о продавце</h2><p>{ratingText}</p></div>
-                    </div>
-                    {reviews.length ? (
-                        <ul className={Styles['product-page__reviews']}>
-                            {reviews.slice(0, 4).map((review) => <li key={review.review_id}><ReviewCard review={review} /></li>)}
-                        </ul>
-                    ) : <div className={Styles['product-page__empty']}>У продавца пока нет отзывов.</div>}
-                </section>
             </article>
 
             <OfferExchangeModal
                 isOpen={isOfferOpen && canOffer}
-                onClose={() => setIsOfferOpen(false)}
-                onSuccess={(chainId) => navigate(`/exchanges/${chainId}`)}
+                onClose={closeOffer}
+                onSuccess={onOfferSuccess}
                 targetProductId={product.product_id}
                 currentCustomerId={currentUserId}
             />

@@ -1,14 +1,13 @@
-import {useNavigate} from 'react-router-dom';
-
 import type {TProduct} from '@entities/product';
 import type {TReview} from '@entities/review';
 import type {TProfileExchange, TProfileTab} from '@pages/profile/lib/useProfile';
 import {Button} from '@shared/ui/button';
-import {ExchangeRow} from '@shared/ui/exchangeRow';
-import {ProfileSidebar} from '@shared/ui/profileSidebar';
-import {ReviewCard} from '@shared/ui/reviewCard';
+import {ExchangeRow} from '@widgets/exchangeRow';
+import {ProfileSidebar} from '@widgets/profileSidebar';
+import {ReviewCard} from '@entities/review';
+import {ProfileProductRow} from '@widgets/profile';
 
-import {ProfileProductRow} from './ProfileProductRow';
+import {EmptyState} from './EmptyState';
 import Styles from './profile-content.module.css';
 
 type TProfileContentViewModel = {
@@ -26,6 +25,13 @@ type TProfileContentViewModel = {
     isExchangesLoading: boolean;
     isExchangesError: boolean;
     onLogout?: () => void;
+    maskedName: string;
+    getTabCount: (tab: TProfileTab) => number;
+    openProduct: (productId: string) => void;
+    openEditProduct: (productId: string) => void;
+    openExchange: (chainId: string) => void;
+    openExchanges: () => void;
+    openCreate: () => void;
 };
 
 type TProfileContentProps = {
@@ -42,25 +48,12 @@ const OWNER_TABS: {id: TProfileTab; label: string}[] = [
 
 const PUBLIC_TABS = OWNER_TABS.filter(({id}) => id !== 'exchanges');
 
-const getTabCount = (tab: TProfileTab, viewModel: TProfileContentViewModel): number => {
-    if (tab === 'products') return viewModel.products.length;
-    if (tab === 'exchanges') return viewModel.exchanges.length;
-    return viewModel.reviews.length;
-};
-
-const maskEmail = (email: string): string => {
-    const [name, domain] = email.split('@');
-    if (!domain) return 'Пользователь';
-    return `${name.slice(0, 2)}***@${domain}`;
-};
-
 /** Собирает публичные данные профиля и приватные возможности владельца. */
 export const ProfileContent = ({
     user,
     isOwner,
     viewModel,
 }: TProfileContentProps) => {
-    const navigate = useNavigate();
     const tabs = isOwner ? OWNER_TABS : PUBLIC_TABS;
 
     const renderContent = () => {
@@ -77,7 +70,7 @@ export const ProfileContent = ({
                         <ExchangeRow
                             key={exchange.chain.chain_id}
                             row={exchange}
-                            onOpen={(chainId) => navigate(`/exchanges/${chainId}`)}
+                            onOpen={viewModel.openExchange}
                         />
                     ))}
                 </div>
@@ -86,7 +79,7 @@ export const ProfileContent = ({
                     title="Цепочек обменов пока нет"
                     description="Предлагайте свои товары в обмен — активные и завершённые цепочки появятся здесь."
                     actionLabel="Перейти к обменам"
-                    onAction={() => navigate('/exchanges')}
+                    onAction={viewModel.openExchanges}
                 />
             );
         }
@@ -128,8 +121,8 @@ export const ProfileContent = ({
                                 key={product.product_id}
                                 product={product}
                                 isOwner={isOwner}
-                                onOpen={() => navigate(`/product/${product.product_id}`)}
-                                onEdit={() => navigate(`/product/${product.product_id}/edit`)}
+                                onOpen={() => viewModel.openProduct(product.product_id)}
+                                onEdit={() => viewModel.openEditProduct(product.product_id)}
                             />
                         ))}
                     </div>
@@ -138,7 +131,7 @@ export const ProfileContent = ({
                         title={isOwner ? 'У вас пока нет товаров' : 'У пользователя пока нет товаров'}
                         description={isOwner ? 'Добавьте первый товар, чтобы начать обмен.' : 'Здесь появятся активные объявления пользователя.'}
                         actionLabel={isOwner ? 'Добавить товар' : undefined}
-                        onAction={isOwner ? () => navigate('/create') : undefined}
+                        onAction={isOwner ? viewModel.openCreate : undefined}
                     />
                 )}
 
@@ -155,7 +148,7 @@ export const ProfileContent = ({
                         </div>
                         <ExchangeRow
                             row={viewModel.exchanges[0]}
-                            onOpen={(chainId) => navigate(`/exchanges/${chainId}`)}
+                            onOpen={viewModel.openExchange}
                         />
                     </section>
                 )}
@@ -166,7 +159,7 @@ export const ProfileContent = ({
     return (
         <div className={Styles.layout}>
             <ProfileSidebar
-                name={isOwner ? user.email : maskEmail(user.email)}
+                name={viewModel.maskedName}
                 createdAt={user.created_at}
                 rating={viewModel.rating}
                 reviewsCount={viewModel.reviewsCount}
@@ -185,9 +178,9 @@ export const ProfileContent = ({
                             active={viewModel.activeTab === tab.id}
                             className={`${Styles.tab} ${viewModel.activeTab === tab.id ? Styles.tabActive : ''}`}
                             onClick={() => viewModel.setActiveTab(tab.id)}
-                            ariaLabel={`${tab.label}: ${getTabCount(tab.id, viewModel)}`}
+                            ariaLabel={`${tab.label}: ${viewModel.getTabCount(tab.id)}`}
                         >
-                            {tab.label} <span>{getTabCount(tab.id, viewModel)}</span>
+                            {tab.label} <span>{viewModel.getTabCount(tab.id)}</span>
                         </Button>
                     ))}
                 </nav>
@@ -206,7 +199,7 @@ export const ProfileContent = ({
                         )}
                     </div>
                     {isOwner && viewModel.activeTab === 'products' && (
-                        <Button onClick={() => navigate('/create')}>Добавить товар</Button>
+                        <Button onClick={viewModel.openCreate}>Добавить товар</Button>
                     )}
                 </div>
 
@@ -215,23 +208,3 @@ export const ProfileContent = ({
         </div>
     );
 };
-
-const EmptyState = ({
-    title,
-    description,
-    actionLabel,
-    onAction,
-}: {
-    title: string;
-    description: string;
-    actionLabel?: string;
-    onAction?: () => void;
-}) => (
-    <div className={Styles.empty}>
-        <div>
-            <h3>{title}</h3>
-            <p>{description}</p>
-        </div>
-        {actionLabel && onAction && <Button variant="secondary" onClick={onAction}>{actionLabel}</Button>}
-    </div>
-);

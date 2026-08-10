@@ -4,48 +4,24 @@ import { Button } from '@shared/ui/button';
 import { MainSection } from '@shared/ui/mainSection';
 import { PageError } from '@shared/ui/pageError';
 import { Preloader } from '@shared/ui/preloader';
-import { ProductImage } from '@shared/ui/productImage';
+import { ProductImage } from '@entities/product';
+import { ProfileProductRow } from '@widgets/profile';
 import { formatAmount, formatDate } from '@shared/lib';
 
-import { useRoute } from '../lib';
+import { formatCompletedCount, formatExchangeCount, useRoute } from '../lib';
 import Styles from './route-page.module.css';
-
-const formatExchangeCount = (count: number): string => {
-    const lastTwo = count % 100;
-    const last = count % 10;
-    const word =
-        lastTwo >= 11 && lastTwo <= 14
-            ? 'обменов'
-            : last === 1
-              ? 'обмен'
-              : last >= 2 && last <= 4
-                ? 'обмена'
-                : 'обменов';
-    return `${count} ${word}`;
-};
-
-const formatCompletedCount = (count: number): string => {
-    const lastTwo = count % 100;
-    const last = count % 10;
-    const words =
-        lastTwo >= 11 && lastTwo <= 14
-            ? 'завершённых обменов'
-            : last === 1
-              ? 'завершённый обмен'
-              : last >= 2 && last <= 4
-                ? 'завершённых обмена'
-                : 'завершённых обменов';
-    return `${count} ${words}`;
-};
 
 export const RoutePage = () => {
     const {
         targetId,
-        isAuthenticated,
+        sourceId,
+        targetCategoryName,
         isLoading,
         isError,
         isEmpty,
         currentCustomerId,
+        sourceProducts,
+        selectSource,
         currentProduct,
         goalProduct,
         stepsRemaining,
@@ -64,7 +40,6 @@ export const RoutePage = () => {
         closeOffer,
         handleOfferSuccess,
         goHome,
-        openAuthModal,
     } = useRoute();
 
     if (!targetId) {
@@ -79,23 +54,6 @@ export const RoutePage = () => {
         );
     }
 
-    if (!isAuthenticated) {
-        return (
-            <MainSection>
-                <section className={Styles['route-page__guest-card']}>
-                    <div>
-                        <h2>Войдите, чтобы построить путь к цели</h2>
-                        <p>
-                            Сервис покажет ближайший обмен и будет пересчитывать путь после каждого
-                            шага.
-                        </p>
-                    </div>
-                    <Button onClick={openAuthModal}>Войти или зарегистрироваться</Button>
-                </section>
-            </MainSection>
-        );
-    }
-
     if (isLoading) {
         return <Preloader message="Подбираем следующий обмен…" />;
     }
@@ -104,46 +62,85 @@ export const RoutePage = () => {
         return <PageError message="Не удалось построить путь к цели" />;
     }
 
+    if (!sourceId) {
+        return (
+            <MainSection>
+                <div className={Styles['route-page__source-picker']}>
+                    <div>
+                        <h2>С чего начинаем?</h2>
+                        <p>Выберите своё активное объявление, которое хотите обменять по цепочке на целевой товар.</p>
+                    </div>
+                    {sourceProducts.length ? (
+                        <div className={Styles['route-page__source-list']}>
+                            {sourceProducts.map((source) => (
+                                <ProfileProductRow
+                                    key={source.product_id}
+                                    product={source}
+                                    isOwner={false}
+                                    onOpen={() => selectSource(source.product_id)}
+                                    onEdit={() => undefined}
+                                    openLabel="Выбрать"
+                                />
+                            ))}
+                        </div>
+                    ) : (
+                        <p>У вас нет активных объявлений для начала цепочки.</p>
+                    )}
+                </div>
+            </MainSection>
+        );
+    }
+
     return (
         <MainSection>
             <div className={Styles['route-page']}>
-                {isEmpty || !currentProduct || !goalProduct ? (
+                {isEmpty || !currentProduct ? (
                     <div className={Styles['route-page__empty']}>
                         <h2>Подходящий путь пока не найден</h2>
-                        <p>Можно предложить свой товар владельцу цели напрямую.</p>
-                        <Button onClick={openGoalOffer}>Предложить прямой обмен</Button>
+                        <p>Не удалось определить исходный товар для маршрута.</p>
+                        {goalProduct && <Button onClick={openGoalOffer}>Предложить прямой обмен</Button>}
                     </div>
                 ) : (
                     <>
                         <section
-                            className={Styles['route-page__goal']}
+                            className={`${Styles['route-page__goal']} ${!goalProduct ? Styles['route-page__goal--category'] : ''}`}
                             aria-labelledby="route-goal-title"
                         >
-                            <div className={Styles['route-page__goal-media']}>
-                                <ProductImage
-                                    src={goalProduct.image}
-                                    alt={goalProduct.title}
-                                    title={goalProduct.title}
-                                />
-                            </div>
+                            {goalProduct && (
+                                <div className={Styles['route-page__goal-media']}>
+                                    <ProductImage
+                                        src={goalProduct.image}
+                                        alt={goalProduct.title}
+                                        title={goalProduct.title}
+                                    />
+                                </div>
+                            )}
                             <div className={Styles['route-page__goal-body']}>
-                                <h2 id="route-goal-title">Цель: {goalProduct.title}</h2>
-                                <p>
-                                    {stepsRemaining === 0
+                                <h2 id="route-goal-title">
+                                    {goalProduct
+                                        ? `Цель: ${goalProduct.title}`
+                                        : `Категория: ${targetCategoryName ?? 'категория'}`}
+                                </h2>
+                                {goalProduct && (
+                                    <p>
+                                        {stepsRemaining === 0
                                         ? 'Цель достигнута'
                                         : `${formatExchangeCount(stepsRemaining)} до цели`}
-                                </p>
+                                    </p>
+                                )}
                             </div>
-                            <Button
-                                variant="text"
-                                className={Styles['route-page__goal-action']}
-                                onClick={() => openProduct(goalProduct.product_id)}
-                            >
-                                Открыть цель
-                            </Button>
+                            {goalProduct && (
+                                <Button
+                                    variant="text"
+                                    className={Styles['route-page__goal-action']}
+                                    onClick={() => openProduct(goalProduct.product_id)}
+                                >
+                                    Открыть цель
+                                </Button>
+                            )}
                         </section>
 
-                        {stepsRemaining > 0 ? (
+                        {!goalProduct || stepsRemaining > 0 ? (
                             <section
                                 className={Styles['route-page__recommendations']}
                                 aria-labelledby="route-recommendations-title"

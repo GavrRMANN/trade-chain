@@ -1,12 +1,7 @@
-import {type ChangeEvent, forwardRef} from "react";
-import ControlStyles from "../control/Control.module.css";
-import Styles from "./Input.module.css";
+import {forwardRef} from "react";
 import {Label} from "../label";
-
-type TError = {
-    showError: boolean;
-    errorMessage: string;
-};
+import {useInput} from './useInput';
+import type {TFormError} from '@shared/lib/form';
 
 type TInputProps = {
     label?: string;
@@ -15,7 +10,7 @@ type TInputProps = {
     value: string;
     placeholder?: string;
     onChange?: (value: string) => void;
-    error?: TError;
+    error?: TFormError;
     disabled?: boolean,
     loading?: boolean,
 }
@@ -31,16 +26,7 @@ export const Input = forwardRef<HTMLInputElement, TInputProps>(({
                                                                     disabled = false,
                                                                     loading = false
                                                                 }, ref) => {
-    const inputClasses = [
-        Styles['input'],
-        ControlStyles['text'],
-        (disabled || loading) && Styles['input--disabled'],
-        error?.showError && Styles['input--error']
-    ].filter(Boolean).join(' ');
-
-    const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
-        onChange?.(e.target.value);
-    };
+    const {inputClasses, handleChange} = useInput({disabled, error, loading, onChange});
 
     return (
         <Label label={label} error={error} disabled={disabled}>

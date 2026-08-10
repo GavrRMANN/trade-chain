@@ -21,3 +21,15 @@ export const formatToPartsAmount = (amount: number): Intl.NumberFormatPart[] =>
         currency: 'RUB',
         maximumFractionDigits: 0,
     }).formatToParts(amount);
+
+/**
+ * Оставляет только цифры и добавляет пробел-разделитель тысяч.
+ * Обратная операция для форматированного поля ввода цены.
+ */
+export const sanitizePrice = (value: string): string => {
+    const digits = value.replace(/[^\d]/g, '');
+    if (!digits) {
+        return '';
+    }
+    return digits.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+};

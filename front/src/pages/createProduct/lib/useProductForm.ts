@@ -1,24 +1,47 @@
-import {FormEvent, useEffect, useMemo, useState} from 'react';
+import {FormEvent, useEffect, useMemo, useReducer} from 'react';
 import {useNavigate} from 'react-router-dom';
 
 import {
     useCreateProductMutation,
     useGetProductQuery,
+    useGetProductsQuery,
     useUpdateProductMutation,
 } from '@entities/product';
+import { useCreateChainMutation } from '@entities/chain';
 import {useGetCategoriesQuery} from '@entities/category';
 import {useGetCurrentUserQuery} from '@entities/user';
-import {getAuthToken} from '@shared/api';
-import type {TProductStatus} from '@entities/product';
+import type {TProductStatus, TTargetGoal} from '@entities/product';
 
 export type TField =
     | 'title'
     | 'categoryId'
     | 'description'
     | 'price'
-    | 'location';
+    | 'location'
+    | 'targetGoal';
 
 export type TErrors = Partial<Record<TField, string>>;
+
+type TFormState = {
+    title: string;
+    categoryId: string;
+    description: string;
+    image: string;
+    price: string;
+    location: string;
+    status: TProductStatus;
+    targetGoal: TTargetGoal;
+    createdProductId?: string;
+    errors: TErrors;
+    requestError?: string;
+    isOwnerError: boolean;
+    isInitialized: boolean;
+};
+type TFormAction = {type: 'update'; payload: Partial<TFormState>};
+const formReducer = (state: TFormState, action: TFormAction): TFormState => ({
+    ...state,
+    ...action.payload,
+});
 
 const getErrorMessage = (error: unknown) => {
     if (typeof error === 'object' && error !== null && 'data' in error) {
@@ -36,6 +59,8 @@ const validate = (
     description: string,
     price: string,
     location: string,
+    targetGoal: TTargetGoal,
+    isEdit: boolean,
 ): TErrors => {
     const errors: TErrors = {};
 
@@ -47,6 +72,10 @@ const validate = (
 
     if (!categoryId) {
         errors.categoryId = 'Выберите категорию';
+    }
+
+    if (!isEdit && !targetGoal.productId && !targetGoal.categoryId) {
+        errors.targetGoal = 'Выберите товар или категорию, к которой хотите прийти';
     }
 
     if (description.length > 5000) {
@@ -82,30 +111,38 @@ const statusOptions: {value: TProductStatus; label: string}[] = [
 export const useProductForm = (productId?: string) => {
     const navigate = useNavigate();
     const isEdit = Boolean(productId);
-    const isAuthenticated = Boolean(getAuthToken());
 
-    const {data: user, isLoading: isUserLoading} = useGetCurrentUserQuery(undefined, {
-        skip: !isAuthenticated,
-    });
+    const {data: user, isLoading: isUserLoading} = useGetCurrentUserQuery();
     const productQuery = useGetProductQuery(productId ?? '', {skip: !productId});
+    const targetProductsQuery = useGetProductsQuery(
+        {offset: 0, limit: 100},
+        {skip: isEdit},
+    );
     const {data: categories = [], isLoading: isCategoriesLoading, isError: isCategoriesError} =
         useGetCategoriesQuery();
 
     const [createProduct, {isLoading: isCreating}] = useCreateProductMutation();
+    const [createChain, {isLoading: isChainCreating}] = useCreateChainMutation();
     const [updateProduct, {isLoading: isUpdating}] = useUpdateProductMutation();
 
-    const [title, setTitle] = useState('');
-    const [categoryId, setCategoryId] = useState('');
-    const [description, setDescription] = useState('');
-    const [image, setImage] = useState('');
-    const [price, setPrice] = useState('');
-    const [location, setLocation] = useState('');
-    const [status, setStatus] = useState<TProductStatus>('active');
-
-    const [errors, setErrors] = useState<TErrors>({});
-    const [requestError, setRequestError] = useState<string>();
-    const [isOwnerError, setIsOwnerError] = useState(false);
-    const [isInitialized, setIsInitialized] = useState(false);
+    const [state, dispatch] = useReducer(formReducer, {
+        title: '', categoryId: '', description: '', image: '', price: '', location: '',
+        status: 'active', targetGoal: {}, errors: {}, isOwnerError: false, isInitialized: false,
+    });
+    const {
+        title, categoryId, description, image, price, location, status, targetGoal,
+        createdProductId, errors, requestError, isOwnerError, isInitialized,
+    } = state;
+    const update = <K extends keyof TFormState>(key: K, value: TFormState[K]) =>
+        dispatch({type: 'update', payload: {[key]: value}});
+    const setTitle = (value: string) => update('title', value);
+    const setCategoryId = (value: string) => update('categoryId', value);
+    const setDescription = (value: string) => update('description', value);
+    const setImage = (value: string) => update('image', value);
+    const setPrice = (value: string) => update('price', value);
+    const setLocation = (value: string) => update('location', value);
+    const setStatus = (value: TProductStatus) => update('status', value);
+    const setTargetGoal = (value: TTargetGoal) => update('targetGoal', value);
 
     const editableProduct = productQuery.data;
 
@@ -119,25 +156,23 @@ export const useProductForm = (productId?: string) => {
         }
         // Проверяем владельца: редактировать может только собственник.
         if (user && editableProduct.customer_id !== user.customer_id) {
-            setIsOwnerError(true);
-            setIsInitialized(true);
+            dispatch({type: 'update', payload: {isOwnerError: true, isInitialized: true}});
             return;
         }
-        setTitle(editableProduct.title);
-        setCategoryId(editableProduct.category_id ?? '');
-        setDescription(editableProduct.description ?? '');
-        setImage(editableProduct.image ?? '');
-        setPrice(
-            editableProduct.price !== undefined && editableProduct.price !== null
-                ? String(editableProduct.price)
-                : '',
-        );
-        setLocation(editableProduct.location ?? '');
-        setStatus(editableProduct.status);
-        setIsInitialized(true);
+        dispatch({type: 'update', payload: {
+            title: editableProduct.title,
+            categoryId: editableProduct.category_id ?? '',
+            description: editableProduct.description ?? '',
+            image: editableProduct.image ?? '',
+            price: editableProduct.price !== undefined && editableProduct.price !== null
+                ? String(editableProduct.price) : '',
+            location: editableProduct.location ?? '',
+            status: editableProduct.status,
+            isInitialized: true,
+        }});
     }, [isEdit, isInitialized, editableProduct, user]);
 
-    const isLoading = isCreating || isUpdating;
+    const isLoading = isCreating || isUpdating || isChainCreating;
     const isProductLoading = isEdit && productQuery.isLoading;
     const isFetchingUser = isEdit && !isOwnerError && !editableProduct && isUserLoading;
 
@@ -159,10 +194,18 @@ export const useProductForm = (productId?: string) => {
 
     const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
-        setRequestError(undefined);
+        update('requestError', undefined);
 
-        const validationErrors = validate(title, categoryId, description, price, location);
-        setErrors(validationErrors);
+        const validationErrors = validate(
+            title,
+            categoryId,
+            description,
+            price,
+            location,
+            targetGoal,
+            isEdit,
+        );
+        update('errors', validationErrors);
 
         if (Object.keys(validationErrors).length > 0) {
             return;
@@ -190,31 +233,57 @@ export const useProductForm = (productId?: string) => {
             }
 
             if (!user) {
-                setRequestError('Не удалось определить пользователя. Войдите в аккаунт.');
+                update('requestError', 'Не удалось определить пользователя. Войдите в аккаунт.');
                 return;
             }
 
-            const created = await createProduct({
-                customer_id: user.customer_id,
-                category_id: categoryId,
-                title: title.trim(),
-                description: description.trim(),
-                image: image.trim(),
-                price: numericPrice,
-                location: location.trim(),
-                status,
+            let sourceProductId = createdProductId;
+
+            if (!sourceProductId) {
+                const created = await createProduct({
+                    customer_id: user.customer_id,
+                    category_id: categoryId,
+                    title: title.trim(),
+                    description: description.trim(),
+                    image: image.trim(),
+                    price: numericPrice,
+                    location: location.trim(),
+                }).unwrap();
+                sourceProductId = created.product_id;
+                update('createdProductId', sourceProductId);
+            }
+
+            await createChain({
+                from_product_id: sourceProductId,
+                ...(targetGoal.productId ? { to_product_id: targetGoal.productId } : {}),
+                ...(targetGoal.categoryId ? { to_category_id: targetGoal.categoryId } : {}),
+                ...(targetGoal.productId ? { exchange_goal_id: targetGoal.productId } : {}),
+                route_step_id: sourceProductId,
+                status: 'pending',
+                message: `Предложение по новому объявлению «${title.trim()}»`,
             }).unwrap();
 
-            navigate(`/product/${created.product_id}`, {replace: true});
+            const routeParams = new URLSearchParams({from: sourceProductId});
+            if (targetGoal.productId) {
+                routeParams.set('target', targetGoal.productId);
+            } else if (targetGoal.categoryId) {
+                routeParams.set('targetCategory', targetGoal.categoryId);
+            }
+            navigate(`/route?${routeParams.toString()}`, {replace: true});
         } catch (error) {
-            setRequestError(getErrorMessage(error));
+            update('requestError',
+                createdProductId
+                    ? `Объявление уже создано. ${getErrorMessage(error)} Повторите отправку предложения.`
+                    : getErrorMessage(error),
+            );
         }
     };
 
     return {
         isEdit,
-        isAuthenticated,
         categories,
+        targetProducts: targetProductsQuery.data ?? [],
+        currentCustomerId: user?.customer_id ?? '',
         categoryPath,
         statusOptions,
         // данные товара для экранов загрузки/ошибки
@@ -224,6 +293,8 @@ export const useProductForm = (productId?: string) => {
         isFetchingUser,
         isCategoriesLoading,
         isCategoriesError,
+        isTargetProductsLoading: isUserLoading || targetProductsQuery.isLoading,
+        isTargetProductsError: targetProductsQuery.isError,
         isOwnerError,
         // поля формы
         title,
@@ -233,6 +304,7 @@ export const useProductForm = (productId?: string) => {
         price,
         location,
         status,
+        targetGoal,
         errors,
         requestError,
         isLoading,
@@ -244,6 +316,7 @@ export const useProductForm = (productId?: string) => {
         setPrice,
         setLocation,
         setStatus,
+        setTargetGoal,
         handleSubmit,
     };
 };

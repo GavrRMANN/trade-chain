@@ -10,15 +10,19 @@ import { apiBaseQuery } from '@/shared/api';
 export const userApi = createApi({
     reducerPath: 'userApi',
     baseQuery: apiBaseQuery,
+    tagTypes: ['CurrentUser'],
     endpoints: (builder) => ({
         loginUser: builder.mutation<TAuthResponse, TLoginPayload>({
             query: (body) => ({url: '/auth/login', method: 'POST', body}),
+            invalidatesTags: ['CurrentUser'],
         }),
         registerUser: builder.mutation<TAuthResponse, TRegisterPayload>({
             query: (body) => ({url: '/auth/register', method: 'POST', body}),
+            invalidatesTags: ['CurrentUser'],
         }),
         getCurrentUser: builder.query<TUser, void>({
             query: () => '/auth/me',
+            providesTags: ['CurrentUser'],
         }),
     }),
 });

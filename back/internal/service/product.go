@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"strings"
+
 	"trade-chain/internal/domain"
 	"trade-chain/internal/repository"
 )
@@ -189,6 +190,17 @@ func isValidProductStatus(status domain.ProductStatus) bool {
 // blank – проверка на пустую строку
 func blank(s string) bool {
 	return strings.TrimSpace(s) == ""
+}
+
+// nilIfEmpty превращает указатель на пустую строку в nil.
+//
+// Фронтенд присылает пустые строки для необязательных UUID-полей, а PostgreSQL
+// не принимает "" в UUID-колонке — нужен NULL.
+func nilIfEmpty(s *string) *string {
+	if s == nil || strings.TrimSpace(*s) == "" {
+		return nil
+	}
+	return s
 }
 
 // validatePage – нормализация offset/limit

@@ -6,7 +6,8 @@ export type TChainStatus =
     | 'rejected'
     | 'countered'
     | 'failed'
-    | 'expired';
+    | 'expired'
+    | 'unavailable';
 
 export type TChain = {
     /** Уникальный идентификатор звена цепочки. */
@@ -14,7 +15,9 @@ export type TChain = {
     /** Идентификатор исходного товара. */
     from_product_id: string;
     /** Идентификатор целевого товара. */
-    to_product_id: string;
+    to_product_id?: string;
+    /** Идентификатор целевой категории (если цель — категория, а не товар). */
+    to_category_id?: string;
     /** Идентификатор пользователя, инициировавшего цепочку. */
     initiator_id: string;
     /** Идентификатор получателя предложения. */
@@ -43,7 +46,9 @@ export type TCreateChainRequest = {
     /** Идентификатор исходного товара. */
     from_product_id: string;
     /** Идентификатор целевого товара. */
-    to_product_id: string;
+    to_product_id?: string;
+    /** Идентификатор целевой категории (если цель — категория, а не товар). */
+    to_category_id?: string;
     /** Идентификатор предыдущего звена цепочки. */
     previous_chain_id?: string;
     /** Идентификатор следующего звена цепочки. */
@@ -70,5 +75,16 @@ export type TChainMessage = {
 };
 
 export type TConfirmChainRequest = { success: boolean };
+
+export type TChainConfirmation = {
+    customer_id: string;
+    result: 'success' | 'failed';
+    reason?: string;
+    created_at: string;
+};
+
+export type TChainDetails = {
+    confirmations: TChainConfirmation[];
+};
 
 export type TSendChainMessageRequest = { body: string };

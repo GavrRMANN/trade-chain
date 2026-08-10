@@ -5,6 +5,7 @@ import (
 	"errors"
 	"strings"
 	"time"
+
 	"trade-chain/internal/domain"
 	"trade-chain/internal/exchange"
 	"trade-chain/internal/repository"
@@ -30,17 +31,35 @@ func NewChainService(
 // успешный обмен меняет владельцев местами, и вычисление на лету после
 // завершения сделки указывало бы обеими сторонами на одного человека.
 func dealOf(chain *domain.Chain) exchange.Deal {
+	var recipientID string
+	if chain.RecipientID != nil {
+		recipientID = *chain.RecipientID
+	}
 	return exchange.Deal{
 		ChainID:     chain.ChainID,
 		InitiatorID: chain.InitiatorID,
-		RecipientID: chain.RecipientID,
+		RecipientID: recipientID,
 		Status:      domain.ChainStatus(chain.Status),
 		ExpiresAt:   chain.ExpiresAt,
 	}
 }
 
 func (s *chainService) Create(ctx context.Context, c *domain.Chain) (*domain.Chain, error) {
-	if c == nil || blank(c.FromProductID) || blank(c.ToProductID) || blank(c.InitiatorID) {
+	if c == nil || blank(c.FromProductID) || blank(c.InitiatorID) {
+		return nil, ErrInvalidInput
+	}
+
+	// Фронтенд присылает пустые строки для необязательных UUID-полей, а база
+	// ждёт NULL: пустая строка в UUID-колонке — ошибка. Нормализуем один раз.
+	c.ToProductID = nilIfEmpty(c.ToProductID)
+	c.ToCategoryID = nilIfEmpty(c.ToCategoryID)
+	c.ExchangeGoalID = nilIfEmpty(c.ExchangeGoalID)
+	c.RouteStepID = nilIfEmpty(c.RouteStepID)
+	c.RecipientID = nilIfEmpty(c.RecipientID)
+
+	hasProductGoal := c.ToProductID != nil
+	hasCategoryGoal := c.ToCategoryID != nil
+	if !hasProductGoal && !hasCategoryGoal {
 		return nil, ErrInvalidInput
 	}
 
@@ -48,38 +67,42 @@ func (s *chainService) Create(ctx context.Context, c *domain.Chain) (*domain.Cha
 	if err != nil {
 		return nil, normalizeError(err)
 	}
-	requested, err := s.products.GetByID(ctx, c.ToProductID)
-	if err != nil {
-		return nil, normalizeError(err)
-	}
 
-	deal := exchange.Deal{
-		ChainID:     c.ChainID,
-		InitiatorID: c.InitiatorID,
-		RecipientID: requested.CustomerID,
-	}
-	if err := exchange.Validate(deal, *offered, *requested); err != nil {
-		return nil, mapExchangeError(err)
-	}
-
-	c.Surcharge = exchange.NormalizeSurcharge(c.Surcharge)
-	if err := exchange.ValidateSurcharge(deal, c.Surcharge); err != nil {
-		return nil, mapExchangeError(err)
-	}
-
-	// Новое предложение всегда начинается с ожидания ответа: создать сразу
-	// принятым или завершённым нельзя, иначе согласие второй стороны
-	// становится необязательным.
+	// Новое предложение всегда начинается с ожидания ответа.
 	c.Status = string(domain.ChainPending)
-	c.RecipientID = requested.CustomerID
 	if c.ExpiresAt.IsZero() {
 		c.ExpiresAt = time.Now().Add(exchange.DefaultTTL)
 	}
 
+	if hasProductGoal {
+		// Цель — конкретный товар: валидация обмена между двумя товарами.
+		requested, err := s.products.GetByID(ctx, *c.ToProductID)
+		if err != nil {
+			return nil, normalizeError(err)
+		}
+
+		deal := exchange.Deal{
+			ChainID:     c.ChainID,
+			InitiatorID: c.InitiatorID,
+			RecipientID: requested.CustomerID,
+		}
+		if err := exchange.Validate(deal, *offered, *requested); err != nil {
+			return nil, mapExchangeError(err)
+		}
+
+		c.Surcharge = exchange.NormalizeSurcharge(c.Surcharge)
+		if err := exchange.ValidateSurcharge(deal, c.Surcharge); err != nil {
+			return nil, mapExchangeError(err)
+		}
+
+		c.RecipientID = &requested.CustomerID
+	}
+
+	// Цель-категория: получатель неизвестен, обмен не с конкретным человеком.
+	// Валидация товаров и доплат не нужна.
+
 	v, err := s.repo.Create(ctx, c)
 	if errors.Is(err, domain.ErrOfferDuplicate) {
-		// Повторное предложение — не сбой, а вторая попытка человека:
-		// normalizeError свела бы её к внутренней ошибке.
 		return nil, mapExchangeError(err)
 	}
 	return v, normalizeError(err)
@@ -150,6 +173,11 @@ func (s *chainService) Decide(ctx context.Context, id string, action exchange.Ac
 		return nil, normalizeError(err)
 	}
 	deal := dealOf(chain)
+	if action == exchange.ActionAccept {
+		if err := s.validateAcceptableProducts(ctx, chain, deal); err != nil {
+			return nil, mapExchangeError(err)
+		}
+	}
 
 	next, err := exchange.Apply(deal, action, actorID, time.Now())
 	if err != nil {
@@ -161,6 +189,31 @@ func (s *chainService) Decide(ctx context.Context, id string, action exchange.Ac
 
 	updated, err := s.repo.GetByID(ctx, id)
 	return updated, normalizeError(err)
+}
+
+// validateAcceptableProducts не даёт принять предложение после того, как
+// товар уже ушёл в другой завершённый обмен. Такое предложение сохраняется
+// в истории и получает отдельный статус unavailable при завершении сделки.
+func (s *chainService) validateAcceptableProducts(ctx context.Context, chain *domain.Chain, deal exchange.Deal) error {
+	offered, err := s.products.GetByID(ctx, chain.FromProductID)
+	if err != nil {
+		return normalizeError(err)
+	}
+	if offered.Status != domain.ProductActive || offered.CustomerID != deal.InitiatorID {
+		return domain.ErrProductUnavailable
+	}
+
+	if chain.ToProductID == nil {
+		return nil
+	}
+	requested, err := s.products.GetByID(ctx, *chain.ToProductID)
+	if err != nil {
+		return normalizeError(err)
+	}
+	if requested.Status != domain.ProductActive || requested.CustomerID != deal.RecipientID {
+		return domain.ErrProductUnavailable
+	}
+	return nil
 }
 
 // Confirm записывает решение стороны об итоге обмена и, если высказались оба,
@@ -185,6 +238,18 @@ func (s *chainService) Confirm(ctx context.Context, id, actorID string, success 
 		return nil, normalizeError(err)
 	}
 	if err := exchange.CanConfirm(deal, actorID, existing); err != nil {
+		// Подтверждение могло сохраниться, а финализация сделки упасть позже
+		// (например, из-за ограничения базы). Повторный запрос должен повторить
+		// финализацию, а не оставлять обмен навсегда активным.
+		if errors.Is(err, domain.ErrAlreadyConfirmed) {
+			if status, settled := exchange.Resolve(deal, existing); settled {
+				if settleErr := s.settle(ctx, id, status); settleErr != nil {
+					return nil, settleErr
+				}
+				updated, getErr := s.repo.GetByID(ctx, id)
+				return updated, normalizeError(getErr)
+			}
+		}
 		return nil, mapExchangeError(err)
 	}
 

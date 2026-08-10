@@ -8,6 +8,7 @@ import { reviewApi } from '@/entities/review';
 import { searchApi } from '@/entities/search';
 import { userSlice, userApi } from '@/entities/user';
 import { wishlistApi } from '@/entities/wishlist';
+import { rtkQueryAuthMiddleware } from './middleware';
 
 export const store = configureStore({
     reducer: {
@@ -21,17 +22,19 @@ export const store = configureStore({
         [searchApi.reducerPath]: searchApi.reducer,
         [wishlistApi.reducerPath]: wishlistApi.reducer,
     },
-    middleware: (getDefaultMiddleware) => getDefaultMiddleware()
-        .concat(
-            userApi.middleware,
-            productApi.middleware,
-            categoryApi.middleware,
-            chainApi.middleware,
-            customerApi.middleware,
-            reviewApi.middleware,
-            searchApi.middleware,
-            wishlistApi.middleware,
-        ),
+    middleware: (getDefaultMiddleware) =>
+        getDefaultMiddleware()
+            .concat(
+                rtkQueryAuthMiddleware,
+                userApi.middleware,
+                productApi.middleware,
+                categoryApi.middleware,
+                chainApi.middleware,
+                customerApi.middleware,
+                reviewApi.middleware,
+                searchApi.middleware,
+                wishlistApi.middleware,
+            ),
 });
 
 export type TRootState = ReturnType<typeof store.getState>;

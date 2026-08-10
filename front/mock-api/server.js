@@ -171,8 +171,16 @@ async function handleProducts(request, response, url) {
         return sendJson(response, 200, list.slice(...sliceBounds(url.searchParams)));
     }
 
-    // /search и /by-customer на бэкенде не смонтированы — поэтому здесь их нет:
-    // такие запросы уходят в ветку {id} и возвращают 404.
+    if (request.method === 'GET' && parts.length === 2 && parts[1] === 'recommendations') {
+        return productRecommendations(request, response, parts[0]);
+    }
+
+    if (request.method === 'GET' && parts.length === 2 && parts[0] === 'by-customer') {
+        const customerId = parts[1];
+        const user = requireUser(request);
+        if (!user || user.id !== customerId) return sendError(response, 403, 'operation forbidden');
+        return sendJson(response, 200, products.filter((product) => product.customer_id === customerId));
+    }
 
     if (parts.length === 2 && parts[1] === 'image') {
         const index = products.findIndex(({ product_id: id }) => id === parts[0]);
@@ -760,8 +768,20 @@ function confirmChain(chain, actorId, success, reason) {
     (confirmations[chain.chain_id] ||= []).push(entry);
 
     const settled = resolveConfirmations(chain);
-    if (settled) chain.status = settled;
-    chain.updated_at = new Date().toISOString();
+    if (settled) {
+        chain.status = settled;
+        chain.updated_at = new Date().toISOString();
+        if (settled === 'completed') {
+            const exchangedProductIds = [chain.from_product_id, chain.to_product_id];
+            for (const product of products) {
+                if (exchangedProductIds.includes(product.product_id)) {
+                    product.status = 'exchanged';
+                    product.updated_at = chain.updated_at;
+                }
+            }
+        }
+    }
+    if (!settled) chain.updated_at = new Date().toISOString();
     return null;
 }
 
@@ -1089,6 +1109,26 @@ function findChain(request, response, params) {
           ].filter(Boolean)
         : [];
     return sendJson(response, 200, { chain, length: chain.length });
+}
+
+function productRecommendations(request, response, productId) {
+    const user = requireUser(request);
+    if (!user) return sendError(response, 403, 'operation forbidden');
+
+    const result = chains.find(
+        (item) => item.to_product_id === productId && item.status !== 'cancelled',
+    );
+    const productsInChain = result
+        ? [
+              products.find((item) => item.product_id === result.from_product_id),
+              products.find((item) => item.product_id === result.to_product_id),
+          ].filter(Boolean)
+        : [];
+
+    return sendJson(response, 200, {
+        Products: productsInChain,
+        Length: productsInChain.length,
+    });
 }
 
 // ===== Общие хелперы =======================================================

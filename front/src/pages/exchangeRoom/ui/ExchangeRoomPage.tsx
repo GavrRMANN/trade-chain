@@ -1,19 +1,15 @@
-import { useLayoutEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-
-import { usePageTitle } from '@app/providers/pageTitle';
 import { useExchangeRoom } from '../lib';
 
 import { Button } from '@shared/ui/button';
 import { MainSection } from '@shared/ui/mainSection';
 import { MessageInput } from '@shared/ui/messageInput';
-import { MessageList } from '@shared/ui/messageList';
+import { MessageList } from '@entities/chain';
 import { PageError } from '@shared/ui/pageError';
 import { Preloader } from '@shared/ui/preloader';
-import { ProductCard } from '@shared/ui/productCard';
-import { StatusBadge } from '@shared/ui/statusBadge';
+import { ProductCard } from '@entities/product';
+import { ChainStatusBadge } from '@entities/chain';
 import { Textarea } from '@shared/ui/textarea';
-import { formatDate, useOpenModalRoute } from '@shared/lib';
+import { formatDate } from '@shared/lib';
 
 import StarSVG from '@shared/assets/icons/Star.svg?react';
 
@@ -22,11 +18,6 @@ import Styles from './exchange-room.module.css';
 const STAR_VALUES = [1, 2, 3, 4, 5] as const;
 
 export const ExchangeRoomPage = () => {
-    const { chainId } = useParams<{ chainId: string }>();
-    const navigate = useNavigate();
-    const openModal = useOpenModalRoute();
-    const { setTitle } = usePageTitle();
-
     const {
         chain,
         currentUserId,
@@ -36,7 +27,12 @@ export const ExchangeRoomPage = () => {
         messages,
         isLoading,
         isError,
-        isAuthenticated,
+        isPendingLike,
+        isActive,
+        isCompleted,
+        isUnavailable,
+        isWaitingForOtherConfirmation,
+        openProduct,
         messageDraft,
         setMessageDraft,
         handleSendMessage,
@@ -46,30 +42,15 @@ export const ExchangeRoomPage = () => {
         handleConfirm,
         isActionLoading,
         statusError,
+        rating,
+        setRating,
+        comment,
+        setComment,
         handleSendReview,
         isReviewCreating,
         reviewError,
         isReviewSent,
-    } = useExchangeRoom(chainId);
-
-    const [rating, setRating] = useState(0);
-    const [comment, setComment] = useState('');
-
-    useLayoutEffect(() => {
-        setTitle('Сделка обмена');
-    }, [setTitle]);
-
-    if (!isAuthenticated) {
-        return (
-            <MainSection>
-                <section className={Styles['guest-card']}>
-                    <h2>Войдите, чтобы открыть сделку</h2>
-                    <p>Только авторизованные пользователи могут участвовать в обмене.</p>
-                    <Button onClick={() => openModal('auth')}>Войти или зарегистрироваться</Button>
-                </section>
-            </MainSection>
-        );
-    }
+    } = useExchangeRoom();
 
     if (isLoading) {
         return <Preloader message={'Загружаем сделку…'} />;
@@ -79,23 +60,12 @@ export const ExchangeRoomPage = () => {
         return <PageError message={'Не удалось загрузить сделку'} />;
     }
 
-    const isPendingLike = chain.status === 'pending' || chain.status === 'countered';
-    const isActive = chain.status === 'active';
-    const isCompleted = chain.status === 'completed';
-
-    const handleReviewSubmit = () => {
-        if (rating < 1) {
-            return;
-        }
-        handleSendReview(rating, comment);
-    };
-
     return (
         <MainSection>
             <div className={Styles.page}>
                 <header className={Styles.header}>
                     <div className={Styles['header__meta']}>
-                        <StatusBadge status={chain.status} />
+                        <ChainStatusBadge status={chain.status} />
                     </div>
                     <span className={Styles['header__created']}>
                         Создано: {formatDate(chain.created_at)}
@@ -111,7 +81,7 @@ export const ExchangeRoomPage = () => {
                                 price={fromProduct.price}
                                 location={fromProduct.location}
                                 variant="horizontal"
-                                onClick={() => navigate(`/product/${fromProduct.product_id}`)}
+                                onClick={() => openProduct(fromProduct.product_id)}
                             />
                         ) : (
                             <p className={Styles['product-empty']}>Товар недоступен</p>
@@ -126,7 +96,7 @@ export const ExchangeRoomPage = () => {
                                 price={toProduct.price}
                                 location={toProduct.location}
                                 variant="horizontal"
-                                onClick={() => navigate(`/product/${toProduct.product_id}`)}
+                                onClick={() => openProduct(toProduct.product_id)}
                             />
                         ) : (
                             <p className={Styles['product-empty']}>Товар недоступен</p>
@@ -150,25 +120,12 @@ export const ExchangeRoomPage = () => {
                                 </Button>
                             ) : (
                                 <>
-                                    {chain.status === 'countered' && (
-                                        <p className={Styles['actions__note']}>
-                                            Встречное предложение отправлено
-                                        </p>
-                                    )}
                                     <Button
                                         loading={isActionLoading}
                                         disabled={isActionLoading}
                                         onClick={() => handleChangeStatus('active')}
                                     >
                                         Принять
-                                    </Button>
-                                    <Button
-                                        variant="secondary"
-                                        loading={isActionLoading}
-                                        disabled={isActionLoading}
-                                        onClick={() => handleChangeStatus('countered')}
-                                    >
-                                        Встречное
                                     </Button>
                                     <Button
                                         variant="text"
@@ -183,7 +140,13 @@ export const ExchangeRoomPage = () => {
                         </div>
                     )}
 
-                    {isActive && (
+                    {isWaitingForOtherConfirmation && (
+                        <p className={Styles['actions__note']}>
+                            Вы подтвердили, что обмен состоялся. Ожидаем подтверждение второй стороны.
+                        </p>
+                    )}
+
+                    {isActive && !isWaitingForOtherConfirmation && (
                         <div className={Styles.actions}>
                             <Button
                                 loading={isActionLoading}
@@ -205,7 +168,9 @@ export const ExchangeRoomPage = () => {
 
                     {!isPendingLike && !isActive && (
                         <p className={Styles['actions__note']}>
-                            Сделка завершена, действия недоступны.
+                            {isUnavailable
+                                ? 'Товар уже недоступен: он участвует в другом завершённом обмене.'
+                                : 'Сделка завершена, действия недоступны.'}
                         </p>
                     )}
 
@@ -239,7 +204,7 @@ export const ExchangeRoomPage = () => {
                                 className={Styles.review}
                                 onSubmit={(event) => {
                                     event.preventDefault();
-                                    handleReviewSubmit();
+                                    handleSendReview();
                                 }}
                                 noValidate
                             >

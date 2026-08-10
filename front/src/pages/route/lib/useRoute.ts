@@ -2,15 +2,14 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'reac
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import { usePageTitle } from '@app/providers/pageTitle';
+import { useGetCategoriesQuery } from '@entities/category';
 import { useCreateChainMutation, useGetMyChainsQuery } from '@entities/chain';
 import type { TChain } from '@entities/chain';
-import { useGetProductsQuery } from '@entities/product';
+import { useGetProductsByCustomerQuery, useGetProductsQuery } from '@entities/product';
 import type { TProduct } from '@entities/product';
 import { useFindChainQuery } from '@entities/search';
 import { useGetCurrentUserQuery } from '@entities/user';
 import type { TRouteRecommendation } from '@features/routeRecommendations';
-import { getAuthToken } from '@shared/api';
-import { useOpenModalRoute } from '@shared/lib';
 
 const OPEN_OFFER_STATUSES = new Set<TChain['status']>(['pending', 'active']);
 
@@ -23,26 +22,30 @@ type TRouteHistoryItem = {
 export const useRoute = () => {
     const { setTitle } = usePageTitle();
     const navigate = useNavigate();
-    const openModal = useOpenModalRoute();
     const [searchParams] = useSearchParams();
 
     const targetId = searchParams.get('target')?.trim() ?? '';
+    const targetCategoryId = searchParams.get('targetCategory')?.trim() ?? '';
     const sourceId = searchParams.get('from')?.trim() ?? '';
-    const isAuthenticated = Boolean(getAuthToken());
 
     const routeQuery = useFindChainQuery(
-        { target_product_id: targetId },
-        { skip: !targetId || !isAuthenticated },
+        { source_product_id: sourceId, target_product_id: targetId },
+        { skip: !targetId || !sourceId || Boolean(targetCategoryId), refetchOnMountOrArgChange: true },
     );
-    const currentUserQuery = useGetCurrentUserQuery(undefined, {
-        skip: !isAuthenticated,
+    const currentUserQuery = useGetCurrentUserQuery();
+    const currentCustomerId = currentUserQuery.data?.customer_id;
+    const categoriesQuery = useGetCategoriesQuery();
+    const myProductsQuery = useGetProductsByCustomerQuery(currentCustomerId ?? '', {
+        skip: !currentCustomerId,
+        refetchOnMountOrArgChange: true,
     });
     const productsQuery = useGetProductsQuery(
         { limit: 100 },
-        { skip: !targetId || !isAuthenticated },
+        { skip: !targetId && !targetCategoryId, refetchOnMountOrArgChange: true },
     );
     const myChainsQuery = useGetMyChainsQuery(undefined, {
-        skip: !targetId || !isAuthenticated,
+        skip: !targetId && !targetCategoryId,
+        refetchOnMountOrArgChange: true,
     });
     const [createChain, { isLoading: isSubmitting }] = useCreateChainMutation();
 
@@ -55,30 +58,38 @@ export const useRoute = () => {
         setTitle('Путь к цели');
     }, [setTitle]);
 
-    // Реальный поиск отдаёт «цель → текущий товар», а mock API — наоборот.
-    // Ориентируем маршрут по известной цели, чтобы экран не зависел от окружения.
     const chain = useMemo(() => {
         const products = routeQuery.data?.chain ?? [];
-        if (products.at(-1)?.product_id === targetId) {
-            return [...products];
-        }
-        if (products[0]?.product_id === targetId) {
-            return [...products].reverse();
-        }
         return [...products];
-    }, [routeQuery.data?.chain, targetId]);
-    const currentCustomerId = currentUserQuery.data?.customer_id;
+    }, [routeQuery.data?.chain]);
+    const sourceProducts = useMemo(
+        () =>
+            (myProductsQuery.data ?? []).filter((product) => product.status === 'active'),
+        [myProductsQuery.data],
+    );
+
+    const selectSource = useCallback(
+        (productId: string) => {
+            const params = new URLSearchParams(searchParams);
+            params.set('from', productId);
+            navigate(`/route?${params.toString()}`);
+        },
+        [navigate, searchParams],
+    );
 
     const productsById = useMemo(() => {
         const map = new Map<string, TProduct>();
         for (const product of productsQuery.data ?? []) {
             map.set(product.product_id, product);
         }
+        for (const product of myProductsQuery.data ?? []) {
+            map.set(product.product_id, product);
+        }
         for (const product of chain) {
             map.set(product.product_id, product);
         }
         return map;
-    }, [chain, productsQuery.data]);
+    }, [chain, myProductsQuery.data, productsQuery.data]);
 
     const routeSource = chain[0];
     const requestedSource = sourceId ? productsById.get(sourceId) : undefined;
@@ -88,18 +99,57 @@ export const useRoute = () => {
         requestedSource.status === 'active'
             ? requestedSource
             : undefined;
-    const currentProduct = selectedSource ?? routeSource;
-    const goalProduct = productsById.get(targetId) ?? chain[chain.length - 1];
-    const sourceMatchesRoute = currentProduct?.product_id === routeSource?.product_id;
-    const firstHop = sourceMatchesRoute
-        ? chain[1] ?? goalProduct
-        : routeSource?.customer_id === currentCustomerId
-          ? chain[1] ?? goalProduct
-          : routeSource ?? goalProduct;
-    const goalId = goalProduct?.product_id ?? targetId;
-    const stepsRemaining = currentProduct?.product_id === goalId
+    const goalProduct = targetCategoryId ? undefined : productsById.get(targetId) ?? chain[chain.length - 1];
+    const targetCategoryName = targetCategoryId
+        ? categoriesQuery.data?.find((category) => category.category_id === targetCategoryId)?.name
+        : undefined;
+    const goalId = targetCategoryId || goalProduct?.product_id || targetId;
+    const categoryTargetProduct = targetCategoryId
+        ? (productsQuery.data ?? []).find(
+              (product) =>
+                  product.category_id === targetCategoryId &&
+                  product.status === 'active' &&
+                  product.product_id !== sourceId,
+          )
+        : undefined;
+    const lastCompletedRouteStep = useMemo(() => {
+        return [...(myChainsQuery.data ?? [])]
+            .filter(
+                (item) =>
+                    item.status === 'completed' &&
+                    item.initiator_id === currentCustomerId &&
+                    item.route_step_id &&
+                    item.route_step_id !== sourceId &&
+                    (targetCategoryId
+                        ? item.to_category_id === targetCategoryId
+                        : item.exchange_goal_id === goalId ||
+                          (!item.exchange_goal_id && item.to_product_id === goalId)),
+            )
+            .sort((left, right) => right.updated_at.localeCompare(left.updated_at))[0];
+    }, [currentCustomerId, goalId, myChainsQuery.data, sourceId, targetCategoryId]);
+    const completedStepProduct = lastCompletedRouteStep
+        ? lastCompletedRouteStep.to_product_id
+            ? productsById.get(lastCompletedRouteStep.to_product_id)
+            : undefined
+        : undefined;
+    const currentProduct = completedStepProduct ?? selectedSource ?? routeSource;
+    const currentProductIndex = chain.findIndex(
+        (product) => product.product_id === currentProduct?.product_id,
+    );
+    const firstHop = targetCategoryId
+        ? categoryTargetProduct
+        :
+        currentProductIndex >= 0
+            ? chain[currentProductIndex + 1] ?? goalProduct
+            : routeSource?.customer_id === currentCustomerId
+              ? chain[1] ?? goalProduct
+              : routeSource ?? goalProduct;
+    const hasReachedGoal = currentProduct?.product_id === goalId && currentProductIndex > 0;
+    const stepsRemaining = hasReachedGoal
         ? 0
-        : Math.max(1, chain.length - 1);
+        : currentProductIndex >= 0
+          ? Math.max(1, chain.length - currentProductIndex - 1)
+          : 1;
 
     useEffect(() => {
         setSelectedTargetIds([]);
@@ -117,17 +167,19 @@ export const useRoute = () => {
                 (offer) =>
                     offer.initiator_id === currentCustomerId &&
                     offer.from_product_id === currentProduct.product_id &&
-                    (offer.exchange_goal_id === goalId ||
-                        (!offer.exchange_goal_id && offer.to_product_id === goalId)) &&
+                    (targetCategoryId
+                        ? offer.to_category_id === targetCategoryId
+                        : offer.exchange_goal_id === goalId ||
+                          (!offer.exchange_goal_id && offer.to_product_id === goalId)) &&
                     OPEN_OFFER_STATUSES.has(offer.status),
             )
             .sort((left, right) => right.updated_at.localeCompare(left.updated_at));
-    }, [currentCustomerId, currentProduct, goalId, myChainsQuery.data]);
+    }, [currentCustomerId, currentProduct, goalId, myChainsQuery.data, targetCategoryId]);
 
     const offerByTargetId = useMemo(() => {
         const map = new Map<string, TChain>();
         for (const offer of stageOffers) {
-            if (!map.has(offer.to_product_id)) {
+            if (offer.to_product_id && !map.has(offer.to_product_id)) {
                 map.set(offer.to_product_id, offer);
             }
         }
@@ -143,7 +195,7 @@ export const useRoute = () => {
         candidates.set(firstHop.product_id, firstHop);
 
         for (const offer of stageOffers) {
-            const product = productsById.get(offer.to_product_id);
+            const product = offer.to_product_id ? productsById.get(offer.to_product_id) : undefined;
             if (product) {
                 candidates.set(product.product_id, product);
             }
@@ -186,15 +238,17 @@ export const useRoute = () => {
                 (item) =>
                     item.status === 'completed' &&
                     item.initiator_id === currentCustomerId &&
-                    (item.exchange_goal_id === goalId ||
-                        (!item.exchange_goal_id && item.to_product_id === goalId)),
+                    (targetCategoryId
+                        ? item.to_category_id === targetCategoryId
+                        : item.exchange_goal_id === goalId ||
+                          (!item.exchange_goal_id && item.to_product_id === goalId)),
             )
             .sort((left, right) => right.updated_at.localeCompare(left.updated_at))
             .map((item) => ({
                 chain: item,
                 product: productsById.get(item.from_product_id),
             }));
-    }, [currentCustomerId, goalId, myChainsQuery.data, productsById]);
+    }, [currentCustomerId, goalId, myChainsQuery.data, productsById, targetCategoryId]);
 
     const toggleRecommendation = useCallback((productId: string, selected: boolean) => {
         setSelectedTargetIds((current) => {
@@ -220,7 +274,9 @@ export const useRoute = () => {
                 createChain({
                     from_product_id: currentProduct.product_id,
                     to_product_id: productId,
-                    exchange_goal_id: goalId,
+                    ...(targetCategoryId ? {to_category_id: targetCategoryId} : {}),
+                    previous_chain_id: lastCompletedRouteStep?.chain_id,
+                    ...(!targetCategoryId ? {exchange_goal_id: goalId} : {}),
                     route_step_id: currentProduct.product_id,
                     status: 'pending',
                     message: `Предложение в рамках цели «${goalProduct?.title ?? 'Обмен до цели'}»`,
@@ -253,7 +309,16 @@ export const useRoute = () => {
         }
 
         setSelectedTargetIds(failedIds);
-    }, [createChain, currentProduct, goalId, goalProduct?.title, myChainsQuery, selectedTargetIds]);
+    }, [
+        createChain,
+        currentProduct,
+        goalId,
+        goalProduct?.title,
+        lastCompletedRouteStep?.chain_id,
+        myChainsQuery,
+        selectedTargetIds,
+        targetCategoryId,
+    ]);
 
     const openProduct = useCallback(
         (productId: string) => navigate(`/product/${productId}`),
@@ -278,17 +343,28 @@ export const useRoute = () => {
     );
     const goHome = useCallback(() => navigate('/'), [navigate]);
 
-    const isLoading = routeQuery.isLoading || productsQuery.isLoading || myChainsQuery.isLoading;
-    const isError = routeQuery.isError || productsQuery.isError || myChainsQuery.isError;
-    const isEmpty = !isLoading && !isError && (!currentProduct || !goalProduct);
+    const isLoading =
+        routeQuery.isLoading ||
+        productsQuery.isLoading ||
+        myProductsQuery.isLoading ||
+        myChainsQuery.isLoading;
+    const isError =
+        routeQuery.isError ||
+        productsQuery.isError ||
+        myProductsQuery.isError ||
+        myChainsQuery.isError;
+    const isEmpty = !isLoading && !isError && (!currentProduct || (!targetCategoryId && !goalProduct));
 
     return {
-        targetId,
-        isAuthenticated,
+        targetId: targetId || targetCategoryId,
+        sourceId,
+        targetCategoryName,
         isLoading,
         isError,
         isEmpty,
         currentCustomerId,
+        sourceProducts,
+        selectSource,
         currentProduct,
         goalProduct,
         goalId,
@@ -308,6 +384,5 @@ export const useRoute = () => {
         closeOffer,
         handleOfferSuccess,
         goHome,
-        openAuthModal: () => openModal('auth'),
     };
 };

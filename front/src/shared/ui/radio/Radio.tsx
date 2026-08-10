@@ -1,19 +1,14 @@
-import {forwardRef, type ChangeEvent} from "react";
-
-import Styles from './Radio.module.css';
+import {forwardRef} from "react";
 
 import {Label} from "../label";
-
-type TError = {
-    showError: boolean;
-    errorMessage: string;
-};
+import {useRadio} from './useRadio';
+import type {TFormError} from '@shared/lib/form';
 
 type TRadioProps = {
     name?: string;
     label?: string;
     disabled?: boolean;
-    error?: TError;
+    error?: TFormError;
     checked: boolean;
     onChange?: (value: boolean) => void;
 };
@@ -26,14 +21,7 @@ export const Radio = forwardRef<HTMLInputElement, TRadioProps>(({
                                                                     checked,
                                                                     onChange
                                                                 }, ref) => {
-        const radioClasses = [
-            Styles['radio'],
-            error?.showError && Styles['radio--error']
-        ].filter(Boolean).join(' ');
-
-        const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
-            onChange?.(e.target.checked);
-        };
+        const {radioClasses, handleChange} = useRadio({error, onChange});
 
         return (
             <Label

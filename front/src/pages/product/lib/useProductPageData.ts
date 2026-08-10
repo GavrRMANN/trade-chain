@@ -1,25 +1,25 @@
 import {useMemo} from 'react';
 
 import {useGetCategoryQuery} from '@entities/category';
-import {useGetChainsByProductQuery} from '@entities/chain';
+import {useGetChainsByProductQuery, useGetMyChainsQuery} from '@entities/chain';
 import {useGetCustomerQuery} from '@entities/customer';
 import {
     useGetProductQuery,
+    useGetProductRecommendationsQuery,
     useGetProductsByCustomerQuery,
     useGetProductsQuery,
 } from '@entities/product';
 import {useGetCustomerRatingQuery, useGetReviewsByCustomerQuery} from '@entities/review';
-import {useFindChainQuery} from '@entities/search';
-import {useGetCurrentUserQuery} from '@entities/user';
+import {selectIsAuthenticated, useGetCurrentUserQuery} from '@entities/user';
 import {useGetWishlistByProductQuery, useGetWishlistOptionsQuery} from '@entities/wishlist';
-import {getAuthToken} from '@shared/api';
+import {useAppSelector} from '@app/redux';
 
 const OPEN_CHAIN_STATUSES = new Set(['pending', 'active', 'countered']);
 
 export const useProductPageData = (productId?: string) => {
     const productQuery = useGetProductQuery(productId ?? '', {skip: !productId});
     const product = productQuery.data;
-    const isAuthenticated = Boolean(getAuthToken());
+    const isAuthenticated = useAppSelector(selectIsAuthenticated);
     const currentUserQuery = useGetCurrentUserQuery(undefined, {skip: !isAuthenticated});
     const currentUserId = currentUserQuery.data?.customer_id;
     const isOwner = Boolean(product && currentUserId && product.customer_id === currentUserId);
@@ -48,10 +48,13 @@ export const useProductPageData = (productId?: string) => {
     const chainsQuery = useGetChainsByProductQuery(productId ?? '', {
         skip: !productId || !isOwner,
     });
-    const chainQuery = useFindChainQuery(
-        {target_product_id: productId ?? ''},
+    const recommendationsQuery = useGetProductRecommendationsQuery(
+        productId ?? '',
         {skip: !productId || !currentUserId || isOwner},
     );
+    const myChainsQuery = useGetMyChainsQuery(undefined, {
+        skip: !currentUserId || isOwner,
+    });
 
     const matchingProducts = useMemo(() => {
         const categoryIds = new Set((optionsQuery.data ?? []).map((item) => item.category_id));
@@ -61,9 +64,9 @@ export const useProductPageData = (productId?: string) => {
     }, [myProductsQuery.data, optionsQuery.data]);
 
     const routeChain = useMemo(() => {
-        const products = chainQuery.data?.chain ?? [];
+        const products = recommendationsQuery.data?.Products ?? [];
         return [...products].reverse();
-    }, [chainQuery.data?.chain]);
+    }, [recommendationsQuery.data?.Products]);
 
     const productOffers = useMemo(() => {
         const productsById = new Map(
@@ -88,8 +91,16 @@ export const useProductPageData = (productId?: string) => {
         OPEN_CHAIN_STATUSES.has(row.chain.status),
     ).length;
 
-    const isOwner = Boolean(
-        product && currentUserQuery.data && product.customer_id === currentUserQuery.data.customer_id,
+    const targetChain = useMemo(
+        () =>
+            [...(myChainsQuery.data ?? [])]
+                .filter(
+                    (chain) =>
+                        chain.exchange_goal_id === productId ||
+                        (!chain.exchange_goal_id && chain.to_product_id === productId),
+                )
+                .sort((left, right) => Date.parse(right.updated_at) - Date.parse(left.updated_at))[0],
+        [myChainsQuery.data, productId],
     );
 
     return {
@@ -104,6 +115,7 @@ export const useProductPageData = (productId?: string) => {
         averageRating: ratingQuery.data?.average_rating,
         incomingOffers,
         productOffers,
+        targetChain,
         isOwner,
         isAuthenticated,
         currentUserId,
