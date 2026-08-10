@@ -1,4 +1,4 @@
-import {useEffect, useState} from 'react';
+import {useEffect, useReducer} from 'react';
 
 import type {TCategory} from '@entities/category';
 import {
@@ -17,10 +17,36 @@ type TWishlistEditorParams = {
     options: TCategory[];
 };
 
+type TEditorState = {
+    selectedCategoryId: string;
+    requestError?: string;
+    isEditing: boolean;
+};
+
+type TEditorAction =
+    | {type: 'selectCategory'; value: string}
+    | {type: 'setError'; value?: string}
+    | {type: 'toggleEditing'}
+    | {type: 'setEditing'; value: boolean};
+
+const editorReducer = (state: TEditorState, action: TEditorAction): TEditorState => {
+    switch (action.type) {
+        case 'selectCategory':
+            return {...state, selectedCategoryId: action.value};
+        case 'setError':
+            return {...state, requestError: action.value};
+        case 'toggleEditing':
+            return {...state, isEditing: !state.isEditing};
+        case 'setEditing':
+            return {...state, isEditing: action.value};
+    }
+};
+
 export const useWishlistEditor = ({productId, productTitle, wishlist, options}: TWishlistEditorParams) => {
-    const [selectedCategoryId, setSelectedCategoryId] = useState('');
-    const [requestError, setRequestError] = useState<string>();
-    const [isEditing, setIsEditing] = useState(false);
+    const [{selectedCategoryId, requestError, isEditing}, dispatch] = useReducer(editorReducer, {
+        selectedCategoryId: '',
+        isEditing: false,
+    });
 
     const {data: categories = []} = useGetCategoriesQuery();
     const [createWishlist, {isLoading: isCreatingWishlist}] = useCreateWishlistMutation();
@@ -34,7 +60,7 @@ export const useWishlistEditor = ({productId, productTitle, wishlist, options}: 
         .map((category) => ({value: category.category_id, label: category.name}));
 
     useEffect(() => {
-        setSelectedCategoryId('');
+        dispatch({type: 'selectCategory', value: ''});
     }, [options.length]);
 
     const ensureWishlist = async (): Promise<TWishlist> => {
@@ -48,13 +74,13 @@ export const useWishlistEditor = ({productId, productTitle, wishlist, options}: 
         if (!selectedCategoryId) {
             return;
         }
-        setRequestError(undefined);
+        dispatch({type: 'setError'});
         try {
             const target = await ensureWishlist();
             await addOption({id: target.wishlist_id, body: {category_id: selectedCategoryId}}).unwrap();
-            setSelectedCategoryId('');
+            dispatch({type: 'selectCategory', value: ''});
         } catch (error) {
-            setRequestError(parseApiError(error, 'Не удалось обновить список желаний. Попробуйте ещё раз.'));
+            dispatch({type: 'setError', value: parseApiError(error, 'Не удалось обновить список желаний. Попробуйте ещё раз.')});
         }
     };
 
@@ -62,19 +88,19 @@ export const useWishlistEditor = ({productId, productTitle, wishlist, options}: 
         if (!wishlist) {
             return;
         }
-        setRequestError(undefined);
+        dispatch({type: 'setError'});
         try {
             await removeOption({id: wishlist.wishlist_id, categoryId}).unwrap();
         } catch (error) {
-            setRequestError(parseApiError(error, 'Не удалось обновить список желаний. Попробуйте ещё раз.'));
+            dispatch({type: 'setError', value: parseApiError(error, 'Не удалось обновить список желаний. Попробуйте ещё раз.')});
         }
     };
 
     const toggleEditing = () => {
-        setIsEditing((value) => !value);
+        dispatch({type: 'toggleEditing'});
     };
     const startEditing = () => {
-        setIsEditing(true);
+        dispatch({type: 'setEditing', value: true});
     };
 
     return {
@@ -85,7 +111,7 @@ export const useWishlistEditor = ({productId, productTitle, wishlist, options}: 
         selectedCategoryId,
         availableOptions,
         requestError,
-        setSelectedCategoryId,
+        setSelectedCategoryId: (value: string) => dispatch({type: 'selectCategory', value}),
         handleAdd,
         handleRemove,
         toggleEditing,

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useReducer, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { useGetCategoriesQuery } from '@entities/category';
@@ -25,22 +25,60 @@ export type TSearchSuggestion = {
     categoryId?: string;
 };
 
+type TSearchState = {
+    value: string;
+    selectedSuggestion: TSearchSuggestion | null;
+    productSuggestions: TSearchSuggestion[];
+    showDefaultSuggestions: boolean;
+};
+
+type TSearchAction =
+    | {type: 'setValue'; value: string}
+    | {type: 'setProductSuggestions'; suggestions: TSearchSuggestion[]}
+    | {type: 'showDefaultSuggestions'; value: boolean}
+    | {type: 'selectSuggestion'; suggestion: TSearchSuggestion};
+
+const searchReducer = (state: TSearchState, action: TSearchAction): TSearchState => {
+    switch (action.type) {
+        case 'setValue':
+            return {
+                ...state,
+                value: action.value,
+                selectedSuggestion: null,
+                showDefaultSuggestions: false,
+            };
+        case 'setProductSuggestions':
+            return {...state, productSuggestions: action.suggestions};
+        case 'showDefaultSuggestions':
+            return {...state, showDefaultSuggestions: action.value};
+        case 'selectSuggestion':
+            return {
+                ...state,
+                value: action.suggestion.label,
+                selectedSuggestion: action.suggestion,
+            };
+    }
+};
+
 export const useSearch = ({
                               initialValue,
                           }: TUseSearchProps): TUseSearchReturn => {
     const navigate = useNavigate();
-    const [value, setValue] = useState(initialValue);
-    const [selectedSuggestion, setSelectedSuggestion] = useState<TSearchSuggestion | null>(null);
-    const [productSuggestions, setProductSuggestions] = useState<TSearchSuggestion[]>([]);
-    const [showDefaultSuggestions, setShowDefaultSuggestions] = useState(false);
+    const [{value, selectedSuggestion, productSuggestions, showDefaultSuggestions}, dispatch] = useReducer(
+        searchReducer,
+        {
+            value: initialValue,
+            selectedSuggestion: null,
+            productSuggestions: [],
+            showDefaultSuggestions: false,
+        },
+    );
     const [searchProducts, { isFetching, isError }] = useLazyGetProductsQuery();
     const {data: categories = []} = useGetCategoriesQuery();
     const activeRequest = useRef<ReturnType<typeof searchProducts> | null>(null);
 
     const setSearchValue = useCallback((nextValue: string) => {
-        setValue(nextValue);
-        setSelectedSuggestion(null);
-        setShowDefaultSuggestions(false);
+        dispatch({type: 'setValue', value: nextValue});
     }, []);
 
     useEffect(() => {
@@ -49,7 +87,7 @@ export const useSearch = ({
         activeRequest.current?.abort();
 
         if ((query.length < 1 && !showDefaultSuggestions) || selectedSuggestion) {
-            setProductSuggestions([]);
+            dispatch({type: 'setProductSuggestions', suggestions: []});
             return;
         }
 
@@ -63,15 +101,15 @@ export const useSearch = ({
 
             void request.unwrap()
                 .then((products) => {
-                    setProductSuggestions(products.map((product) => ({
+                    dispatch({type: 'setProductSuggestions', suggestions: products.map((product) => ({
                         id: product.product_id,
                         label: product.title,
                         type: 'product' as const,
                         categoryId: product.category_id,
-                    })));
+                    }))});
                 })
                 .catch(() => {
-                    setProductSuggestions([]);
+                    dispatch({type: 'setProductSuggestions', suggestions: []});
                 });
         }, 300);
 
@@ -87,12 +125,12 @@ export const useSearch = ({
         activeRequest.current?.abort();
 
         if (!query) {
-            setShowDefaultSuggestions(true);
+            dispatch({type: 'showDefaultSuggestions', value: true});
             navigate('/');
             return;
         }
 
-        setShowDefaultSuggestions(false);
+        dispatch({type: 'showDefaultSuggestions', value: false});
 
         if (selectedSuggestion?.type === 'category' && selectedSuggestion.categoryId) {
             navigate(`/?category_id=${encodeURIComponent(selectedSuggestion.categoryId)}`);
@@ -104,8 +142,7 @@ export const useSearch = ({
 
     const selectSuggestion = useCallback((suggestion: TSearchSuggestion) => {
         activeRequest.current?.abort();
-        setValue(suggestion.label);
-        setSelectedSuggestion(suggestion);
+        dispatch({type: 'selectSuggestion', suggestion});
 
         if (suggestion.type === 'category' && suggestion.categoryId) {
             navigate(`/?category_id=${encodeURIComponent(suggestion.categoryId)}`);

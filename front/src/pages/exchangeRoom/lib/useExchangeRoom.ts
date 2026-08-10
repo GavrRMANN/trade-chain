@@ -1,4 +1,4 @@
-import { useCallback, useLayoutEffect, useMemo, useState } from 'react';
+import { useCallback, useLayoutEffect, useMemo, useReducer } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import {
@@ -31,6 +31,21 @@ const getErrorMessage = (error: unknown) => {
     return 'Не удалось выполнить действие. Попробуйте ещё раз.';
 };
 
+type TRoomState = {
+    messageDraft: string;
+    statusError?: string;
+    messageError?: string;
+    reviewError?: string;
+    isReviewSent: boolean;
+    rating: number;
+    comment: string;
+};
+type TRoomAction = {type: 'update'; payload: Partial<TRoomState>};
+const roomReducer = (state: TRoomState, action: TRoomAction): TRoomState => ({
+    ...state,
+    ...action.payload,
+});
+
 export const useExchangeRoom = () => {
     const { chainId } = useParams<{ chainId: string }>();
     const navigate = useNavigate();
@@ -51,15 +66,16 @@ export const useExchangeRoom = () => {
     const [sendChainMessage, { isLoading: isMessageSending }] = useSendChainMessageMutation();
     const [createReview, { isLoading: isReviewCreating }] = useCreateReviewMutation();
 
-    const [messageDraft, setMessageDraft] = useState('');
-    const [statusError, setStatusError] = useState<string>();
-    const [messageError, setMessageError] = useState<string>();
-    const [reviewError, setReviewError] = useState<string>();
-    const [isReviewSent, setIsReviewSent] = useState(false);
-
-    // Форма отзыва
-    const [rating, setRating] = useState(0);
-    const [comment, setComment] = useState('');
+    const [state, dispatch] = useReducer(roomReducer, {
+        messageDraft: '',
+        isReviewSent: false,
+        rating: 0,
+        comment: '',
+    });
+    const {messageDraft, statusError, messageError, reviewError, isReviewSent, rating, comment} = state;
+    const setMessageDraft = (value: string) => dispatch({type: 'update', payload: {messageDraft: value}});
+    const setRating = (value: number) => dispatch({type: 'update', payload: {rating: value}});
+    const setComment = (value: string) => dispatch({type: 'update', payload: {comment: value}});
 
     const chain = chainQuery.data;
     const currentUserId = currentUserQuery.data?.customer_id;
@@ -95,12 +111,12 @@ export const useExchangeRoom = () => {
     const handleChangeStatus = useCallback(
         async (status: TUpdateChainStatus) => {
             if (!chainId) return;
-            setStatusError(undefined);
+            dispatch({type: 'update', payload: {statusError: undefined}});
             try {
                 await updateChainStatus({ id: chainId, body: { status } }).unwrap();
                 chainQuery.refetch();
             } catch (error) {
-                setStatusError(getErrorMessage(error));
+                dispatch({type: 'update', payload: {statusError: getErrorMessage(error)}});
             }
         },
         [chainId, updateChainStatus, chainQuery],
@@ -109,13 +125,13 @@ export const useExchangeRoom = () => {
     const handleConfirm = useCallback(
         async (success: boolean) => {
             if (!chainId) return;
-            setStatusError(undefined);
+            dispatch({type: 'update', payload: {statusError: undefined}});
             try {
                 await confirmChain({ id: chainId, body: { success } }).unwrap();
                 chainQuery.refetch();
                 chainDetailsQuery.refetch();
             } catch (error) {
-                setStatusError(getErrorMessage(error));
+                dispatch({type: 'update', payload: {statusError: getErrorMessage(error)}});
             }
         },
         [chainId, confirmChain, chainQuery, chainDetailsQuery],
@@ -125,28 +141,28 @@ export const useExchangeRoom = () => {
         if (!chainId) return;
         const body = messageDraft.trim();
         if (!body) return;
-        setMessageError(undefined);
+        dispatch({type: 'update', payload: {messageError: undefined}});
         try {
             await sendChainMessage({ id: chainId, body: { body } }).unwrap();
             setMessageDraft('');
             messagesQuery.refetch();
         } catch (error) {
-            setMessageError(getErrorMessage(error));
+            dispatch({type: 'update', payload: {messageError: getErrorMessage(error)}});
         }
     }, [chainId, messageDraft, sendChainMessage, messagesQuery]);
 
     const handleSendReview = useCallback(async () => {
         if (!chainId || rating < 1) return;
-        setReviewError(undefined);
+        dispatch({type: 'update', payload: {reviewError: undefined}});
         try {
             await createReview({
                 chain_id: chainId,
                 rating,
                 comment: comment.trim() || undefined,
             }).unwrap();
-            setIsReviewSent(true);
+            dispatch({type: 'update', payload: {isReviewSent: true}});
         } catch (error) {
-            setReviewError(getErrorMessage(error));
+            dispatch({type: 'update', payload: {reviewError: getErrorMessage(error)}});
         }
     }, [chainId, rating, comment, createReview]);
 

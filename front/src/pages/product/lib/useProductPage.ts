@@ -1,4 +1,4 @@
-import { useCallback, useLayoutEffect, useState } from 'react';
+import { useCallback, useLayoutEffect, useReducer } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import { usePageTitle } from '@app/providers/pageTitle';
@@ -14,12 +14,19 @@ const statusLabels = {
     archived: 'В архиве',
 } as const;
 
+type TOfferState = {isOpen: boolean};
+type TOfferAction = {type: 'open'} | {type: 'close'};
+
+const offerReducer = (state: TOfferState, action: TOfferAction): TOfferState => ({
+    isOpen: action.type === 'open',
+});
+
 export const useProductPage = () => {
     const { productId } = useParams<{ productId: string }>();
     const navigate = useNavigate();
     const openModalRoute = useOpenModalRoute();
     const { setTitle } = usePageTitle();
-    const [isOfferOpen, setIsOfferOpen] = useState(false);
+    const [offerState, dispatchOffer] = useReducer(offerReducer, {isOpen: false});
 
     const {
         product,
@@ -71,10 +78,10 @@ export const useProductPage = () => {
             openModalRoute('auth');
             return;
         }
-        if (status === 'active') setIsOfferOpen(true);
+        if (status === 'active') dispatchOffer({type: 'open'});
     }, [isAuthenticated, status, openModalRoute]);
 
-    const closeOffer = useCallback(() => setIsOfferOpen(false), []);
+    const closeOffer = useCallback(() => dispatchOffer({type: 'close'}), []);
 
     const onOfferSuccess = useCallback(
         (chainId: string) => navigate(`/exchanges/${chainId}`),
@@ -131,7 +138,7 @@ export const useProductPage = () => {
         ratingText,
         canOffer,
         // offer-модалка
-        isOfferOpen,
+        isOfferOpen: offerState.isOpen,
         openOffer,
         closeOffer,
         onOfferSuccess,

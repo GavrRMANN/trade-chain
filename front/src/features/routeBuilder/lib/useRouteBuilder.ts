@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useReducer } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { useGetCategoriesQuery } from '@entities/category';
@@ -14,8 +14,13 @@ export const useRouteBuilder = () => {
     const productsQuery = useGetProductsQuery({ offset: 0, limit: 100 });
     const categoriesQuery = useGetCategoriesQuery();
 
-    const [sourceId, setSourceId] = useState('');
-    const [targetGoal, setTargetGoal] = useState<TTargetGoal>({});
+    const [{sourceId, targetGoal}, dispatch] = useReducer(
+        (state: {sourceId: string; targetGoal: TTargetGoal}, action: {type: 'source' | 'target'; value: string | TTargetGoal}) =>
+            action.type === 'source'
+                ? {...state, sourceId: action.value as string}
+                : {...state, targetGoal: action.value as TTargetGoal},
+        {sourceId: '', targetGoal: {}},
+    );
 
     const sourceProducts = useMemo(
         () =>
@@ -35,6 +40,10 @@ export const useRouteBuilder = () => {
         : undefined;
 
     const hasTarget = Boolean(targetGoal.productId || targetGoal.categoryId);
+    const targetLabel = selectedTarget?.title ?? selectedCategoryName ?? 'Выберите цель';
+    const sourceProductMeta = new Map(
+        sourceProducts.map((product) => [product.product_id, getProductMeta(product) || 'Активное объявление']),
+    );
 
     const buildRoute = () => {
         if (!sourceId || !hasTarget) {
@@ -61,12 +70,14 @@ export const useRouteBuilder = () => {
         selectedSource,
         selectedTarget,
         selectedCategoryName,
+        targetLabel,
+        sourceProductMeta,
         hasTarget,
         isSourcesLoading: currentUserQuery.isLoading || productsQuery.isLoading,
         isTargetsLoading: categoriesQuery.isLoading || productsQuery.isLoading,
         hasTargetError: categoriesQuery.isError || productsQuery.isError,
-        setSourceId,
-        setTargetGoal,
+        setSourceId: (value: string) => dispatch({type: 'source', value}),
+        setTargetGoal: (value: TTargetGoal) => dispatch({type: 'target', value}),
         buildRoute,
     };
 };

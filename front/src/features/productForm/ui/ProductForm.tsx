@@ -1,10 +1,7 @@
-import { useCallback } from 'react';
-
 import {Button} from '@shared/ui/button';
 import {Input} from '@shared/ui/input';
 import {Selector} from '@shared/ui/selector';
 import {Textarea} from '@shared/ui/textarea';
-import {sanitizePrice} from '@shared/lib';
 import type {TCategory} from '@entities/category';
 import { TargetProductPicker } from '@entities/product';
 import type {TProduct, TProductStatus} from '@entities/product';
@@ -12,6 +9,7 @@ import type {TProduct, TProductStatus} from '@entities/product';
 import {CategoryPicker} from './CategoryPicker';
 import Styles from './product-form.module.css';
 import {useImageUpload} from './useImageUpload';
+import {usePriceChange} from './usePriceChange';
 
 type TField = 'title' | 'categoryId' | 'description' | 'price' | 'location' | 'targetGoal';
 type TErrors = Partial<Record<TField, string>>;
@@ -79,9 +77,7 @@ export const ProductForm = ({
         onImageLoaded: setImage,
     });
 
-    const handlePriceChange = useCallback((value: string) => {
-        setPrice(sanitizePrice(value));
-    }, [setPrice]);
+    const handlePriceChange = usePriceChange(setPrice);
 
     return (
         <form className={Styles.form} onSubmit={handleSubmit} noValidate>

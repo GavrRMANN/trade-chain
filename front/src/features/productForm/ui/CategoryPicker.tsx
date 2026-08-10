@@ -1,8 +1,7 @@
-import {useMemo, useState} from 'react';
-
 import type {TCategory} from '@entities/category';
 
 import Styles from './CategoryPicker.module.css';
+import {useCategoryPicker} from './useCategoryPicker';
 
 type TCategoryPickerProps = {
     categories: TCategory[];
@@ -19,63 +18,11 @@ export const CategoryPicker = ({
     disabled = false,
     error,
 }: TCategoryPickerProps) => {
-    const [expandedParent, setExpandedParent] = useState<string | null>(null);
-    const [search, setSearch] = useState('');
-
-    const roots = useMemo(
-        () => categories.filter((category) => !category.parent_id),
-        [categories],
-    );
-
-    const children = useMemo(
-        () => categories.filter((category) => category.parent_id === expandedParent),
-        [categories, expandedParent],
-    );
-
-    const searchResults = useMemo(() => {
-        const query = search.trim().toLowerCase();
-        if (!query) {
-            return [];
-        }
-        return categories.filter((category) =>
-            category.name.toLowerCase().includes(query),
-        );
-    }, [categories, search]);
-
-    const selectedPath = useMemo(() => {
-        if (!value) {
-            return [];
-        }
-        const path = [];
-        let current = categories.find((category) => category.category_id === value);
-        const guard = new Set<string>();
-        while (current && !guard.has(current.category_id)) {
-            guard.add(current.category_id);
-            path.unshift(current);
-            current = current.parent_id
-                ? categories.find((category) => category.category_id === current?.parent_id)
-                : undefined;
-        }
-        return path;
-    }, [categories, value]);
-
-    const handleExpand = (parentId: string) => {
-        if (disabled) {
-            return;
-        }
-        setExpandedParent((current) => (current === parentId ? null : parentId));
-    };
-
-    const handleSelect = (category: TCategory) => {
-        if (disabled) {
-            return;
-        }
-        onChange(category.category_id);
-        setExpandedParent(null);
-        setSearch('');
-    };
-
-    const isSearching = search.trim().length > 0;
+    const {
+        expandedParent, search, setSearch, roots, children, searchResults, selectedPath,
+        expandedParentName, isSearching, handleExpand, handleSelect,
+        expandedParentCategory,
+    } = useCategoryPicker(categories, value, disabled, onChange);
 
     return (
         <div className={Styles.picker}>
@@ -147,9 +94,7 @@ export const CategoryPicker = ({
 
                     <div className={Styles['picker__column']}>
                         <p className={Styles['picker__column-title']}>
-                            {expandedParent
-                                ? (categories.find((c) => c.category_id === expandedParent)?.name ?? 'Подкатегории')
-                                : 'Подкатегория'}
+                            {expandedParentName}
                         </p>
                         {!expandedParent && (
                             <p className={Styles['picker__hint']}>Выберите категорию слева</p>
@@ -164,11 +109,7 @@ export const CategoryPicker = ({
                                     .filter(Boolean)
                                     .join(' ')}
                                 disabled={disabled}
-                                onClick={() =>
-                                    handleSelect(
-                                        categories.find((c) => c.category_id === expandedParent) as TCategory,
-                                    )
-                                }
+                                onClick={() => expandedParentCategory && handleSelect(expandedParentCategory)}
                             >
                                 Использовать эту категорию
                             </button>

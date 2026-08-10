@@ -1,4 +1,4 @@
-import {useEffect, useMemo, useRef, useState} from 'react';
+import {useEffect, useMemo, useReducer, useRef} from 'react';
 
 import ControlStyles from '../control/Control.module.css';
 import Styles from './Selector.module.css';
@@ -17,7 +17,14 @@ type TUseSelectorParams = {
 
 /** Инкапсулирует состояние и взаимодействия выпадающего списка. */
 export const useSelector = ({label, value, options, disabled, loading, error, onSelect}: TUseSelectorParams) => {
-    const [isExpanded, setIsExpanded] = useState(false);
+    const [state, dispatch] = useReducer(
+        (currentState: { isExpanded: boolean }, action: { type: 'toggle' | 'collapse' }) => ({
+            ...currentState,
+            isExpanded: action.type === 'toggle' ? !currentState.isExpanded : false,
+        }),
+        { isExpanded: false },
+    );
+    const {isExpanded} = state;
     const wrapperRef = useRef<HTMLLabelElement>(null);
     const selectedLabel = useMemo(
         () => options.find((option) => option.value === value)?.label || label || options[0]?.label,
@@ -37,12 +44,12 @@ export const useSelector = ({label, value, options, disabled, loading, error, on
         .join(' ');
     const toggle = () => {
         if (!disabled && !loading) {
-            setIsExpanded((previous) => !previous);
+            dispatch({ type: 'toggle' });
         }
     };
     const selectOption = (option: TOption) => {
         onSelect?.(option.value);
-        setIsExpanded(false);
+        dispatch({ type: 'collapse' });
     };
 
     useEffect(() => {
@@ -51,7 +58,7 @@ export const useSelector = ({label, value, options, disabled, loading, error, on
         }
         const handleDocumentClick = (event: MouseEvent) => {
             if (event.target instanceof Node && !wrapperRef.current?.contains(event.target)) {
-                setIsExpanded(false);
+                dispatch({ type: 'collapse' });
             }
         };
         document.addEventListener('mousedown', handleDocumentClick);

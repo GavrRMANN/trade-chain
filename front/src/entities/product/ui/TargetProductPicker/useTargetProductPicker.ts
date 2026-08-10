@@ -1,10 +1,54 @@
-import { useDeferredValue, useMemo, useState } from 'react';
+import { useDeferredValue, useMemo, useReducer } from 'react';
 
 import type { TProduct, TTargetGoal } from '../../types';
 
 export type { TTargetGoal };
 
 export type TGoalSearchMode = 'product' | 'category';
+
+type TPickerState = {
+    searchMode: TGoalSearchMode;
+    searchValue: string;
+    categoryId: string;
+    selectedCategoryId: string;
+};
+
+type TPickerAction =
+    | { type: 'selectMode'; mode: TGoalSearchMode }
+    | { type: 'selectCategory'; categoryId: string }
+    | { type: 'selectCategoryAsGoal' }
+    | { type: 'selectProduct' }
+    | { type: 'search'; value: string };
+
+const initialState: TPickerState = {
+    searchMode: 'product',
+    searchValue: '',
+    categoryId: '',
+    selectedCategoryId: '',
+};
+
+const pickerReducer = (state: TPickerState, action: TPickerAction): TPickerState => {
+    switch (action.type) {
+        case 'selectMode':
+            return {
+                ...state,
+                searchMode: action.mode,
+                searchValue: '',
+                categoryId: '',
+                selectedCategoryId: '',
+            };
+        case 'selectCategory':
+            return { ...state, categoryId: action.categoryId, selectedCategoryId: '' };
+        case 'selectCategoryAsGoal':
+            return { ...state, selectedCategoryId: state.categoryId };
+        case 'selectProduct':
+            return { ...state, selectedCategoryId: '' };
+        case 'search':
+            return { ...state, searchValue: action.value, selectedCategoryId: '' };
+        default:
+            return state;
+    }
+};
 
 type TUseTargetProductPickerParams = {
     products: TProduct[];
@@ -18,18 +62,15 @@ export const useTargetProductPicker = ({
     currentCustomerId,
     onSelect,
 }: TUseTargetProductPickerParams) => {
-    const [searchMode, setSearchMode] = useState<TGoalSearchMode>('product');
-    const [searchValue, setSearchValue] = useState('');
-    const [categoryId, setCategoryId] = useState('');
-    const [selectedCategoryId, setSelectedCategoryId] = useState('');
-    const deferredSearch = useDeferredValue(searchValue.trim());
+    const [state, dispatch] = useReducer(pickerReducer, initialState);
+    const deferredSearch = useDeferredValue(state.searchValue.trim());
 
     const targetProducts = useMemo(() => {
         const normalizedSearch = deferredSearch.toLocaleLowerCase('ru');
 
         return products
             .filter((product) => {
-                const matchesCategory = !categoryId || product.category_id === categoryId;
+                const matchesCategory = !state.categoryId || product.category_id === state.categoryId;
                 const matchesSearch =
                     !normalizedSearch ||
                     product.title.toLocaleLowerCase('ru').includes(normalizedSearch);
@@ -37,50 +78,45 @@ export const useTargetProductPicker = ({
                 return (
                     product.status === 'active' &&
                     product.customer_id !== currentCustomerId &&
-                    (searchMode === 'product' ? matchesSearch : matchesCategory)
+                    (state.searchMode === 'product' ? matchesSearch : matchesCategory)
                 );
             })
             .slice(0, 8);
-    }, [categoryId, currentCustomerId, deferredSearch, products, searchMode]);
+    }, [currentCustomerId, deferredSearch, products, state.categoryId, state.searchMode]);
 
     const selectMode = (mode: TGoalSearchMode) => {
-        setSearchMode(mode);
-        setSearchValue('');
-        setCategoryId('');
-        setSelectedCategoryId('');
+        dispatch({ type: 'selectMode', mode });
         onSelect({});
     };
 
     const selectCategory = (value: string) => {
-        setCategoryId(value);
-        setSelectedCategoryId('');
+        dispatch({ type: 'selectCategory', categoryId: value });
         onSelect({});
     };
 
     const selectCategoryAsGoal = () => {
-        if (!categoryId) {
+        if (!state.categoryId) {
             return;
         }
-        setSelectedCategoryId(categoryId);
-        onSelect({ categoryId });
+        dispatch({ type: 'selectCategoryAsGoal' });
+        onSelect({ categoryId: state.categoryId });
     };
 
     const selectProduct = (productId: string) => {
-        setSelectedCategoryId('');
+        dispatch({ type: 'selectProduct' });
         onSelect({ productId });
     };
 
     const search = (value: string) => {
-        setSearchValue(value);
-        setSelectedCategoryId('');
+        dispatch({ type: 'search', value });
         onSelect({});
     };
 
     return {
-        searchMode,
-        searchValue,
-        categoryId,
-        selectedCategoryId,
+        searchMode: state.searchMode,
+        searchValue: state.searchValue,
+        categoryId: state.categoryId,
+        selectedCategoryId: state.selectedCategoryId,
         targetProducts,
         selectMode,
         selectCategory,

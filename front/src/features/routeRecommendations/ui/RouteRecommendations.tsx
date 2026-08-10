@@ -1,13 +1,10 @@
-import { useMemo } from 'react';
-
 import type { TChain } from '@entities/chain';
 import type { TProduct } from '@entities/product';
 import { Button } from '@shared/ui/button';
 
 import { RecommendationCard } from './RecommendationCard';
 import Styles from './route-recommendations.module.css';
-import { useSwipeGesture } from './useSwipeGesture';
-import { useCarousel } from './useCarousel';
+import {useRouteRecommendations} from './useRouteRecommendations';
 
 export type TRouteRecommendation = {
     product: TProduct;
@@ -33,22 +30,8 @@ export const RouteRecommendations = ({
     onOpenProduct,
     onOpenOffer,
 }: TRouteRecommendationsProps) => {
-    const { activeIndex, current, advance } = useCarousel(items);
-    const selected = useMemo(() => new Set(selectedIds), [selectedIds]);
-
-    const selectAndAdvance = () => {
-        if (!current || current.offer) {
-            advance();
-            return;
-        }
-        onToggle(current.product.product_id, true);
-        advance();
-    };
-
-    const { handlePointerDown, handlePointerUp } = useSwipeGesture({
-        onSwipeLeft: selectAndAdvance,
-        onSwipeRight: advance,
-    });
+    const {activeIndex, current, selected, advance, selectAndAdvance, handlePointerDown, handlePointerUp} =
+        useRouteRecommendations(items, selectedIds, onToggle);
 
     if (items.length === 0) {
         return (

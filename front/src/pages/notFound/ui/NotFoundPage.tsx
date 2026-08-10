@@ -1,11 +1,11 @@
 import { Button, Result } from 'antd';
-import { Link, useLocation } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 
+import { useNotFoundPage } from '../lib';
 import Styles from './notFound-page.module.css';
 
 export const NotFoundPage = () => {
-    const location = useLocation();
-    const backUrl = location.state?.backUrl;
+    const { backUrl } = useNotFoundPage();
 
     return (
         <div className={Styles.page}>

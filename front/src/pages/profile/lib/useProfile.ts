@@ -1,4 +1,4 @@
-import {useCallback, useMemo, useState} from 'react';
+import {useCallback, useMemo, useReducer} from 'react';
 import {useNavigate} from 'react-router-dom';
 
 import {useGetProductsByCustomerQuery} from '@entities/product';
@@ -26,7 +26,11 @@ const maskEmail = (email: string): string => {
 
 export const useProfile = (user?: TUser, isOwner = false) => {
     const navigate = useNavigate();
-    const [activeTab, setActiveTab] = useState<TProfileTab>('products');
+    const [activeTab, dispatch] = useReducer(
+        (_: TProfileTab, next: TProfileTab) => next,
+        'products',
+    );
+    const setActiveTab = dispatch;
     const customerId = user?.customer_id ?? '';
 
     const productsQuery = useGetProductsByCustomerQuery(customerId, {skip: !customerId});

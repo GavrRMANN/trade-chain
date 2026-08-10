@@ -1,4 +1,4 @@
-import {useState} from 'react';
+import {useReducer} from 'react';
 
 import {useArchiveProductMutation} from '@entities/product';
 import type {TProductStatus} from '@entities/product';
@@ -18,39 +18,62 @@ const getErrorMessage = (error: unknown) => {
     return 'Не удалось выполнить действие. Попробуйте ещё раз.';
 };
 
+type TActionState = {
+    confirmAction: boolean;
+    error?: string;
+    status?: TProductStatus;
+};
+type TAction =
+    | {type: 'request'}
+    | {type: 'cancel'}
+    | {type: 'start'}
+    | {type: 'success'}
+    | {type: 'error'; error: string};
+
+const actionReducer = (state: TActionState, action: TAction): TActionState => {
+    switch (action.type) {
+        case 'request':
+            return { ...state, confirmAction: true, error: undefined };
+        case 'cancel':
+            return {...state, confirmAction: false};
+        case 'start':
+            return {...state, error: undefined};
+        case 'success':
+            return {confirmAction: false, status: 'archived'};
+        case 'error':
+            return {...state, error: action.error};
+    }
+};
+
 /**
  * Архивирование товара владельцем после подтверждения.
  */
 export const useProductActions = (productId?: string) => {
     const [archiveProduct, {isLoading}] = useArchiveProductMutation();
-    const [confirmAction, setConfirmAction] = useState(false);
-    const [error, setError] = useState<string>();
-    const [status, setStatus] = useState<TProductStatus>();
+    const [state, dispatch] = useReducer(actionReducer, {confirmAction: false});
 
     const requestArchive = () => {
-        setError(undefined);
-        setConfirmAction(true);
+        dispatch({type: 'request'});
     };
 
-    const cancelConfirm = () => setConfirmAction(false);
+    const cancelConfirm = () => dispatch({type: 'cancel'});
 
     const confirm = async () => {
-        if (!productId || !confirmAction) return;
+        if (!productId || !state.confirmAction) return;
 
-        setError(undefined);
+        dispatch({type: 'start'});
         try {
             await archiveProduct(productId).unwrap();
-            setStatus('archived');
-            setConfirmAction(false);
+            dispatch({type: 'success'});
         } catch (mutationError) {
-            setError(getErrorMessage(mutationError));
+            dispatch({type: 'error', error: getErrorMessage(mutationError)});
         }
     };
 
     return {
-        status,
-        error,
-        confirmAction,
+        status: state.status,
+        error: state.error,
+        confirmAction: state.confirmAction,
         confirmText: 'Снять товар с обмена? Он уйдёт в архив и перестанет участвовать в обменах.',
         confirmLabel: 'Снять с обмена',
         isLoading,
