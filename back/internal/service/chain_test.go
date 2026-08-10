@@ -134,7 +134,11 @@ func (f *fakeChainRepo) CompleteExchange(_ context.Context, id string) error {
 			continue
 		}
 		if touchesSameProducts(other, c) {
-			other.Status = string(domain.ChainCancelled)
+			if isOutgoingCompetingOffer(other, c) {
+				other.Status = string(domain.ChainCancelled)
+			} else {
+				other.Status = string(domain.ChainUnavailable)
+			}
 			f.chains[otherID] = other
 		}
 	}
@@ -391,6 +395,86 @@ func TestCompletionClosesCompetingOffers(t *testing.T) {
 	}
 }
 
+func TestCompletionMarksIncomingOfferAsUnavailable(t *testing.T) {
+	f := newFixture(domain.ChainActive)
+	ctx := context.Background()
+
+	incoming := domain.Chain{
+		ChainID:       "chain-incoming",
+		FromProductID: strangerID,
+		ToProductID:   strPtr(requestedID),
+		InitiatorID:   stranger,
+		RecipientID:   strPtr(recipient),
+		Status:        string(domain.ChainActive),
+	}
+	f.chains.chains[incoming.ChainID] = incoming
+
+	if _, err := f.service.Confirm(ctx, chainID, initiator, true, ""); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.service.Confirm(ctx, chainID, recipient, true, ""); err != nil {
+		t.Fatal(err)
+	}
+
+	if got := f.chains.chains[incoming.ChainID].Status; got != string(domain.ChainUnavailable) {
+		t.Errorf("входящий обмен в статусе %q, ожидался %q", got, domain.ChainUnavailable)
+	}
+	if f.products.products[requestedID].Status != domain.ProductExchanged {
+		t.Errorf("статус товара %q, ожидался %q", f.products.products[requestedID].Status, domain.ProductExchanged)
+	}
+}
+
+func TestIncomingOfferCannotBeAcceptedAfterProductIsExchanged(t *testing.T) {
+	f := newFixture(domain.ChainActive)
+	ctx := context.Background()
+	incomingID := "chain-incoming-pending"
+	f.chains.chains[incomingID] = domain.Chain{
+		ChainID:       incomingID,
+		FromProductID: strangerID,
+		ToProductID:   strPtr(requestedID),
+		InitiatorID:   stranger,
+		RecipientID:   strPtr(recipient),
+		Status:        string(domain.ChainPending),
+	}
+	f.products.products[requestedID] = domain.Product{
+		ProductID: requestedID, CustomerID: recipient, Status: domain.ProductExchanged,
+	}
+
+	if _, err := f.service.Decide(ctx, incomingID, exchange.ActionAccept, recipient); !errors.Is(err, ErrConflict) {
+		t.Fatalf("принятие предложения с недоступным товаром вернуло %v, ожидался конфликт", err)
+	}
+	if got := f.chains.chains[incomingID].Status; got != string(domain.ChainPending) {
+		t.Errorf("входящее предложение изменило статус на %q", got)
+	}
+}
+
+func TestCompletionCancelsCompetingActiveOffers(t *testing.T) {
+	f := newFixture(domain.ChainActive)
+	ctx := context.Background()
+
+	// Второй обмен уже принят получателем, поэтому он не должен остаться
+	// доступным после успешного завершения первого.
+	f.chains.chains["chain-active-competing"] = domain.Chain{
+		ChainID:       "chain-active-competing",
+		FromProductID: requestedID,
+		ToProductID:   strPtr(strangerID),
+		InitiatorID:   recipient,
+		RecipientID:   strPtr(stranger),
+		Status:        string(domain.ChainActive),
+	}
+
+	if _, err := f.service.Confirm(ctx, chainID, initiator, true, ""); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.service.Confirm(ctx, chainID, recipient, true, ""); err != nil {
+		t.Fatal(err)
+	}
+
+	if got := f.chains.chains["chain-active-competing"].Status; got != string(domain.ChainCancelled) {
+		t.Errorf("принятый конкурирующий обмен в статусе %q, ожидался %q", got, domain.ChainCancelled)
+	}
+}
+
 func TestSingleNegativeConfirmationFailsExchange(t *testing.T) {
 	f := newFixture(domain.ChainActive)
 	ctx := context.Background()
@@ -417,6 +501,23 @@ func TestSecondConfirmationFromSameSideIsConflict(t *testing.T) {
 	}
 	if _, err := f.service.Confirm(ctx, chainID, initiator, true, ""); !errors.Is(err, ErrConflict) {
 		t.Fatalf("ошибка %v, ожидалась ErrConflict", err)
+	}
+}
+
+func TestRepeatedConfirmationRetriesFailedSettlement(t *testing.T) {
+	f := newFixture(domain.ChainActive)
+	ctx := context.Background()
+	f.negotiations.confirmations = []domain.ChainConfirmation{
+		{ChainID: chainID, CustomerID: initiator, Success: true},
+		{ChainID: chainID, CustomerID: recipient, Success: true},
+	}
+
+	chain, err := f.service.Confirm(ctx, chainID, recipient, true, "")
+	if err != nil {
+		t.Fatalf("повторное подтверждение должно завершить обмен: %v", err)
+	}
+	if chain.Status != string(domain.ChainCompleted) {
+		t.Errorf("статус %q, ожидался %q", chain.Status, domain.ChainCompleted)
 	}
 }
 

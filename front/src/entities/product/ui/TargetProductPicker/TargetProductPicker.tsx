@@ -32,6 +32,7 @@ const getProductMeta = (product: TProduct): string =>
 export const TargetProductPicker = ({
     products,
     categories,
+    currentCustomerId,
     value,
     disabled = false,
     isLoading = false,
@@ -49,7 +50,7 @@ export const TargetProductPicker = ({
         selectCategoryAsGoal,
         selectProduct,
         search,
-    } = useTargetProductPicker({ products, currentCustomerId: '', onSelect: onChange });
+    } = useTargetProductPicker({ products, currentCustomerId, onSelect: onChange });
     const categoryOptions = [
         { value: '', label: 'Выберите категорию' },
         ...categories.map((category) => ({ value: category.category_id, label: category.name })),

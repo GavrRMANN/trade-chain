@@ -6,7 +6,8 @@ export type TChainStatus =
     | 'rejected'
     | 'countered'
     | 'failed'
-    | 'expired';
+    | 'expired'
+    | 'unavailable';
 
 export type TChain = {
     /** Уникальный идентификатор звена цепочки. */

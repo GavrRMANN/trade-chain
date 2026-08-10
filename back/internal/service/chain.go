@@ -185,6 +185,31 @@ func (s *chainService) Decide(ctx context.Context, id string, action exchange.Ac
 	return updated, normalizeError(err)
 }
 
+// validateAcceptableProducts не даёт принять предложение после того, как
+// товар уже ушёл в другой завершённый обмен. Такое предложение сохраняется
+// в истории и получает отдельный статус unavailable при завершении сделки.
+func (s *chainService) validateAcceptableProducts(ctx context.Context, chain *domain.Chain, deal exchange.Deal) error {
+	offered, err := s.products.GetByID(ctx, chain.FromProductID)
+	if err != nil {
+		return normalizeError(err)
+	}
+	if offered.Status != domain.ProductActive || offered.CustomerID != deal.InitiatorID {
+		return domain.ErrProductUnavailable
+	}
+
+	if chain.ToProductID == nil {
+		return nil
+	}
+	requested, err := s.products.GetByID(ctx, *chain.ToProductID)
+	if err != nil {
+		return normalizeError(err)
+	}
+	if requested.Status != domain.ProductActive || requested.CustomerID != deal.RecipientID {
+		return domain.ErrProductUnavailable
+	}
+	return nil
+}
+
 // Confirm записывает решение стороны об итоге обмена и, если высказались оба,
 // закрывает сделку.
 //
@@ -207,6 +232,18 @@ func (s *chainService) Confirm(ctx context.Context, id, actorID string, success 
 		return nil, normalizeError(err)
 	}
 	if err := exchange.CanConfirm(deal, actorID, existing); err != nil {
+		// Подтверждение могло сохраниться, а финализация сделки упасть позже
+		// (например, из-за ограничения базы). Повторный запрос должен повторить
+		// финализацию, а не оставлять обмен навсегда активным.
+		if errors.Is(err, domain.ErrAlreadyConfirmed) {
+			if status, settled := exchange.Resolve(deal, existing); settled {
+				if settleErr := s.settle(ctx, id, status); settleErr != nil {
+					return nil, settleErr
+				}
+				updated, getErr := s.repo.GetByID(ctx, id)
+				return updated, normalizeError(getErr)
+			}
+		}
 		return nil, mapExchangeError(err)
 	}
 
