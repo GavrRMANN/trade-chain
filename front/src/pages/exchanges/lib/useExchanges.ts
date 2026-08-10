@@ -27,6 +27,7 @@ export type TExchangeRow = {
 
 export type TExchangeRouteGroup = {
     goalId: string;
+    goalCategoryId?: string;
     goalProduct?: TProduct;
     sourceProduct?: TProduct;
     offersCount: number;
@@ -99,8 +100,12 @@ export const useExchanges = () => {
         return (chain: TChain): TExchangeRow => ({
             chain,
             fromProduct: productsById.get(chain.from_product_id),
-            toProduct: productsById.get(chain.to_product_id),
-            goalProduct: productsById.get(chain.exchange_goal_id ?? chain.to_product_id),
+            toProduct: chain.to_product_id ? productsById.get(chain.to_product_id) : undefined,
+            goalProduct: chain.exchange_goal_id
+                ? productsById.get(chain.exchange_goal_id)
+                : chain.to_product_id
+                  ? productsById.get(chain.to_product_id)
+                  : undefined,
         });
     }, [productsById]);
 
@@ -112,7 +117,13 @@ export const useExchanges = () => {
                 continue;
             }
 
-            const goalId = chain.exchange_goal_id ?? chain.to_product_id;
+            const goalId = chain.exchange_goal_id ?? chain.to_product_id ?? chain.to_category_id;
+            if (!goalId) {
+                continue;
+            }
+            const goalCategoryId = chain.to_category_id && !chain.to_product_id
+                ? chain.to_category_id
+                : undefined;
             const current = groups.get(goalId);
             const isOpen = !FINAL_STATUSES.has(chain.status);
             const isCompleted = chain.status === 'completed';
@@ -120,6 +131,7 @@ export const useExchanges = () => {
             if (!current) {
                 groups.set(goalId, {
                     goalId,
+                    goalCategoryId,
                     goalProduct: productsById.get(goalId),
                     sourceProduct: productsById.get(chain.route_step_id ?? chain.from_product_id),
                     offersCount: 1,
@@ -194,8 +206,9 @@ export const useExchanges = () => {
         navigate(`/exchanges/${chainId}`);
     }, [navigate]);
 
-    const openRoute = useCallback((goalId: string, sourceId?: string) => {
-        const params = new URLSearchParams({target: goalId});
+    const openRoute = useCallback((goalId: string, sourceId?: string, goalCategoryId?: string) => {
+        const params = new URLSearchParams();
+        params.set(goalCategoryId ? 'targetCategory' : 'target', goalId);
         if (sourceId) {
             params.set('from', sourceId);
         }

@@ -64,7 +64,7 @@ export const buildNotifications = (
         }
 
         const fromProduct = productsById.get(chain.from_product_id);
-        const toProduct = productsById.get(chain.to_product_id);
+        const toProduct = chain.to_product_id ? productsById.get(chain.to_product_id) : undefined;
         const href = `/exchanges/${chain.chain_id}`;
 
         const notification = {

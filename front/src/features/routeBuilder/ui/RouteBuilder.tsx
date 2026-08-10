@@ -20,16 +20,20 @@ export const RouteBuilder = ({ onCancel, variant = 'card' }: TRouteBuilderProps)
         categories,
         currentCustomerId,
         sourceId,
-        targetId,
+        targetGoal,
         selectedSource,
         selectedTarget,
+        selectedCategoryName,
+        hasTarget,
         isSourcesLoading,
         isTargetsLoading,
         hasTargetError,
         setSourceId,
-        setTargetId,
+        setTargetGoal,
         buildRoute,
     } = useRouteBuilder();
+
+    const targetLabel = selectedTarget?.title ?? selectedCategoryName ?? 'Выберите цель';
 
     return (
         <section
@@ -126,10 +130,10 @@ export const RouteBuilder = ({ onCancel, variant = 'card' }: TRouteBuilderProps)
                         products={products}
                         categories={categories}
                         currentCustomerId={currentCustomerId}
-                        value={targetId}
+                        value={targetGoal}
                         isLoading={isTargetsLoading}
                         isError={hasTargetError}
-                        onChange={setTargetId}
+                        onChange={setTargetGoal}
                     />
                 </div>
             </div>
@@ -138,7 +142,7 @@ export const RouteBuilder = ({ onCancel, variant = 'card' }: TRouteBuilderProps)
                 <div className={Styles.builder__summary}>
                     <span>{selectedSource?.title ?? 'Выберите стартовый товар'}</span>
                     <b aria-hidden="true">→</b>
-                    <span>{selectedTarget?.title ?? 'Выберите цель'}</span>
+                    <span>{targetLabel}</span>
                 </div>
                 <div className={`${Styles.builder__actions} ${Styles.builder__desktopActions}`}>
                     {onCancel && (
@@ -146,7 +150,7 @@ export const RouteBuilder = ({ onCancel, variant = 'card' }: TRouteBuilderProps)
                             Отмена
                         </Button>
                     )}
-                    <Button disabled={!sourceId || !targetId} onClick={buildRoute}>
+                    <Button disabled={!sourceId || !hasTarget} onClick={buildRoute}>
                         Построить цепочку
                     </Button>
                 </div>
@@ -167,7 +171,7 @@ export const RouteBuilder = ({ onCancel, variant = 'card' }: TRouteBuilderProps)
                             <Button variant="text" onClick={() => setMobileStep(1)}>
                                 Назад
                             </Button>
-                            <Button disabled={!targetId} onClick={buildRoute}>
+                            <Button disabled={!hasTarget} onClick={buildRoute}>
                                 Построить цепочку
                             </Button>
                         </>

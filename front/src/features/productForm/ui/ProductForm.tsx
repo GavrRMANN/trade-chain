@@ -13,7 +13,7 @@ import {CategoryPicker} from './CategoryPicker';
 import Styles from './product-form.module.css';
 import {useImageUpload} from './useImageUpload';
 
-type TField = 'title' | 'categoryId' | 'description' | 'price' | 'location' | 'targetProductId';
+type TField = 'title' | 'categoryId' | 'description' | 'price' | 'location' | 'targetGoal';
 type TErrors = Partial<Record<TField, string>>;
 
 type TProductFormProps = {
@@ -29,7 +29,7 @@ type TProductFormProps = {
     price: string;
     location: string;
     status: TProductStatus;
-    targetProductId: string;
+    targetGoal: { productId?: string; categoryId?: string };
     errors: TErrors;
     requestError?: string;
     isLoading: boolean;
@@ -42,7 +42,7 @@ type TProductFormProps = {
     setPrice: (value: string) => void;
     setLocation: (value: string) => void;
     setStatus: (value: TProductStatus) => void;
-    setTargetProductId: (value: string) => void;
+    setTargetGoal: (goal: { productId?: string; categoryId?: string }) => void;
     handleSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
 };
 
@@ -59,7 +59,7 @@ export const ProductForm = ({
     price,
     location,
     status,
-    targetProductId,
+    targetGoal,
     errors,
     requestError,
     isLoading,
@@ -72,7 +72,7 @@ export const ProductForm = ({
     setPrice,
     setLocation,
     setStatus,
-    setTargetProductId,
+    setTargetGoal,
     handleSubmit,
 }: TProductFormProps) => {
     const { fileInputRef, imageError, handleImageChange, handleRemoveImage } = useImageUpload({
@@ -207,14 +207,14 @@ export const ProductForm = ({
                         products={targetProducts}
                         categories={categories}
                         currentCustomerId={currentCustomerId}
-                        value={targetProductId}
+                        value={targetGoal}
                         disabled={isLoading}
                         isLoading={isTargetProductsLoading}
                         isError={isTargetProductsError}
-                        onChange={setTargetProductId}
+                        onChange={setTargetGoal}
                     />
-                    {errors.targetProductId && (
-                        <p className={Styles['form__error-text']}>{errors.targetProductId}</p>
+                    {errors.targetGoal && (
+                        <p className={Styles['form__error-text']}>{errors.targetGoal}</p>
                     )}
                 </div>
             )}

@@ -61,7 +61,7 @@ export const useProfile = (user?: TUser, isOwner = false) => {
             .map((chain) => ({
                 chain,
                 fromProduct: productsById.get(chain.from_product_id),
-                toProduct: productsById.get(chain.to_product_id),
+                toProduct: chain.to_product_id ? productsById.get(chain.to_product_id) : undefined,
             }))
             .sort((a, b) => b.chain.updated_at.localeCompare(a.chain.updated_at));
     }, [chainsQuery.data, productsById]);

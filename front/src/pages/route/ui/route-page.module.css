@@ -23,6 +23,15 @@
     background: color-mix(in srgb, var(--accent-primary) 5%, var(--bg-secondary));
 }
 
+.route-page__goal--category {
+    grid-template-columns: minmax(0, 1fr);
+}
+
+.route-page__goal--category .route-page__goal-body {
+    flex-direction: row;
+    align-items: center;
+}
+
 .route-page__goal-media,
 .route-page__current-media {
     width: 112px;

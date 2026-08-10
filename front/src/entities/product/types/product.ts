@@ -77,3 +77,9 @@ export type TProductRecommendations = {
     Products: TProduct[];
     Length: number;
 };
+
+/** Цель обмена — конкретный товар или категория. */
+export type TTargetGoal = {
+    productId?: string;
+    categoryId?: string;
+};

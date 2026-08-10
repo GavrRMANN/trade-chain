@@ -1,16 +1,18 @@
 import { useDeferredValue, useMemo, useState } from 'react';
 
-import type { TProduct } from '../../types';
+import type { TProduct, TTargetGoal } from '../../types';
+
+export type { TTargetGoal };
 
 export type TGoalSearchMode = 'product' | 'category';
 
 type TUseTargetProductPickerParams = {
     products: TProduct[];
     currentCustomerId: string;
-    onSelect: (productId: string) => void;
+    onSelect: (goal: TTargetGoal) => void;
 };
 
-/** Управляет фильтрами и выбором целевого товара для обмена. */
+/** Управляет фильтрами и выбором целевого товара или категории для обмена. */
 export const useTargetProductPicker = ({
     products,
     currentCustomerId,
@@ -19,6 +21,7 @@ export const useTargetProductPicker = ({
     const [searchMode, setSearchMode] = useState<TGoalSearchMode>('product');
     const [searchValue, setSearchValue] = useState('');
     const [categoryId, setCategoryId] = useState('');
+    const [selectedCategoryId, setSelectedCategoryId] = useState('');
     const deferredSearch = useDeferredValue(searchValue.trim());
 
     const targetProducts = useMemo(() => {
@@ -44,26 +47,45 @@ export const useTargetProductPicker = ({
         setSearchMode(mode);
         setSearchValue('');
         setCategoryId('');
-        onSelect('');
+        setSelectedCategoryId('');
+        onSelect({});
     };
 
     const selectCategory = (value: string) => {
         setCategoryId(value);
-        onSelect('');
+        setSelectedCategoryId('');
+        onSelect({});
+    };
+
+    const selectCategoryAsGoal = () => {
+        if (!categoryId) {
+            return;
+        }
+        setSelectedCategoryId(categoryId);
+        onSelect({ categoryId });
+    };
+
+    const selectProduct = (productId: string) => {
+        setSelectedCategoryId('');
+        onSelect({ productId });
     };
 
     const search = (value: string) => {
         setSearchValue(value);
-        onSelect('');
+        setSelectedCategoryId('');
+        onSelect({});
     };
 
     return {
         searchMode,
         searchValue,
         categoryId,
+        selectedCategoryId,
         targetProducts,
         selectMode,
         selectCategory,
+        selectCategoryAsGoal,
+        selectProduct,
         search,
     };
 };

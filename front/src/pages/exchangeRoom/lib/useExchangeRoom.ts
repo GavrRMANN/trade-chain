@@ -88,7 +88,9 @@ export const useExchangeRoom = () => {
     }, [productsQuery.data]);
 
     const fromProduct = chain ? productsById.get(chain.from_product_id) : undefined;
-    const toProduct = chain ? productsById.get(chain.to_product_id) : undefined;
+    const toProduct = chain && chain.to_product_id
+        ? productsById.get(chain.to_product_id)
+        : undefined;
 
     const handleChangeStatus = useCallback(
         async (status: TUpdateChainStatus) => {

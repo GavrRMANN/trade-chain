@@ -2,20 +2,22 @@ import { Button } from '@shared/ui/button';
 import { Input } from '@shared/ui/input';
 import { Selector } from '@shared/ui/selector';
 
-import type { TProduct } from '../../types';
+import type { TProduct, TTargetGoal } from '../../types';
 import { ProductImage } from '../ProductImage/ProductImage';
 import { useTargetProductPicker } from './useTargetProductPicker';
 import Styles from './TargetProductPicker.module.css';
+
+export type { TTargetGoal } from '../../types';
 
 type TTargetProductPickerProps = {
     products: TProduct[];
     categories: Array<{ category_id: string; name: string }>;
     currentCustomerId: string;
-    value: string;
+    value?: TTargetGoal;
     disabled?: boolean;
     isLoading?: boolean;
     isError?: boolean;
-    onChange: (productId: string) => void;
+    onChange: (goal: TTargetGoal) => void;
 };
 
 const getProductMeta = (product: TProduct): string =>
@@ -30,7 +32,6 @@ const getProductMeta = (product: TProduct): string =>
 export const TargetProductPicker = ({
     products,
     categories,
-    currentCustomerId,
     value,
     disabled = false,
     isLoading = false,
@@ -41,15 +42,21 @@ export const TargetProductPicker = ({
         searchMode,
         searchValue,
         categoryId,
+        selectedCategoryId,
         targetProducts,
         selectMode,
         selectCategory,
+        selectCategoryAsGoal,
+        selectProduct,
         search,
-    } = useTargetProductPicker({ products, currentCustomerId, onSelect: onChange });
+    } = useTargetProductPicker({ products, currentCustomerId: '', onSelect: onChange });
     const categoryOptions = [
         { value: '', label: 'Выберите категорию' },
         ...categories.map((category) => ({ value: category.category_id, label: category.name })),
     ];
+
+    const selectedCategoryName =
+        selectedCategoryId && categories.find((c) => c.category_id === selectedCategoryId)?.name;
 
     return (
         <section className={Styles.picker} aria-label="Куда хотим прийти">
@@ -57,7 +64,11 @@ export const TargetProductPicker = ({
                 <span>2</span>
                 <div>
                     <h3>Куда хотим прийти</h3>
-                    <p>Найдите товар или откройте категорию</p>
+                    <p>
+                        {selectedCategoryName
+                            ? `Выбрана категория: ${selectedCategoryName}`
+                            : 'Найдите товар или откройте категорию'}
+                    </p>
                 </div>
             </div>
 
@@ -108,20 +119,43 @@ export const TargetProductPicker = ({
                 <p className={Styles.picker__state}>Ищем подходящие товары…</p>
             ) : searchMode === 'category' && !categoryId ? (
                 <p className={Styles.picker__state}>Выберите категорию, чтобы увидеть товары.</p>
-            ) : targetProducts.length === 0 ? (
+            ) : targetProducts.length === 0 && !selectedCategoryId ? (
                 <p className={Styles.picker__state}>По этому запросу ничего не найдено.</p>
             ) : (
                 <div className={Styles.picker__grid}>
+                    {searchMode === 'category' && categoryId && (
+                        <button
+                            type="button"
+                            className={`${Styles.picker__category} ${
+                                selectedCategoryId === categoryId ? Styles['picker__category--selected'] : ''
+                            }`}
+                            aria-pressed={selectedCategoryId === categoryId}
+                            disabled={disabled}
+                            onClick={selectCategoryAsGoal}
+                        >
+                            <span className={Styles.picker__categoryIcon} aria-hidden="true">🏷</span>
+                            <span className={Styles.picker__categoryBody}>
+                                <strong>
+                                    Хочу из категории:{' '}
+                                    {categories.find((c) => c.category_id === categoryId)?.name}
+                                </strong>
+                                <small>Любой товар из этой категории подойдёт</small>
+                            </span>
+                        </button>
+                    )}
+
                     {targetProducts.map((product) => (
                         <button
                             key={product.product_id}
                             type="button"
                             className={`${Styles.picker__target} ${
-                                value === product.product_id ? Styles['picker__target--selected'] : ''
+                                value?.productId === product.product_id
+                                    ? Styles['picker__target--selected']
+                                    : ''
                             }`}
-                            aria-pressed={value === product.product_id}
+                            aria-pressed={value?.productId === product.product_id}
                             disabled={disabled}
-                            onClick={() => onChange(product.product_id)}
+                            onClick={() => selectProduct(product.product_id)}
                         >
                             <span className={Styles.picker__media}>
                                 <ProductImage src={product.image} alt="" title={product.title} />
