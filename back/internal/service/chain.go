@@ -172,6 +172,11 @@ func (s *chainService) Decide(ctx context.Context, id string, action exchange.Ac
 		return nil, normalizeError(err)
 	}
 	deal := dealOf(chain)
+	if action == exchange.ActionAccept {
+		if err := s.validateAcceptableProducts(ctx, chain, deal); err != nil {
+			return nil, mapExchangeError(err)
+		}
+	}
 
 	next, err := exchange.Apply(deal, action, actorID, time.Now())
 	if err != nil {

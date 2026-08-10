@@ -119,6 +119,7 @@ func (f *fakeChainRepo) CompleteExchange(_ context.Context, id string) error {
 	}
 	to := f.products.products[*c.ToProductID]
 	from.CustomerID, to.CustomerID = to.CustomerID, from.CustomerID
+	from.Status, to.Status = domain.ProductExchanged, domain.ProductExchanged
 	f.products.products[c.FromProductID] = from
 	f.products.products[*c.ToProductID] = to
 
@@ -130,7 +131,7 @@ func (f *fakeChainRepo) CompleteExchange(_ context.Context, id string) error {
 	// товарам в этой же транзакции; фейк повторяет это, иначе правило негде
 	// проверить.
 	for otherID, other := range f.chains {
-		if otherID == id || other.Status != string(domain.ChainPending) {
+		if otherID == id || (other.Status != string(domain.ChainPending) && other.Status != string(domain.ChainActive)) {
 			continue
 		}
 		if touchesSameProducts(other, c) {
@@ -159,6 +160,9 @@ func touchesSameProducts(a, b domain.Chain) bool {
 }
 
 func isOutgoingCompetingOffer(other, completed domain.Chain) bool {
+	if other.Status == string(domain.ChainPending) {
+		return true
+	}
 	if other.InitiatorID == completed.InitiatorID && other.FromProductID == completed.FromProductID {
 		return true
 	}
