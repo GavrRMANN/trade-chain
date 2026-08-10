@@ -129,59 +129,59 @@ BEGIN
     RETURNING customer_id INTO cust1;
 
     INSERT INTO customers(email, password_hash)
-    VALUES ('user2@test.com', '1')
+    VALUES ('user2@test.com', '$2a$10$m.NfG.SFSyf7.nrMZ9x4bu/1d5xHThLC59PLM1Xrk9fvqmUmIEKLu')
     RETURNING customer_id INTO cust2;
 
     INSERT INTO customers(email, password_hash)
-    VALUES ('user3@test.com', '1')
+    VALUES ('user3@test.com', '$2a$10$m.NfG.SFSyf7.nrMZ9x4bu/1d5xHThLC59PLM1Xrk9fvqmUmIEKLu')
     RETURNING customer_id INTO cust3;
 
     INSERT INTO customers(email, password_hash)
-    VALUES ('user4@test.com', '1')
+    VALUES ('user4@test.com', '$2a$10$m.NfG.SFSyf7.nrMZ9x4bu/1d5xHThLC59PLM1Xrk9fvqmUmIEKLu')
     RETURNING customer_id INTO cust4;
 
     INSERT INTO customers(email, password_hash)
-    VALUES ('user5@test.com', '1')
+    VALUES ('user5@test.com', '$2a$10$m.NfG.SFSyf7.nrMZ9x4bu/1d5xHThLC59PLM1Xrk9fvqmUmIEKLu')
     RETURNING customer_id INTO cust5;
 
     INSERT INTO customers(email, password_hash)
-    VALUES ('user6@test.com', '1')
+    VALUES ('user6@test.com', '$2a$10$m.NfG.SFSyf7.nrMZ9x4bu/1d5xHThLC59PLM1Xrk9fvqmUmIEKLu')
     RETURNING customer_id INTO cust6;
 
     INSERT INTO customers(email, password_hash)
-    VALUES ('user7@test.com', '1')
+    VALUES ('user7@test.com', '$2a$10$m.NfG.SFSyf7.nrMZ9x4bu/1d5xHThLC59PLM1Xrk9fvqmUmIEKLu')
     RETURNING customer_id INTO cust7;
 
     INSERT INTO customers(email, password_hash)
-    VALUES ('user8@test.com', '1')
+    VALUES ('user8@test.com', '$2a$10$m.NfG.SFSyf7.nrMZ9x4bu/1d5xHThLC59PLM1Xrk9fvqmUmIEKLu')
     RETURNING customer_id INTO cust8;
 
     INSERT INTO customers(email, password_hash)
-    VALUES ('user9@test.com', '1')
+    VALUES ('user9@test.com', '$2a$10$m.NfG.SFSyf7.nrMZ9x4bu/1d5xHThLC59PLM1Xrk9fvqmUmIEKLu')
     RETURNING customer_id INTO cust9;
 
     INSERT INTO customers(email, password_hash)
-    VALUES ('user10@test.com', '1')
+    VALUES ('user10@test.com', '$2a$10$m.NfG.SFSyf7.nrMZ9x4bu/1d5xHThLC59PLM1Xrk9fvqmUmIEKLu')
     RETURNING customer_id INTO cust10;
 
     INSERT INTO customers(email, password_hash)
-    VALUES ('user11@test.com', '1')
+    VALUES ('user11@test.com', '$2a$10$m.NfG.SFSyf7.nrMZ9x4bu/1d5xHThLC59PLM1Xrk9fvqmUmIEKLu')
     RETURNING customer_id INTO cust11;
 
     INSERT INTO customers(email, password_hash)
-    VALUES ('user12@test.com', '1')
+    VALUES ('user12@test.com', '1$2a$10$m.NfG.SFSyf7.nrMZ9x4bu/1d5xHThLC59PLM1Xrk9fvqmUmIEKLu')
     RETURNING customer_id INTO cust12;
 
     INSERT INTO customers(email, password_hash)
-    VALUES ('user13@test.com', '1')
+    VALUES ('user13@test.com', '$2a$10$m.NfG.SFSyf7.nrMZ9x4bu/1d5xHThLC59PLM1Xrk9fvqmUmIEKLu')
     RETURNING customer_id INTO cust13;
 
     INSERT INTO customers(email, password_hash)
-    VALUES ('user14@test.com', '1')
+    VALUES ('user14@test.com', '$2a$10$m.NfG.SFSyf7.nrMZ9x4bu/1d5xHThLC59PLM1Xrk9fvqmUmIEKLu')
     RETURNING customer_id INTO cust14;
 
     INSERT INTO customers(email, password_hash)
-    VALUES ('user15@test.com', '1')
+    VALUES ('user15@test.com', '$2a$10$m.NfG.SFSyf7.nrMZ9x4bu/1d5xHThLC59PLM1Xrk9fvqmUmIEKLu')
     RETURNING customer_id INTO cust15;
 
 

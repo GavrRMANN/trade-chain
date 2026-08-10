@@ -177,11 +177,6 @@ func (s *chainService) Decide(ctx context.Context, id string, action exchange.Ac
 	if err != nil {
 		return nil, mapExchangeError(err)
 	}
-	if action == exchange.ActionAccept {
-		if err := s.validateAcceptableProducts(ctx, chain, deal); err != nil {
-			return nil, mapExchangeError(err)
-		}
-	}
 	if err := s.repo.UpdateStatus(ctx, id, next); err != nil {
 		return nil, normalizeError(err)
 	}
@@ -231,11 +226,6 @@ func (s *chainService) Confirm(ctx context.Context, id, actorID string, success 
 		return nil, normalizeError(err)
 	}
 	deal := dealOf(chain)
-	if success {
-		if err := s.validateAcceptableProducts(ctx, chain, deal); err != nil {
-			return nil, mapExchangeError(err)
-		}
-	}
 
 	existing, err := s.negotiations.ListConfirmations(ctx, id)
 	if err != nil {

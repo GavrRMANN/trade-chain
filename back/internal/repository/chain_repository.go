@@ -241,7 +241,7 @@ func (r *chainRepository) CompleteExchange(ctx context.Context, chainID string) 
 	// 1. Получить цепочку
 	var chain domain.Chain
 	err = tx.QueryRow(ctx, `
-			SELECT chain_id, from_product_id, to_product_id, initiator_id, recipient_id, status
+			SELECT chain_id, from_product_id, to_product_id, initiator_id, status
 			FROM chains
 			WHERE chain_id = $1
 			FOR UPDATE
@@ -250,7 +250,6 @@ func (r *chainRepository) CompleteExchange(ctx context.Context, chainID string) 
 		&chain.FromProductID,
 		&chain.ToProductID,
 		&chain.InitiatorID,
-		&chain.RecipientID,
 		&chain.Status,
 	)
 	if err != nil {
@@ -305,13 +304,6 @@ func (r *chainRepository) CompleteExchange(ctx context.Context, chainID string) 
 	toOwner, ok := owners[toProductID]
 	if !ok {
 		return sql.ErrNoRows
-	}
-
-	// Защита от гонки: другая сделка могла завершиться после чтения этой
-	// цепочки, но до блокировки товаров. Повторно обменивать уже переехавший
-	// товар нельзя.
-	if fromOwner != chain.InitiatorID || chain.RecipientID == nil || toOwner != *chain.RecipientID {
-		return errors.New("products are no longer owned by exchange participants")
 	}
 
 	// 3. Обменять владельцев
