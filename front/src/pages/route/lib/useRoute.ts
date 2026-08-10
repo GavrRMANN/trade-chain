@@ -29,8 +29,8 @@ export const useRoute = () => {
     const sourceId = searchParams.get('from')?.trim() ?? '';
 
     const routeQuery = useFindChainQuery(
-        { target_product_id: targetId },
-        { skip: !targetId || Boolean(targetCategoryId), refetchOnMountOrArgChange: true },
+        { source_product_id: sourceId, target_product_id: targetId },
+        { skip: !targetId || !sourceId || Boolean(targetCategoryId), refetchOnMountOrArgChange: true },
     );
     const currentUserQuery = useGetCurrentUserQuery();
     const categoriesQuery = useGetCategoriesQuery();
@@ -53,19 +53,28 @@ export const useRoute = () => {
         setTitle('Путь к цели');
     }, [setTitle]);
 
-    // Реальный поиск отдаёт «цель → текущий товар», а mock API — наоборот.
-    // Ориентируем маршрут по известной цели, чтобы экран не зависел от окружения.
     const chain = useMemo(() => {
         const products = routeQuery.data?.chain ?? [];
-        if (products.at(-1)?.product_id === targetId) {
-            return [...products];
-        }
-        if (products[0]?.product_id === targetId) {
-            return [...products].reverse();
-        }
         return [...products];
-    }, [routeQuery.data?.chain, targetId]);
+    }, [routeQuery.data?.chain]);
     const currentCustomerId = currentUserQuery.data?.customer_id;
+    const sourceProducts = useMemo(
+        () =>
+            (productsQuery.data ?? []).filter(
+                (product) =>
+                    product.customer_id === currentCustomerId && product.status === 'active',
+            ),
+        [currentCustomerId, productsQuery.data],
+    );
+
+    const selectSource = useCallback(
+        (productId: string) => {
+            const params = new URLSearchParams(searchParams);
+            params.set('from', productId);
+            navigate(`/route?${params.toString()}`);
+        },
+        [navigate, searchParams],
+    );
 
     const productsById = useMemo(() => {
         const map = new Map<string, TProduct>();
@@ -105,13 +114,15 @@ export const useRoute = () => {
                 (item) =>
                     item.status === 'completed' &&
                     item.initiator_id === currentCustomerId &&
+                    item.route_step_id &&
+                    item.route_step_id !== sourceId &&
                     (targetCategoryId
                         ? item.to_category_id === targetCategoryId
                         : item.exchange_goal_id === goalId ||
                           (!item.exchange_goal_id && item.to_product_id === goalId)),
             )
             .sort((left, right) => right.updated_at.localeCompare(left.updated_at))[0];
-    }, [currentCustomerId, goalId, myChainsQuery.data, targetCategoryId]);
+    }, [currentCustomerId, goalId, myChainsQuery.data, sourceId, targetCategoryId]);
     const completedStepProduct = lastCompletedRouteStep
         ? lastCompletedRouteStep.to_product_id
             ? productsById.get(lastCompletedRouteStep.to_product_id)
@@ -129,12 +140,12 @@ export const useRoute = () => {
             : routeSource?.customer_id === currentCustomerId
               ? chain[1] ?? goalProduct
               : routeSource ?? goalProduct;
-    const stepsRemaining =
-        currentProductIndex >= 0
-            ? Math.max(0, chain.length - currentProductIndex - 1)
-            : currentProduct?.product_id === goalId
-              ? 0
-              : Math.max(1, chain.length - 1);
+    const hasReachedGoal = currentProduct?.product_id === goalId && currentProductIndex > 0;
+    const stepsRemaining = hasReachedGoal
+        ? 0
+        : currentProductIndex >= 0
+          ? Math.max(1, chain.length - currentProductIndex - 1)
+          : 1;
 
     useEffect(() => {
         setSelectedTargetIds([]);
@@ -334,11 +345,14 @@ export const useRoute = () => {
 
     return {
         targetId: targetId || targetCategoryId,
+        sourceId,
         targetCategoryName,
         isLoading,
         isError,
         isEmpty,
         currentCustomerId,
+        sourceProducts,
+        selectSource,
         currentProduct,
         goalProduct,
         goalId,

@@ -5,6 +5,7 @@ import { MainSection } from '@shared/ui/mainSection';
 import { PageError } from '@shared/ui/pageError';
 import { Preloader } from '@shared/ui/preloader';
 import { ProductImage } from '@entities/product';
+import { ProfileProductRow } from '@widgets/profile';
 import { formatAmount, formatDate } from '@shared/lib';
 
 import { formatCompletedCount, formatExchangeCount, useRoute } from '../lib';
@@ -13,11 +14,14 @@ import Styles from './route-page.module.css';
 export const RoutePage = () => {
     const {
         targetId,
+        sourceId,
         targetCategoryName,
         isLoading,
         isError,
         isEmpty,
         currentCustomerId,
+        sourceProducts,
+        selectSource,
         currentProduct,
         goalProduct,
         stepsRemaining,
@@ -56,6 +60,35 @@ export const RoutePage = () => {
 
     if (isError) {
         return <PageError message="Не удалось построить путь к цели" />;
+    }
+
+    if (!sourceId) {
+        return (
+            <MainSection>
+                <div className={Styles['route-page__source-picker']}>
+                    <div>
+                        <h2>С чего начинаем?</h2>
+                        <p>Выберите своё активное объявление, которое хотите обменять по цепочке на целевой товар.</p>
+                    </div>
+                    {sourceProducts.length ? (
+                        <div className={Styles['route-page__source-list']}>
+                            {sourceProducts.map((source) => (
+                                <ProfileProductRow
+                                    key={source.product_id}
+                                    product={source}
+                                    isOwner={false}
+                                    onOpen={() => selectSource(source.product_id)}
+                                    onEdit={() => undefined}
+                                    openLabel="Выбрать"
+                                />
+                            ))}
+                        </div>
+                    ) : (
+                        <p>У вас нет активных объявлений для начала цепочки.</p>
+                    )}
+                </div>
+            </MainSection>
+        );
     }
 
     return (

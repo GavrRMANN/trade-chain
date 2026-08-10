@@ -42,6 +42,7 @@ export const AppRouter = () => {
                 <Route element={<App />}>
                     <Route index element={<CatalogPage />} />
                     <Route path="product/:productId" element={<ProductPage />} />
+                    <Route path="auth" element={withSuspense(<AuthModalLazy />, <ModalPreload />)} />
                     <Route element={<ProtectedRoute />}>
                         <Route path="create" element={<CreateProductPage />} />
                         <Route path="product/:productId/edit" element={<CreateProductPage />} />

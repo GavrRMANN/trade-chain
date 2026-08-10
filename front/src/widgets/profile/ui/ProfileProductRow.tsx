@@ -10,6 +10,7 @@ type TProfileProductRowProps = {
     isOwner: boolean;
     onOpen: () => void;
     onEdit: () => void;
+    openLabel?: string;
 };
 
 const PRODUCT_STATUS_LABELS: Record<TProduct['status'], string> = {
@@ -25,6 +26,7 @@ export const ProfileProductRow = ({
     isOwner,
     onOpen,
     onEdit,
+    openLabel = 'Открыть',
 }: TProfileProductRowProps) => (
     <article className={Styles.row}>
         <div className={Styles.media}>
@@ -46,7 +48,7 @@ export const ProfileProductRow = ({
             {product.location && <p className={Styles.location}>{product.location}</p>}
             {product.description && <p className={Styles.description}>{product.description}</p>}
             <div className={Styles.actions}>
-                <Button variant="secondary" onClick={onOpen}>Открыть</Button>
+                <Button variant="secondary" onClick={onOpen}>{openLabel}</Button>
                 {isOwner && <Button variant="text" onClick={onEdit}>Редактировать</Button>}
             </div>
         </div>

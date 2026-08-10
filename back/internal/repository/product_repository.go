@@ -276,7 +276,7 @@ func (r *productRepository) List(
 			created_at,
 			updated_at
 		FROM products
-		WHERE status != 'archived'
+		WHERE status NOT IN ('archived', 'exchanged')
 	`
 
 	args := []interface{}{}

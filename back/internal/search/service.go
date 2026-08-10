@@ -34,32 +34,54 @@ func NewSearchService(
 func (s *SearchService) FindChain(
 	ctx context.Context,
 	customerID string,
+	sourceProductID string,
 	targetProductID string,
 	maxDepth int,
 ) (*ProductSearchResult, error) {
+
+	source, err := s.productService.GetByID(ctx, sourceProductID)
+	if err != nil {
+		return nil, err
+	}
+	if source.CustomerID != customerID || source.Status != domain.ProductActive {
+		return nil, service.ErrForbidden
+	}
 
 	target, err := s.productService.GetByID(ctx, targetProductID)
 	if err != nil {
 		return nil, err
 	}
 
-	myProducts, err := s.productService.GetByCustomerID(ctx, customerID)
-	if err != nil {
-		return nil, err
-	}
-
-	// Пустой список своих товаров — это не поломка сервера, а состояние
-	// пользователя: меняться ему пока нечем. Голая errors.New доезжала до
-	// writeError неузнанной и превращалась в 500.
-	if len(myProducts) == 0 {
-		return nil, fmt.Errorf("%w: у пользователя нет товаров для обмена", service.ErrInvalidInput)
+	if source.ProductID == target.ProductID {
+		return &ProductSearchResult{Products: []domain.Product{*source}, Length: 0}, nil
 	}
 
 	return findChainBFS(
 		ctx,
 		s.productService,
+		*source,
 		*target,
-		myProducts,
 		maxDepth,
 	)
+}
+
+// FindChainToTarget keeps the recommendation endpoint's legacy behaviour.
+func (s *SearchService) FindChainToTarget(
+	ctx context.Context,
+	customerID string,
+	targetProductID string,
+	maxDepth int,
+) (*ProductSearchResult, error) {
+	target, err := s.productService.GetByID(ctx, targetProductID)
+	if err != nil {
+		return nil, err
+	}
+	myProducts, err := s.productService.GetByCustomerID(ctx, customerID)
+	if err != nil {
+		return nil, err
+	}
+	if len(myProducts) == 0 {
+		return nil, fmt.Errorf("%w: у пользователя нет товаров для обмена", service.ErrInvalidInput)
+	}
+	return findLegacyChainBFS(ctx, s.productService, *target, myProducts, maxDepth)
 }

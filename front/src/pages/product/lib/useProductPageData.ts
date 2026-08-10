@@ -1,7 +1,7 @@
 import {useMemo} from 'react';
 
 import {useGetCategoryQuery} from '@entities/category';
-import {useGetChainsByProductQuery} from '@entities/chain';
+import {useGetChainsByProductQuery, useGetMyChainsQuery} from '@entities/chain';
 import {useGetCustomerQuery} from '@entities/customer';
 import {
     useGetProductQuery,
@@ -52,6 +52,9 @@ export const useProductPageData = (productId?: string) => {
         productId ?? '',
         {skip: !productId || !currentUserId || isOwner},
     );
+    const myChainsQuery = useGetMyChainsQuery(undefined, {
+        skip: !currentUserId || isOwner,
+    });
 
     const matchingProducts = useMemo(() => {
         const categoryIds = new Set((optionsQuery.data ?? []).map((item) => item.category_id));
@@ -88,6 +91,18 @@ export const useProductPageData = (productId?: string) => {
         OPEN_CHAIN_STATUSES.has(row.chain.status),
     ).length;
 
+    const targetChain = useMemo(
+        () =>
+            [...(myChainsQuery.data ?? [])]
+                .filter(
+                    (chain) =>
+                        chain.exchange_goal_id === productId ||
+                        (!chain.exchange_goal_id && chain.to_product_id === productId),
+                )
+                .sort((left, right) => Date.parse(right.updated_at) - Date.parse(left.updated_at))[0],
+        [myChainsQuery.data, productId],
+    );
+
     return {
         product,
         customer: customerQuery.data,
@@ -100,6 +115,7 @@ export const useProductPageData = (productId?: string) => {
         averageRating: ratingQuery.data?.average_rating,
         incomingOffers,
         productOffers,
+        targetChain,
         isOwner,
         isAuthenticated,
         currentUserId,

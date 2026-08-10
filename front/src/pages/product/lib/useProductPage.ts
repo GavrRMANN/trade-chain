@@ -40,6 +40,7 @@ export const useProductPage = () => {
         averageRating,
         incomingOffers,
         productOffers,
+        targetChain,
         isOwner,
         isAuthenticated,
         currentUserId,
@@ -103,7 +104,13 @@ export const useProductPage = () => {
     const openCreate = useCallback(() => navigate('/create'), [navigate]);
 
     const openRoute = useCallback(
-        (productId: string) => navigate(`/route?target=${productId}`),
+        (productId: string, sourceProductId?: string) => {
+            const params = new URLSearchParams({target: productId});
+            if (sourceProductId) {
+                params.set('from', sourceProductId);
+            }
+            navigate(`/route?${params.toString()}`);
+        },
         [navigate],
     );
 
@@ -125,6 +132,7 @@ export const useProductPage = () => {
         averageRating,
         incomingOffers,
         productOffers,
+        targetChain,
         isOwner,
         isAuthenticated,
         currentUserId,

@@ -27,6 +27,7 @@ export const ProductPage = () => {
         averageRating,
         incomingOffers,
         productOffers,
+        targetChain,
         isOwner,
         isAuthenticated,
         currentUserId,
@@ -142,6 +143,21 @@ export const ProductPage = () => {
                                     <Button onClick={openOffer} disabled={isAuthenticated && !canOffer}>
                                         {isAuthenticated ? 'Предложить обмен' : 'Войти, чтобы предложить обмен'}
                                     </Button>
+                                    {isAuthenticated && targetChain ? (
+                                        <Button
+                                            variant="secondary"
+                                            onClick={() => openRoute(product.product_id, targetChain.from_product_id)}
+                                        >
+                                            К цепочке
+                                        </Button>
+                                    ) : isAuthenticated && (
+                                        <Button
+                                            variant="secondary"
+                                            onClick={() => openRoute(product.product_id)}
+                                        >
+                                            Построить цепочку обменов
+                                        </Button>
+                                    )}
                                     {status !== 'active' && (
                                         <p className={Styles['product-page__muted']}>Владелец временно не принимает новые предложения.</p>
                                     )}

@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 
 import { selectIsAuthenticated } from '@entities/user';
 import { useAppSelector } from '@app/redux';
-import { getBackgroundRoute } from '@features/auth';
+import { getModalBackgroundRoute } from '@features/auth';
 
 export const useAuthModal = () => {
     const location = useLocation();
@@ -11,7 +11,7 @@ export const useAuthModal = () => {
     const isAuthenticated = useAppSelector(selectIsAuthenticated);
 
     const closeModal = useCallback(() => {
-        const backgroundRoute = getBackgroundRoute(location);
+        const backgroundRoute = getModalBackgroundRoute(location);
         navigate(backgroundRoute, { replace: true });
     }, [location, navigate]);
 

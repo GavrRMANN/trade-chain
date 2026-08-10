@@ -6,6 +6,19 @@ export type BackgroundRouteState = {
     authReturn?: Path;
 };
 
+const getLocationPath = (path: Path) => ({
+    pathname: path.pathname,
+    search: path.search,
+    hash: path.hash,
+});
+
+/** Возвращает страницу, поверх которой открыли модалку. */
+export const getModalBackgroundRoute = (location: Location<BackgroundRouteState>) => {
+    const backgroundLocation = location.state?.backgroundLocation;
+
+    return backgroundLocation ? getLocationPath(backgroundLocation) : '/';
+};
+
 /**
  * Определяет путь, на который нужно вернуться после закрытия/успешного входа
  * в модальном окне авторизации.
@@ -28,13 +41,5 @@ export const getBackgroundRoute = (location: Location<BackgroundRouteState>) => 
         };
     }
 
-    const backgroundLocation = location.state?.backgroundLocation;
-
-    return backgroundLocation
-        ? {
-              pathname: backgroundLocation.pathname,
-              search: backgroundLocation.search,
-              hash: backgroundLocation.hash,
-          }
-        : '/';
+    return getModalBackgroundRoute(location);
 };
