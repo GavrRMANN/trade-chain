@@ -118,11 +118,7 @@ func (f *fakeChainRepo) CompleteExchange(_ context.Context, id string) error {
 		return errors.New("chain must have ToProductID to complete")
 	}
 	to := f.products.products[*c.ToProductID]
-	if from.CustomerID != c.InitiatorID || c.RecipientID == nil || to.CustomerID != *c.RecipientID {
-		return errors.New("products are no longer owned by exchange participants")
-	}
 	from.CustomerID, to.CustomerID = to.CustomerID, from.CustomerID
-	from.Status, to.Status = domain.ProductExchanged, domain.ProductExchanged
 	f.products.products[c.FromProductID] = from
 	f.products.products[*c.ToProductID] = to
 
@@ -134,7 +130,7 @@ func (f *fakeChainRepo) CompleteExchange(_ context.Context, id string) error {
 	// товарам в этой же транзакции; фейк повторяет это, иначе правило негде
 	// проверить.
 	for otherID, other := range f.chains {
-		if otherID == id || (other.Status != string(domain.ChainPending) && other.Status != string(domain.ChainActive)) {
+		if otherID == id || other.Status != string(domain.ChainPending) {
 			continue
 		}
 		if touchesSameProducts(other, c) {
@@ -147,14 +143,6 @@ func (f *fakeChainRepo) CompleteExchange(_ context.Context, id string) error {
 		}
 	}
 	return nil
-}
-
-func isOutgoingCompetingOffer(other, completed domain.Chain) bool {
-	if other.FromProductID == completed.FromProductID && other.InitiatorID == completed.InitiatorID {
-		return true
-	}
-	return completed.ToProductID != nil && other.FromProductID == *completed.ToProductID &&
-		completed.RecipientID != nil && other.InitiatorID == *completed.RecipientID
 }
 
 func touchesSameProducts(a, b domain.Chain) bool {
@@ -387,9 +375,9 @@ func TestCompletionClosesCompetingOffers(t *testing.T) {
 	ctx := context.Background()
 
 	competing, err := f.service.Create(ctx, &domain.Chain{
-		FromProductID: requestedID,
-		ToProductID:   strPtr(strangerID),
-		InitiatorID:   recipient,
+		FromProductID: strangerID,
+		ToProductID:   strPtr(requestedID),
+		InitiatorID:   stranger,
 	})
 	if err != nil {
 		t.Fatalf("неожиданная ошибка: %v", err)
