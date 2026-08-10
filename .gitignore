@@ -30,6 +30,7 @@ yarn-error.log*
 pnpm-debug.log*
 dist/
 build/
+storybook-static/
 .next/
 .nuxt/
 .turbo/
