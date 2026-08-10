@@ -764,8 +764,20 @@ function confirmChain(chain, actorId, success, reason) {
     (confirmations[chain.chain_id] ||= []).push(entry);
 
     const settled = resolveConfirmations(chain);
-    if (settled) chain.status = settled;
-    chain.updated_at = new Date().toISOString();
+    if (settled) {
+        chain.status = settled;
+        chain.updated_at = new Date().toISOString();
+        if (settled === 'completed') {
+            const exchangedProductIds = [chain.from_product_id, chain.to_product_id];
+            for (const product of products) {
+                if (exchangedProductIds.includes(product.product_id)) {
+                    product.status = 'exchanged';
+                    product.updated_at = chain.updated_at;
+                }
+            }
+        }
+    }
+    if (!settled) chain.updated_at = new Date().toISOString();
     return null;
 }
 
