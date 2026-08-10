@@ -26,7 +26,7 @@ func NewChainRepository(db *pgxpool.Pool) ChainRepository {
 
 // chainColumns перечислены один раз намеренно: список повторялся в четырёх
 // запросах, и добавление колонки требовало не забыть ни один из них.
-const chainColumns = `chain_id, from_product_id, to_product_id, initiator_id, recipient_id,
+const chainColumns = `chain_id, from_product_id, to_product_id, to_category_id, initiator_id, recipient_id,
 	previous_chain_id, next_chain_id, status, message, exchange_goal_id, route_step_id,
 	surcharge_amount, surcharge_currency, surcharge_payer, expires_at, created_at, updated_at`
 
@@ -55,6 +55,7 @@ func scanChain(row rowScanner) (domain.Chain, error) {
 		&chain.ChainID,
 		&chain.FromProductID,
 		&chain.ToProductID,
+		&chain.ToCategoryID,
 		&chain.InitiatorID,
 		&chain.RecipientID,
 		&chain.PreviousChainID,
@@ -96,10 +97,10 @@ func (r *chainRepository) queryChains(ctx context.Context, query string, args ..
 
 func (r *chainRepository) Create(ctx context.Context, chain *domain.Chain) (*domain.Chain, error) {
 	query := `
-		INSERT INTO chains (from_product_id, to_product_id, initiator_id, recipient_id, previous_chain_id, next_chain_id, status, message,
-			exchange_goal_id, route_step_id, surcharge_amount, surcharge_currency, surcharge_payer, expires_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, COALESCE($14, CURRENT_TIMESTAMP + INTERVAL '72 hours'))
-		RETURNING ` + chainColumns
+			INSERT INTO chains (from_product_id, to_product_id, to_category_id, initiator_id, recipient_id, previous_chain_id, next_chain_id, status, message,
+				exchange_goal_id, route_step_id, surcharge_amount, surcharge_currency, surcharge_payer, expires_at)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, COALESCE($15, CURRENT_TIMESTAMP + INTERVAL '72 hours'))
+			RETURNING ` + chainColumns
 
 	// Нулевое время означает «срок не задан» — базе передаётся NULL,
 	// и она подставляет свой срок по умолчанию.
@@ -111,6 +112,7 @@ func (r *chainRepository) Create(ctx context.Context, chain *domain.Chain) (*dom
 	created, err := scanChain(r.db.QueryRow(ctx, query,
 		chain.FromProductID,
 		chain.ToProductID,
+		chain.ToCategoryID,
 		chain.InitiatorID,
 		chain.RecipientID,
 		chain.PreviousChainID,
@@ -239,11 +241,11 @@ func (r *chainRepository) CompleteExchange(ctx context.Context, chainID string) 
 	// 1. Получить цепочку
 	var chain domain.Chain
 	err = tx.QueryRow(ctx, `
-		SELECT chain_id, from_product_id, to_product_id, initiator_id, status
-		FROM chains
-		WHERE chain_id = $1
-		FOR UPDATE
-	`, chainID).Scan(
+			SELECT chain_id, from_product_id, to_product_id, initiator_id, status
+			FROM chains
+			WHERE chain_id = $1
+			FOR UPDATE
+		`, chainID).Scan(
 		&chain.ChainID,
 		&chain.FromProductID,
 		&chain.ToProductID,
@@ -258,6 +260,13 @@ func (r *chainRepository) CompleteExchange(ctx context.Context, chainID string) 
 		return errors.New("chain must be active to complete")
 	}
 
+	// Цель-категория: целевого товара нет, обмен владельцев невозможен.
+	if chain.ToProductID == nil {
+		return errors.New("chain with category goal cannot complete exchange")
+	}
+
+	toProductID := *chain.ToProductID
+
 	// 2. Заблокировать товары и прочитать текущих владельцев.
 	//
 	// Без блокировки два обмена, завершающихся одновременно, читают одного и
@@ -266,12 +275,12 @@ func (r *chainRepository) CompleteExchange(ctx context.Context, chainID string) 
 	// берут блокировки крест-накрест и встают в дедлок.
 	owners := make(map[string]string, 2)
 	rows, err := tx.Query(ctx, `
-		SELECT product_id, customer_id
-		FROM products
-		WHERE product_id IN ($1, $2)
-		ORDER BY product_id
-		FOR UPDATE
-	`, chain.FromProductID, chain.ToProductID)
+			SELECT product_id, customer_id
+			FROM products
+			WHERE product_id IN ($1, $2)
+			ORDER BY product_id
+			FOR UPDATE
+		`, chain.FromProductID, toProductID)
 	if err != nil {
 		return err
 	}
@@ -292,29 +301,29 @@ func (r *chainRepository) CompleteExchange(ctx context.Context, chainID string) 
 	if !ok {
 		return sql.ErrNoRows
 	}
-	toOwner, ok := owners[chain.ToProductID]
+	toOwner, ok := owners[toProductID]
 	if !ok {
 		return sql.ErrNoRows
 	}
 
 	// 3. Обменять владельцев
 	_, err = tx.Exec(ctx, `
-		UPDATE products SET customer_id = $1 WHERE product_id = $2
-	`, toOwner, chain.FromProductID)
+			UPDATE products SET customer_id = $1 WHERE product_id = $2
+		`, toOwner, chain.FromProductID)
 	if err != nil {
 		return err
 	}
 	_, err = tx.Exec(ctx, `
-		UPDATE products SET customer_id = $1 WHERE product_id = $2
-	`, fromOwner, chain.ToProductID)
+			UPDATE products SET customer_id = $1 WHERE product_id = $2
+		`, fromOwner, toProductID)
 	if err != nil {
 		return err
 	}
 
 	// 4. Обновить статус цепочки
 	_, err = tx.Exec(ctx, `
-		UPDATE chains SET status = $1 WHERE chain_id = $2
-	`, string(domain.ChainCompleted), chainID)
+			UPDATE chains SET status = $1 WHERE chain_id = $2
+		`, string(domain.ChainCompleted), chainID)
 	if err != nil {
 		return err
 	}
@@ -327,13 +336,13 @@ func (r *chainRepository) CompleteExchange(ctx context.Context, chainID string) 
 	// Всё в той же транзакции: иначе между сменой владельца и закрытием
 	// предложений существует момент, когда чужой оффер ещё можно принять.
 	_, err = tx.Exec(ctx, `
-		UPDATE chains
-		SET status = $1, updated_at = CURRENT_TIMESTAMP
-		WHERE chain_id <> $2
-		  AND status = $3
-		  AND (from_product_id IN ($4, $5) OR to_product_id IN ($4, $5))
-	`, string(domain.ChainCancelled), chainID, string(domain.ChainPending),
-		chain.FromProductID, chain.ToProductID)
+			UPDATE chains
+			SET status = $1, updated_at = CURRENT_TIMESTAMP
+			WHERE chain_id <> $2
+			  AND status = $3
+			  AND (from_product_id IN ($4, $5) OR to_product_id IN ($4, $5))
+		`, string(domain.ChainCancelled), chainID, string(domain.ChainPending),
+		chain.FromProductID, toProductID)
 	if err != nil {
 		return err
 	}

@@ -67,10 +67,12 @@ type fakeChainRepo struct {
 func (f *fakeChainRepo) Create(_ context.Context, c *domain.Chain) (*domain.Chain, error) {
 	if f.rejectDuplicates {
 		for _, existing := range f.chains {
+			toProductMatch := existing.ToProductID == nil && c.ToProductID == nil ||
+				existing.ToProductID != nil && c.ToProductID != nil && *existing.ToProductID == *c.ToProductID
 			if existing.Status == string(domain.ChainPending) &&
 				existing.InitiatorID == c.InitiatorID &&
 				existing.FromProductID == c.FromProductID &&
-				existing.ToProductID == c.ToProductID {
+				toProductMatch {
 				return nil, domain.ErrOfferDuplicate
 			}
 		}
@@ -112,10 +114,13 @@ func (f *fakeChainRepo) CompleteExchange(_ context.Context, id string) error {
 	}
 
 	from := f.products.products[c.FromProductID]
-	to := f.products.products[c.ToProductID]
+	if c.ToProductID == nil {
+		return errors.New("chain must have ToProductID to complete")
+	}
+	to := f.products.products[*c.ToProductID]
 	from.CustomerID, to.CustomerID = to.CustomerID, from.CustomerID
 	f.products.products[c.FromProductID] = from
-	f.products.products[c.ToProductID] = to
+	f.products.products[*c.ToProductID] = to
 
 	c.Status = string(domain.ChainCompleted)
 	f.chains[id] = c
@@ -137,8 +142,12 @@ func (f *fakeChainRepo) CompleteExchange(_ context.Context, id string) error {
 }
 
 func touchesSameProducts(a, b domain.Chain) bool {
-	for _, product := range []string{b.FromProductID, b.ToProductID} {
-		if a.FromProductID == product || a.ToProductID == product {
+	products := []string{b.FromProductID}
+	if b.ToProductID != nil {
+		products = append(products, *b.ToProductID)
+	}
+	for _, product := range products {
+		if a.FromProductID == product || (a.ToProductID != nil && *a.ToProductID == product) {
 			return true
 		}
 	}
@@ -166,11 +175,11 @@ func (f *fakeChainRepo) List(_ context.Context, filter repository.ChainFilter) (
 func matchesRole(c domain.Chain, filter repository.ChainFilter) bool {
 	switch filter.Role {
 	case domain.RoleIncoming:
-		return c.RecipientID == filter.CustomerID
+		return c.RecipientID != nil && *c.RecipientID == filter.CustomerID
 	case domain.RoleOutgoing:
 		return c.InitiatorID == filter.CustomerID
 	default:
-		return c.InitiatorID == filter.CustomerID || c.RecipientID == filter.CustomerID
+		return c.InitiatorID == filter.CustomerID || (c.RecipientID != nil && *c.RecipientID == filter.CustomerID)
 	}
 }
 
@@ -221,6 +230,10 @@ func (f *fakeNegotiationRepo) ListConfirmations(context.Context, string) ([]doma
 
 var errNoRows = errors.New("sql: no rows in result set")
 
+// strPtr возвращает указатель на строку — нужен для инициализации *string полей
+// из констант, адрес которых брать нельзя.
+func strPtr(s string) *string { return &s }
+
 type fixture struct {
 	service      ChainService
 	chains       *fakeChainRepo
@@ -242,9 +255,9 @@ func newFixture(status domain.ChainStatus) *fixture {
 			chainID: {
 				ChainID:       chainID,
 				FromProductID: offeredID,
-				ToProductID:   requestedID,
+				ToProductID:   strPtr(requestedID),
 				InitiatorID:   initiator,
-				RecipientID:   recipient,
+				RecipientID:   strPtr(recipient),
 				Status:        string(status),
 			},
 		},
@@ -269,7 +282,7 @@ func TestCreateStartsFromPendingAndRemembersRecipient(t *testing.T) {
 	// стороны иначе становится необязательным.
 	created, err := f.service.Create(context.Background(), &domain.Chain{
 		FromProductID: offeredID,
-		ToProductID:   requestedID,
+		ToProductID:   strPtr(requestedID),
 		InitiatorID:   initiator,
 		Status:        string(domain.ChainCompleted),
 	})
@@ -279,8 +292,12 @@ func TestCreateStartsFromPendingAndRemembersRecipient(t *testing.T) {
 	if created.Status != string(domain.ChainPending) {
 		t.Errorf("статус %q, ожидался %q", created.Status, domain.ChainPending)
 	}
-	if created.RecipientID != recipient {
-		t.Errorf("вторая сторона %q, ожидалась %q", created.RecipientID, recipient)
+	if created.RecipientID == nil || *created.RecipientID != recipient {
+		if created.RecipientID == nil {
+			t.Errorf("вторая сторона nil, ожидалась %q", recipient)
+		} else {
+			t.Errorf("вторая сторона %q, ожидалась %q", *created.RecipientID, recipient)
+		}
 	}
 	if created.ExpiresAt.IsZero() {
 		t.Error("предложению не проставлен срок ответа")
@@ -293,7 +310,7 @@ func TestCreateRejectsSomeoneElsesProduct(t *testing.T) {
 	// Инициатор предлагает чужую вещь третьему человеку.
 	_, err := f.service.Create(context.Background(), &domain.Chain{
 		FromProductID: requestedID, // товар получателя, не инициатора
-		ToProductID:   strangerID,
+		ToProductID:   strPtr(strangerID),
 		InitiatorID:   initiator,
 	})
 	if !errors.Is(err, ErrForbidden) {
@@ -355,7 +372,7 @@ func TestCompletionClosesCompetingOffers(t *testing.T) {
 
 	competing, err := f.service.Create(ctx, &domain.Chain{
 		FromProductID: strangerID,
-		ToProductID:   requestedID,
+		ToProductID:   strPtr(requestedID),
 		InitiatorID:   stranger,
 	})
 	if err != nil {

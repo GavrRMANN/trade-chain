@@ -17,6 +17,8 @@ import (
 
 const testUserID = "11111111-1111-1111-1111-111111111111"
 
+func ptr(s string) *string { return &s }
+
 // stubOfferService запоминает, с чем к нему пришли: транспорт проверяется на
 // том, что он разобрал запрос и не подставил чужой идентификатор.
 type stubOfferService struct {
@@ -32,7 +34,7 @@ func (s *stubOfferService) offer() *service.Offer {
 		Chain: domain.Chain{
 			ChainID:       "44444444-4444-4444-4444-444444444444",
 			FromProductID: "prod-1",
-			ToProductID:   "prod-2",
+			ToProductID:   ptr("prod-2"),
 			InitiatorID:   testUserID,
 			ExpiresAt:     time.Date(2026, 8, 10, 12, 0, 0, 0, time.UTC),
 		},

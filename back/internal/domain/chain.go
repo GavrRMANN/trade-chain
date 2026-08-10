@@ -8,9 +8,10 @@ import (
 type Chain struct {
 	ChainID         string    `json:"chain_id"`
 	FromProductID   string    `json:"from_product_id"`
-	ToProductID     string    `json:"to_product_id"`
+	ToProductID     *string   `json:"to_product_id,omitempty"`
+	ToCategoryID    *string   `json:"to_category_id,omitempty"`
 	InitiatorID     string    `json:"initiator_id"`
-	RecipientID     string    `json:"recipient_id"`
+	RecipientID     *string   `json:"recipient_id,omitempty"`
 	PreviousChainID *string   `json:"previous_chain_id,omitempty"`
 	NextChainID     *string   `json:"next_chain_id,omitempty"`
 	Status          string    `json:"status"`

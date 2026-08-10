@@ -71,23 +71,24 @@ type CreatedOfferResponse struct {
 // звено, и отдавать клиенту три имени одного значения проще, чем заставлять
 // его помнить, что они равны.
 type OfferResponse struct {
-	ID                 string        `json:"id"`
-	Status             string        `json:"status"`
-	Role               string        `json:"role"`
-	OfferedProductID   string        `json:"offered_product_id"`
-	RequestedProductID string        `json:"requested_product_id"`
-	InitiatorID        string        `json:"initiator_id"`
-	RecipientID        string        `json:"recipient_id"`
-	ExchangeGoalID     *string       `json:"exchange_goal_id,omitempty"`
-	RouteStepID        *string       `json:"route_step_id,omitempty"`
-	Surcharge          SurchargeBody `json:"surcharge"`
-	Comment            string        `json:"comment,omitempty"`
-	ConversationID     string        `json:"conversation_id"`
-	ExchangeID         string        `json:"exchange_id,omitempty"`
-	ExchangeStatus     string        `json:"exchange_status,omitempty"`
-	ExpiresAt          time.Time     `json:"expires_at"`
-	CreatedAt          time.Time     `json:"created_at"`
-	UpdatedAt          time.Time     `json:"updated_at"`
+	ID                  string        `json:"id"`
+	Status              string        `json:"status"`
+	Role                string        `json:"role"`
+	OfferedProductID    string        `json:"offered_product_id"`
+	RequestedProductID  *string       `json:"requested_product_id,omitempty"`
+	RequestedCategoryID *string       `json:"requested_category_id,omitempty"`
+	InitiatorID         string        `json:"initiator_id"`
+	RecipientID         *string       `json:"recipient_id,omitempty"`
+	ExchangeGoalID      *string       `json:"exchange_goal_id,omitempty"`
+	RouteStepID         *string       `json:"route_step_id,omitempty"`
+	Surcharge           SurchargeBody `json:"surcharge"`
+	Comment             string        `json:"comment,omitempty"`
+	ConversationID      string        `json:"conversation_id"`
+	ExchangeID          string        `json:"exchange_id,omitempty"`
+	ExchangeStatus      string        `json:"exchange_status,omitempty"`
+	ExpiresAt           time.Time     `json:"expires_at"`
+	CreatedAt           time.Time     `json:"created_at"`
+	UpdatedAt           time.Time     `json:"updated_at"`
 }
 
 // ConfirmationResponse — решение стороны об итоге обмена.
@@ -113,12 +114,13 @@ type ConfirmExchangeRequest struct {
 
 // ExchangeResponse — состояние обмена после подтверждения.
 type ExchangeResponse struct {
-	ID                 string  `json:"id"`
-	Status             string  `json:"status"`
-	OfferStatus        string  `json:"offer_status"`
-	OfferedProductID   string  `json:"offered_product_id"`
-	RequestedProductID string  `json:"requested_product_id"`
-	GoalID             *string `json:"goal_id,omitempty"`
+	ID                  string  `json:"id"`
+	Status              string  `json:"status"`
+	OfferStatus         string  `json:"offer_status"`
+	OfferedProductID    string  `json:"offered_product_id"`
+	RequestedProductID  *string `json:"requested_product_id,omitempty"`
+	RequestedCategoryID *string `json:"requested_category_id,omitempty"`
+	GoalID              *string `json:"goal_id,omitempty"`
 }
 
 const (
@@ -369,12 +371,13 @@ func (h offerHandler) confirm(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, ExchangeResponse{
-		ID:                 offer.Chain.ChainID,
-		Status:             string(offer.Exchange),
-		OfferStatus:        string(offer.Status),
-		OfferedProductID:   offer.Chain.FromProductID,
-		RequestedProductID: offer.Chain.ToProductID,
-		GoalID:             offer.Chain.ExchangeGoalID,
+		ID:                  offer.Chain.ChainID,
+		Status:              string(offer.Exchange),
+		OfferStatus:         string(offer.Status),
+		OfferedProductID:    offer.Chain.FromProductID,
+		RequestedProductID:  offer.Chain.ToProductID,
+		RequestedCategoryID: offer.Chain.ToCategoryID,
+		GoalID:              offer.Chain.ExchangeGoalID,
 	})
 }
 
@@ -426,15 +429,16 @@ func offerResponse(offer service.Offer, viewerID string) OfferResponse {
 	chain := offer.Chain
 
 	out := OfferResponse{
-		ID:                 chain.ChainID,
-		Status:             string(offer.Status),
-		Role:               string(roleOf(chain, viewerID)),
-		OfferedProductID:   chain.FromProductID,
-		RequestedProductID: chain.ToProductID,
-		InitiatorID:        chain.InitiatorID,
-		RecipientID:        chain.RecipientID,
-		ExchangeGoalID:     chain.ExchangeGoalID,
-		RouteStepID:        chain.RouteStepID,
+		ID:                  chain.ChainID,
+		Status:              string(offer.Status),
+		Role:                string(roleOf(chain, viewerID)),
+		OfferedProductID:    chain.FromProductID,
+		RequestedProductID:  chain.ToProductID,
+		RequestedCategoryID: chain.ToCategoryID,
+		InitiatorID:         chain.InitiatorID,
+		RecipientID:         chain.RecipientID,
+		ExchangeGoalID:      chain.ExchangeGoalID,
+		RouteStepID:         chain.RouteStepID,
 		Surcharge: SurchargeBody{
 			Amount:   chain.Surcharge.Amount,
 			Currency: chain.Surcharge.Currency,
