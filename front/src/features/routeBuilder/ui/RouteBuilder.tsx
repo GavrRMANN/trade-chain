@@ -1,11 +1,10 @@
-import { useState } from 'react';
-
 import { Button } from '@shared/ui/button';
 import { ProductImage } from '@entities/product';
 import { TargetProductPicker } from '@entities/product';
 
-import { getProductMeta, useRouteBuilder } from '../lib/useRouteBuilder';
+import {useRouteBuilder} from '../lib/useRouteBuilder';
 import Styles from './route-builder.module.css';
+import {useMobileRouteStep} from './useMobileRouteStep';
 
 type TRouteBuilderProps = {
     onCancel?: () => void;
@@ -13,7 +12,7 @@ type TRouteBuilderProps = {
 };
 
 export const RouteBuilder = ({ onCancel, variant = 'card' }: TRouteBuilderProps) => {
-    const [mobileStep, setMobileStep] = useState<1 | 2>(1);
+    const {mobileStep, goToNextStep, goToPreviousStep} = useMobileRouteStep();
     const {
         sourceProducts,
         products,
@@ -22,8 +21,8 @@ export const RouteBuilder = ({ onCancel, variant = 'card' }: TRouteBuilderProps)
         sourceId,
         targetGoal,
         selectedSource,
-        selectedTarget,
-        selectedCategoryName,
+        targetLabel,
+        sourceProductMeta,
         hasTarget,
         isSourcesLoading,
         isTargetsLoading,
@@ -32,8 +31,6 @@ export const RouteBuilder = ({ onCancel, variant = 'card' }: TRouteBuilderProps)
         setTargetGoal,
         buildRoute,
     } = useRouteBuilder();
-
-    const targetLabel = selectedTarget?.title ?? selectedCategoryName ?? 'Выберите цель';
 
     return (
         <section
@@ -103,7 +100,7 @@ export const RouteBuilder = ({ onCancel, variant = 'card' }: TRouteBuilderProps)
                                     </span>
                                     <span className={Styles.builder__productBody}>
                                         <strong>{product.title}</strong>
-                                        <small>{getProductMeta(product) || 'Активное объявление'}</small>
+                                        <small>{sourceProductMeta.get(product.product_id)}</small>
                                     </span>
                                     <span className={Styles.builder__check} aria-hidden="true">✓</span>
                                 </button>
@@ -162,13 +159,13 @@ export const RouteBuilder = ({ onCancel, variant = 'card' }: TRouteBuilderProps)
                                     Отмена
                                 </Button>
                             )}
-                            <Button disabled={!sourceId} onClick={() => setMobileStep(2)}>
+                            <Button disabled={!sourceId} onClick={goToNextStep}>
                                 Продолжить
                             </Button>
                         </>
                     ) : (
                         <>
-                            <Button variant="text" onClick={() => setMobileStep(1)}>
+                            <Button variant="text" onClick={goToPreviousStep}>
                                 Назад
                             </Button>
                             <Button disabled={!hasTarget} onClick={buildRoute}>

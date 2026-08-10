@@ -35,6 +35,10 @@ export const useRouteBuilder = () => {
         : undefined;
 
     const hasTarget = Boolean(targetGoal.productId || targetGoal.categoryId);
+    const targetLabel = selectedTarget?.title ?? selectedCategoryName ?? 'Выберите цель';
+    const sourceProductMeta = new Map(
+        sourceProducts.map((product) => [product.product_id, getProductMeta(product) || 'Активное объявление']),
+    );
 
     const buildRoute = () => {
         if (!sourceId || !hasTarget) {
@@ -61,6 +65,8 @@ export const useRouteBuilder = () => {
         selectedSource,
         selectedTarget,
         selectedCategoryName,
+        targetLabel,
+        sourceProductMeta,
         hasTarget,
         isSourcesLoading: currentUserQuery.isLoading || productsQuery.isLoading,
         isTargetsLoading: categoriesQuery.isLoading || productsQuery.isLoading,

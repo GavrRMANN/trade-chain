@@ -1,10 +1,10 @@
 import { Button } from '@shared/ui/button';
 import { ProductImage } from '@entities/product';
 import { ChainStatusBadge } from '@entities/chain';
-import { formatAmount } from '@shared/lib';
 
 import type { TRouteRecommendation } from './RouteRecommendations';
 import Styles from './route-recommendations.module.css';
+import {useRecommendationCard} from './useRecommendationCard';
 
 type TRecommendationCardProps = {
     item: TRouteRecommendation;
@@ -23,15 +23,7 @@ export const RecommendationCard = ({
     onOpenProduct,
     onOpenOffer,
 }: TRecommendationCardProps) => {
-    const { product, offer } = item;
-    const classes = [
-        Styles.recommendation,
-        selected && Styles['recommendation--selected'],
-        offer && Styles['recommendation--sent'],
-        compact && Styles['recommendation--compact'],
-    ]
-        .filter(Boolean)
-        .join(' ');
+    const {product, offer, classes, priceLabel, locationLabel} = useRecommendationCard(item, selected, compact);
 
     return (
         <article className={classes}>
@@ -63,11 +55,9 @@ export const RecommendationCard = ({
 
                 <div className={Styles.recommendation__facts}>
                     <strong>
-                        {product.price === undefined
-                            ? 'Цена не указана'
-                            : formatAmount(product.price)}
+                        {priceLabel}
                     </strong>
-                    <span>{product.location ?? 'Город не указан'}</span>
+                    <span>{locationLabel}</span>
                 </div>
 
                 {offer?.status === 'active' ? (
