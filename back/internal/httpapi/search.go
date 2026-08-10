@@ -40,6 +40,7 @@ type ChainSearchResponse struct {
 // @Description Строит путь от товаров текущего пользователя до целевого товара
 // @Tags search
 // @Produce json
+// @Param source_product_id query string false "Source product ID"
 // @Param target_product_id query string true "Target product ID"
 // @Param max_depth query int false "Max depth, default 10"
 // @Success 200 {object} ChainSearchResponse
@@ -49,6 +50,7 @@ type ChainSearchResponse struct {
 // @Router /search/chain [get]
 func (h searchHandler) chain(w http.ResponseWriter, r *http.Request) {
 	target := strings.TrimSpace(r.URL.Query().Get("target_product_id"))
+	source := strings.TrimSpace(r.URL.Query().Get("source_product_id"))
 	if target == "" {
 		writeError(w, service.ErrInvalidInput)
 		return
@@ -70,7 +72,13 @@ func (h searchHandler) chain(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, err := h.s.FindChain(r.Context(), customerID, target, depth)
+	var result *search.ProductSearchResult
+	var err error
+	if source == "" {
+		result, err = h.s.FindChainToTarget(r.Context(), customerID, target, depth)
+	} else {
+		result, err = h.s.FindChain(r.Context(), customerID, source, target, depth)
+	}
 	if err != nil {
 		writeError(w, err)
 		return

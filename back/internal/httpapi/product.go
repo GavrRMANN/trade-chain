@@ -339,7 +339,7 @@ func (h productHandler) recommendations(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	result, err := h.search.FindChain(
+	result, err := h.search.FindChainToTarget(
 		r.Context(),
 		customerID,
 		productID,

@@ -10,7 +10,7 @@ import {
     useUpdateChainStatusMutation,
 } from '@entities/chain';
 import type { TUpdateChainStatus } from '@entities/chain';
-import { useGetProductsQuery } from '@entities/product';
+import { useGetProductQuery, useGetProductsQuery } from '@entities/product';
 import type { TProduct } from '@entities/product';
 import { useCreateReviewMutation } from '@entities/review';
 import { useGetCurrentUserQuery } from '@entities/user';
@@ -59,6 +59,12 @@ export const useExchangeRoom = () => {
     const chainDetailsQuery = useGetChainDetailsQuery(chainId ?? '', { skip: !chainId });
     const messagesQuery = useGetChainMessagesQuery(chainId ?? '', { skip: !chainId });
     const productsQuery = useGetProductsQuery();
+    const fromProductQuery = useGetProductQuery(chainQuery.data?.from_product_id ?? '', {
+        skip: !chainQuery.data?.from_product_id,
+    });
+    const toProductQuery = useGetProductQuery(chainQuery.data?.to_product_id ?? '', {
+        skip: !chainQuery.data?.to_product_id,
+    });
     const currentUserQuery = useGetCurrentUserQuery();
 
     const [updateChainStatus, { isLoading: isStatusUpdating }] = useUpdateChainStatusMutation();
@@ -95,14 +101,21 @@ export const useExchangeRoom = () => {
     );
     const isWaitingForOtherConfirmation = isActive && hasConfirmedSuccessfulOutcome;
 
-    // Резолвим оба товара цепочки из общего списка продуктов клиентской картой.
+    // Общий каталог может быть пагинированным, поэтому добавляем адресно
+    // загруженные товары цепочки поверх него.
     const productsById = useMemo(() => {
         const map = new Map<string, TProduct>();
         (productsQuery.data ?? []).forEach((product) => {
             map.set(product.product_id, product);
         });
+        if (fromProductQuery.data) {
+            map.set(fromProductQuery.data.product_id, fromProductQuery.data);
+        }
+        if (toProductQuery.data) {
+            map.set(toProductQuery.data.product_id, toProductQuery.data);
+        }
         return map;
-    }, [productsQuery.data]);
+    }, [fromProductQuery.data, productsQuery.data, toProductQuery.data]);
 
     const fromProduct = chain ? productsById.get(chain.from_product_id) : undefined;
     const toProduct = chain && chain.to_product_id
