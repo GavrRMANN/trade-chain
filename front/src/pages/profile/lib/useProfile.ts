@@ -33,7 +33,10 @@ export const useProfile = (user?: TUser, isOwner = false) => {
     const setActiveTab = dispatch;
     const customerId = user?.customer_id ?? '';
 
-    const productsQuery = useGetProductsByCustomerQuery(customerId, {skip: !customerId});
+    const productsQuery = useGetProductsByCustomerQuery(customerId, {
+        skip: !customerId,
+        refetchOnMountOrArgChange: true,
+    });
     const ratingQuery = useGetCustomerRatingQuery(customerId, {skip: !customerId});
     const reviewsQuery = useGetReviewsByCustomerQuery(customerId, {skip: !customerId});
     const chainsQuery = useGetMyChainsQuery(undefined, {skip: !customerId || !isOwner});

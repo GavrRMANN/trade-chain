@@ -52,20 +52,21 @@ func (s Surcharge) IsZero() bool {
 type ChainStatus string
 
 const (
-	ChainPending   ChainStatus = "pending"   // предложение отправлено, ответа нет
-	ChainActive    ChainStatus = "active"    // получатель согласился, стороны договариваются
-	ChainCompleted ChainStatus = "completed" // обмен состоялся, подтвердили оба
-	ChainCancelled ChainStatus = "cancelled" // инициатор отозвал предложение
-	ChainRejected  ChainStatus = "rejected"  // получатель отказался
-	ChainCountered ChainStatus = "countered" // получатель предложил свой вариант
-	ChainFailed    ChainStatus = "failed"    // договорились, но обмен не состоялся
-	ChainExpired   ChainStatus = "expired"   // ответа не дождались
+	ChainPending     ChainStatus = "pending"     // предложение отправлено, ответа нет
+	ChainActive      ChainStatus = "active"      // получатель согласился, стороны договариваются
+	ChainCompleted   ChainStatus = "completed"   // обмен состоялся, подтвердили оба
+	ChainCancelled   ChainStatus = "cancelled"   // инициатор отозвал предложение
+	ChainRejected    ChainStatus = "rejected"    // получатель отказался
+	ChainCountered   ChainStatus = "countered"   // получатель предложил свой вариант
+	ChainFailed      ChainStatus = "failed"      // договорились, но обмен не состоялся
+	ChainExpired     ChainStatus = "expired"     // ответа не дождались
+	ChainUnavailable ChainStatus = "unavailable" // товар уже участвует в другом обмене
 )
 
 // IsFinal сообщает, что звено больше не изменится.
 func (s ChainStatus) IsFinal() bool {
 	switch s {
-	case ChainCompleted, ChainCancelled, ChainRejected, ChainCountered, ChainFailed, ChainExpired:
+	case ChainCompleted, ChainCancelled, ChainRejected, ChainCountered, ChainFailed, ChainExpired, ChainUnavailable:
 		return true
 	default:
 		return false

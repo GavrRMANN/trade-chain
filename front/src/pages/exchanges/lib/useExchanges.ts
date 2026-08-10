@@ -16,6 +16,7 @@ const FINAL_STATUSES: ReadonlySet<TChainStatus> = new Set<TChainStatus>([
     'rejected',
     'failed',
     'expired',
+    'unavailable',
 ]);
 
 export type TExchangeRow = {

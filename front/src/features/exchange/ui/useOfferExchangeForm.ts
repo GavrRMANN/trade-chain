@@ -40,25 +40,36 @@ export const useOfferExchangeForm = ({
         message: '',
     });
 
-    const {data: myProducts = [], isLoading: isProductsLoading} = useGetProductsByCustomerQuery(
+    const {
+        data: myProducts = [],
+        isLoading,
+        isFetching,
+        refetch: refetchProducts,
+    } = useGetProductsByCustomerQuery(
         currentCustomerId ?? '',
         {skip: !currentCustomerId},
     );
     const [createChain, {isLoading: isCreating}] = useCreateChainMutation();
+    const availableProducts = myProducts.filter((product) => product.status === 'active');
+    const isProductsLoading = isLoading || isFetching;
 
     useEffect(() => {
         if (isOpen) {
             dispatch({type: 'reset'});
+            if (currentCustomerId) {
+                void refetchProducts();
+            }
         }
-    }, [isOpen]);
+    }, [currentCustomerId, isOpen, refetchProducts]);
 
-    const canSubmit = Boolean(selectedProductId) && !isCreating;
+    const canSubmit =
+        availableProducts.some((product) => product.product_id === selectedProductId) && !isCreating;
 
     const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         dispatch({type: 'setError'});
 
-        if (!selectedProductId) {
+        if (!availableProducts.some((product) => product.product_id === selectedProductId)) {
             dispatch({type: 'setError', value: 'Выберите товар для обмена'});
             return;
         }
@@ -79,7 +90,7 @@ export const useOfferExchangeForm = ({
     };
 
     return {
-        myProducts,
+        myProducts: availableProducts,
         isProductsLoading,
         isCreating,
         selectedProductId,

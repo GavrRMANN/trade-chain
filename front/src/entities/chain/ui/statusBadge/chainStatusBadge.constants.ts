@@ -9,6 +9,7 @@ export const statusTone: Record<TChainStatusBadgeStatus, TChainStatusBadgeTone> 
     failed: 'negative',
     expired: 'negative',
     countered: 'warning',
+    unavailable: 'negative',
 };
 
 export const statusLabels: Record<TChainStatusBadgeStatus, string> = {
@@ -20,4 +21,5 @@ export const statusLabels: Record<TChainStatusBadgeStatus, string> = {
     countered: 'Встречное',
     failed: 'Не состоялся',
     expired: 'Просрочен',
+    unavailable: 'Товар недоступен',
 };

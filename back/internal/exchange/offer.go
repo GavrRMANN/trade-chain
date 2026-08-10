@@ -28,7 +28,8 @@ const (
 	// OfferFailed выходит за список статусов из API.md намеренно: обмен по
 	// принятому предложению может не состояться, и прятать это под completed
 	// значит показать человеку успешную сделку там, где её не было.
-	OfferFailed OfferStatus = "failed"
+	OfferFailed      OfferStatus = "failed"
+	OfferUnavailable OfferStatus = "unavailable"
 )
 
 // ExchangeStatus — состояние подтверждённого обмена.
@@ -46,14 +47,15 @@ const (
 // countered читается как declined: встречное предложение — это отдельное
 // звено, а исходное на него уже не ждёт ответа.
 var offerStatuses = map[domain.ChainStatus]OfferStatus{
-	domain.ChainPending:   OfferPending,
-	domain.ChainActive:    OfferAccepted,
-	domain.ChainRejected:  OfferDeclined,
-	domain.ChainCountered: OfferDeclined,
-	domain.ChainCancelled: OfferCancelled,
-	domain.ChainExpired:   OfferExpired,
-	domain.ChainCompleted: OfferCompleted,
-	domain.ChainFailed:    OfferFailed,
+	domain.ChainPending:     OfferPending,
+	domain.ChainActive:      OfferAccepted,
+	domain.ChainRejected:    OfferDeclined,
+	domain.ChainCountered:   OfferDeclined,
+	domain.ChainCancelled:   OfferCancelled,
+	domain.ChainExpired:     OfferExpired,
+	domain.ChainCompleted:   OfferCompleted,
+	domain.ChainFailed:      OfferFailed,
+	domain.ChainUnavailable: OfferUnavailable,
 }
 
 // OfferStatusOf сообщает, в каком состоянии предложение прямо сейчас.
@@ -77,13 +79,14 @@ func OfferStatusOf(deal Deal, now time.Time) OfferStatus {
 // pending попадает и в expired: истёкшие предложения так и лежат в базе
 // в ожидании ответа, а expired им проставляет чтение, а не фоновой процесс.
 var chainStatuses = map[OfferStatus][]domain.ChainStatus{
-	OfferPending:   {domain.ChainPending},
-	OfferAccepted:  {domain.ChainActive},
-	OfferDeclined:  {domain.ChainRejected, domain.ChainCountered},
-	OfferCancelled: {domain.ChainCancelled},
-	OfferExpired:   {domain.ChainExpired, domain.ChainPending},
-	OfferCompleted: {domain.ChainCompleted},
-	OfferFailed:    {domain.ChainFailed},
+	OfferPending:     {domain.ChainPending},
+	OfferAccepted:    {domain.ChainActive},
+	OfferDeclined:    {domain.ChainRejected, domain.ChainCountered},
+	OfferCancelled:   {domain.ChainCancelled},
+	OfferExpired:     {domain.ChainExpired, domain.ChainPending},
+	OfferCompleted:   {domain.ChainCompleted},
+	OfferFailed:      {domain.ChainFailed},
+	OfferUnavailable: {domain.ChainUnavailable},
 }
 
 // ChainStatusesFor переводит запрошенные статусы предложений в состояния

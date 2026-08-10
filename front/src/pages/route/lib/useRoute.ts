@@ -105,13 +105,13 @@ export const useRoute = () => {
                 (item) =>
                     item.status === 'completed' &&
                     item.initiator_id === currentCustomerId &&
-                    targetCategoryId
+                    (targetCategoryId
                         ? item.to_category_id === targetCategoryId
                         : item.exchange_goal_id === goalId ||
-                          (!item.exchange_goal_id && item.to_product_id === goalId),
+                          (!item.exchange_goal_id && item.to_product_id === goalId)),
             )
             .sort((left, right) => right.updated_at.localeCompare(left.updated_at))[0];
-    }, [currentCustomerId, goalId, myChainsQuery.data]);
+    }, [currentCustomerId, goalId, myChainsQuery.data, targetCategoryId]);
     const completedStepProduct = lastCompletedRouteStep
         ? lastCompletedRouteStep.to_product_id
             ? productsById.get(lastCompletedRouteStep.to_product_id)
@@ -159,7 +159,7 @@ export const useRoute = () => {
                     OPEN_OFFER_STATUSES.has(offer.status),
             )
             .sort((left, right) => right.updated_at.localeCompare(left.updated_at));
-    }, [currentCustomerId, currentProduct, goalId, myChainsQuery.data]);
+    }, [currentCustomerId, currentProduct, goalId, myChainsQuery.data, targetCategoryId]);
 
     const offerByTargetId = useMemo(() => {
         const map = new Map<string, TChain>();
@@ -223,17 +223,17 @@ export const useRoute = () => {
                 (item) =>
                     item.status === 'completed' &&
                     item.initiator_id === currentCustomerId &&
-                    targetCategoryId
+                    (targetCategoryId
                         ? item.to_category_id === targetCategoryId
                         : item.exchange_goal_id === goalId ||
-                          (!item.exchange_goal_id && item.to_product_id === goalId),
+                          (!item.exchange_goal_id && item.to_product_id === goalId)),
             )
             .sort((left, right) => right.updated_at.localeCompare(left.updated_at))
             .map((item) => ({
                 chain: item,
                 product: productsById.get(item.from_product_id),
             }));
-    }, [currentCustomerId, goalId, myChainsQuery.data, productsById]);
+    }, [currentCustomerId, goalId, myChainsQuery.data, productsById, targetCategoryId]);
 
     const toggleRecommendation = useCallback((productId: string, selected: boolean) => {
         setSelectedTargetIds((current) => {
@@ -302,6 +302,7 @@ export const useRoute = () => {
         lastCompletedRouteStep?.chain_id,
         myChainsQuery,
         selectedTargetIds,
+        targetCategoryId,
     ]);
 
     const openProduct = useCallback(

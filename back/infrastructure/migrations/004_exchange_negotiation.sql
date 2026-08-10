@@ -45,6 +45,7 @@ DO $$ BEGIN
         CHECK (status IN (
             'pending', 'active', 'completed', 'cancelled',
             'rejected', 'countered', 'failed', 'expired'
+	            , 'unavailable'
         ));
 END $$;
 
