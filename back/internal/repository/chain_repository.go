@@ -241,7 +241,7 @@ func (r *chainRepository) CompleteExchange(ctx context.Context, chainID string) 
 	// 1. Получить цепочку
 	var chain domain.Chain
 	err = tx.QueryRow(ctx, `
-			SELECT chain_id, from_product_id, to_product_id, initiator_id, status
+			SELECT chain_id, from_product_id, to_product_id, initiator_id, recipient_id, status
 			FROM chains
 			WHERE chain_id = $1
 			FOR UPDATE
@@ -250,6 +250,7 @@ func (r *chainRepository) CompleteExchange(ctx context.Context, chainID string) 
 		&chain.FromProductID,
 		&chain.ToProductID,
 		&chain.InitiatorID,
+		&chain.RecipientID,
 		&chain.Status,
 	)
 	if err != nil {
@@ -306,6 +307,13 @@ func (r *chainRepository) CompleteExchange(ctx context.Context, chainID string) 
 		return sql.ErrNoRows
 	}
 
+	// Защита от гонки: другая сделка могла завершиться после чтения этой
+	// цепочки, но до блокировки товаров. Повторно обменивать уже переехавший
+	// товар нельзя.
+	if fromOwner != chain.InitiatorID || chain.RecipientID == nil || toOwner != *chain.RecipientID {
+		return errors.New("products are no longer owned by exchange participants")
+	}
+
 	// 3. Обменять владельцев
 	_, err = tx.Exec(ctx, `
 			UPDATE products
@@ -340,13 +348,17 @@ func (r *chainRepository) CompleteExchange(ctx context.Context, chainID string) 
 	// Всё в той же транзакции: иначе между сменой владельца и закрытием
 	// предложений существует момент, когда чужой оффер ещё можно принять.
 	_, err = tx.Exec(ctx, `
-			UPDATE chains
-			SET status = $1, updated_at = CURRENT_TIMESTAMP
-			WHERE chain_id <> $2
-			  AND status = $3
-			  AND (from_product_id IN ($4, $5) OR to_product_id IN ($4, $5))
+		UPDATE chains
+		SET status = $1, updated_at = CURRENT_TIMESTAMP
+		WHERE chain_id <> $2
+		  AND status IN ($3, $6)
+		  AND (
+			(from_product_id = $4 AND initiator_id = $7)
+			OR (from_product_id = $5 AND initiator_id = $8)
+		  )
 		`, string(domain.ChainCancelled), chainID, string(domain.ChainPending),
-		chain.FromProductID, toProductID)
+		chain.FromProductID, toProductID, string(domain.ChainActive),
+		chain.InitiatorID, *chain.RecipientID)
 	if err != nil {
 		return err
 	}
