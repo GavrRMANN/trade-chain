@@ -54,7 +54,7 @@ export const CreateProductPage = () => {
                     price={form.price}
                     location={form.location}
                     status={form.status}
-                    targetProductId={form.targetProductId}
+                    targetGoal={form.targetGoal}
                     errors={form.errors}
                     requestError={form.requestError}
                     isLoading={form.isLoading}
@@ -67,7 +67,7 @@ export const CreateProductPage = () => {
                     setPrice={form.setPrice}
                     setLocation={form.setLocation}
                     setStatus={form.setStatus}
-                    setTargetProductId={form.setTargetProductId}
+                    setTargetGoal={form.setTargetGoal}
                     handleSubmit={form.handleSubmit}
                 />
             </div>

@@ -14,7 +14,9 @@ export type TChain = {
     /** Идентификатор исходного товара. */
     from_product_id: string;
     /** Идентификатор целевого товара. */
-    to_product_id: string;
+    to_product_id?: string;
+    /** Идентификатор целевой категории (если цель — категория, а не товар). */
+    to_category_id?: string;
     /** Идентификатор пользователя, инициировавшего цепочку. */
     initiator_id: string;
     /** Идентификатор получателя предложения. */
@@ -43,7 +45,9 @@ export type TCreateChainRequest = {
     /** Идентификатор исходного товара. */
     from_product_id: string;
     /** Идентификатор целевого товара. */
-    to_product_id: string;
+    to_product_id?: string;
+    /** Идентификатор целевой категории (если цель — категория, а не товар). */
+    to_category_id?: string;
     /** Идентификатор предыдущего звена цепочки. */
     previous_chain_id?: string;
     /** Идентификатор следующего звена цепочки. */

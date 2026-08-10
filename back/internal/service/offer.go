@@ -32,13 +32,14 @@ func NewOfferService(
 
 // CreateOfferInput — предложение обмена, каким его отправляет клиент.
 type CreateOfferInput struct {
-	InitiatorID        string
-	OfferedProductID   string
-	RequestedProductID string
-	ExchangeGoalID     *string
-	RouteStepID        *string
-	Surcharge          domain.Surcharge
-	Comment            string
+	InitiatorID         string
+	OfferedProductID    string
+	RequestedProductID  string
+	RequestedCategoryID string
+	ExchangeGoalID      *string
+	RouteStepID         *string
+	Surcharge           domain.Surcharge
+	Comment             string
 }
 
 // Offer — предложение и, если оно принято, состояние обмена по нему.
@@ -56,9 +57,19 @@ type OfferDetails struct {
 }
 
 func (s *offerService) Create(ctx context.Context, in CreateOfferInput) (*Offer, error) {
+	var toProductID *string
+	var toCategoryID *string
+	if in.RequestedProductID != "" {
+		toProductID = &in.RequestedProductID
+	}
+	if in.RequestedCategoryID != "" {
+		toCategoryID = &in.RequestedCategoryID
+	}
+
 	chain, err := s.chains.Create(ctx, &domain.Chain{
 		FromProductID:  in.OfferedProductID,
-		ToProductID:    in.RequestedProductID,
+		ToProductID:    toProductID,
+		ToCategoryID:   toCategoryID,
 		InitiatorID:    in.InitiatorID,
 		ExchangeGoalID: in.ExchangeGoalID,
 		RouteStepID:    in.RouteStepID,

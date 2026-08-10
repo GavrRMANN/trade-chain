@@ -4,5 +4,6 @@ export type {
     TProductListRequest,
     TProductRecommendations,
     TProductStatus,
+    TTargetGoal,
     TUpdateProductRequest,
 } from './product';

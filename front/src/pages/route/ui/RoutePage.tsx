@@ -41,6 +41,7 @@ const formatCompletedCount = (count: number): string => {
 export const RoutePage = () => {
     const {
         targetId,
+        targetCategoryName,
         isLoading,
         isError,
         isEmpty,
@@ -88,43 +89,53 @@ export const RoutePage = () => {
     return (
         <MainSection>
             <div className={Styles['route-page']}>
-                {isEmpty || !currentProduct || !goalProduct ? (
+                {isEmpty || !currentProduct ? (
                     <div className={Styles['route-page__empty']}>
                         <h2>Подходящий путь пока не найден</h2>
-                        <p>Можно предложить свой товар владельцу цели напрямую.</p>
-                        <Button onClick={openGoalOffer}>Предложить прямой обмен</Button>
+                        <p>Не удалось определить исходный товар для маршрута.</p>
+                        {goalProduct && <Button onClick={openGoalOffer}>Предложить прямой обмен</Button>}
                     </div>
                 ) : (
                     <>
                         <section
-                            className={Styles['route-page__goal']}
+                            className={`${Styles['route-page__goal']} ${!goalProduct ? Styles['route-page__goal--category'] : ''}`}
                             aria-labelledby="route-goal-title"
                         >
-                            <div className={Styles['route-page__goal-media']}>
-                                <ProductImage
-                                    src={goalProduct.image}
-                                    alt={goalProduct.title}
-                                    title={goalProduct.title}
-                                />
-                            </div>
+                            {goalProduct && (
+                                <div className={Styles['route-page__goal-media']}>
+                                    <ProductImage
+                                        src={goalProduct.image}
+                                        alt={goalProduct.title}
+                                        title={goalProduct.title}
+                                    />
+                                </div>
+                            )}
                             <div className={Styles['route-page__goal-body']}>
-                                <h2 id="route-goal-title">Цель: {goalProduct.title}</h2>
-                                <p>
-                                    {stepsRemaining === 0
+                                <h2 id="route-goal-title">
+                                    {goalProduct
+                                        ? `Цель: ${goalProduct.title}`
+                                        : `Категория: ${targetCategoryName ?? 'категория'}`}
+                                </h2>
+                                {goalProduct && (
+                                    <p>
+                                        {stepsRemaining === 0
                                         ? 'Цель достигнута'
                                         : `${formatExchangeCount(stepsRemaining)} до цели`}
-                                </p>
+                                    </p>
+                                )}
                             </div>
-                            <Button
-                                variant="text"
-                                className={Styles['route-page__goal-action']}
-                                onClick={() => openProduct(goalProduct.product_id)}
-                            >
-                                Открыть цель
-                            </Button>
+                            {goalProduct && (
+                                <Button
+                                    variant="text"
+                                    className={Styles['route-page__goal-action']}
+                                    onClick={() => openProduct(goalProduct.product_id)}
+                                >
+                                    Открыть цель
+                                </Button>
+                            )}
                         </section>
 
-                        {stepsRemaining > 0 ? (
+                        {!goalProduct || stepsRemaining > 0 ? (
                             <section
                                 className={Styles['route-page__recommendations']}
                                 aria-labelledby="route-recommendations-title"

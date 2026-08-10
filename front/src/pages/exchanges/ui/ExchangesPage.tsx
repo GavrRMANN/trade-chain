@@ -210,6 +210,7 @@ export const ExchangesPage = () => {
                                                     openRoute(
                                                         group.goalId,
                                                         group.sourceProduct?.product_id,
+                                                        group.goalCategoryId,
                                                     )
                                                 }
                                             >

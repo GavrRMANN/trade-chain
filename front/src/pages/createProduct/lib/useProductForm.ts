@@ -10,7 +10,7 @@ import {
 import { useCreateChainMutation } from '@entities/chain';
 import {useGetCategoriesQuery} from '@entities/category';
 import {useGetCurrentUserQuery} from '@entities/user';
-import type {TProductStatus} from '@entities/product';
+import type {TProductStatus, TTargetGoal} from '@entities/product';
 
 export type TField =
     | 'title'
@@ -18,7 +18,7 @@ export type TField =
     | 'description'
     | 'price'
     | 'location'
-    | 'targetProductId';
+    | 'targetGoal';
 
 export type TErrors = Partial<Record<TField, string>>;
 
@@ -38,7 +38,7 @@ const validate = (
     description: string,
     price: string,
     location: string,
-    targetProductId: string,
+    targetGoal: TTargetGoal,
     isEdit: boolean,
 ): TErrors => {
     const errors: TErrors = {};
@@ -53,8 +53,8 @@ const validate = (
         errors.categoryId = 'Выберите категорию';
     }
 
-    if (!isEdit && !targetProductId) {
-        errors.targetProductId = 'Выберите объявление, к которому хотите прийти';
+    if (!isEdit && !targetGoal.productId && !targetGoal.categoryId) {
+        errors.targetGoal = 'Выберите товар или категорию, к которой хотите прийти';
     }
 
     if (description.length > 5000) {
@@ -111,7 +111,7 @@ export const useProductForm = (productId?: string) => {
     const [price, setPrice] = useState('');
     const [location, setLocation] = useState('');
     const [status, setStatus] = useState<TProductStatus>('active');
-    const [targetProductId, setTargetProductId] = useState('');
+    const [targetGoal, setTargetGoal] = useState<TTargetGoal>({});
     const [createdProductId, setCreatedProductId] = useState<string>();
 
     const [errors, setErrors] = useState<TErrors>({});
@@ -179,7 +179,7 @@ export const useProductForm = (productId?: string) => {
             description,
             price,
             location,
-            targetProductId,
+            targetGoal,
             isEdit,
         );
         setErrors(validationErrors);
@@ -230,16 +230,23 @@ export const useProductForm = (productId?: string) => {
                 setCreatedProductId(sourceProductId);
             }
 
-            const chain = await createChain({
+            await createChain({
                 from_product_id: sourceProductId,
-                to_product_id: targetProductId,
-                exchange_goal_id: targetProductId,
+                ...(targetGoal.productId ? { to_product_id: targetGoal.productId } : {}),
+                ...(targetGoal.categoryId ? { to_category_id: targetGoal.categoryId } : {}),
+                ...(targetGoal.productId ? { exchange_goal_id: targetGoal.productId } : {}),
                 route_step_id: sourceProductId,
                 status: 'pending',
                 message: `Предложение по новому объявлению «${title.trim()}»`,
             }).unwrap();
 
-            navigate(`/exchanges/${chain.chain_id}`, {replace: true});
+            const routeParams = new URLSearchParams({from: sourceProductId});
+            if (targetGoal.productId) {
+                routeParams.set('target', targetGoal.productId);
+            } else if (targetGoal.categoryId) {
+                routeParams.set('targetCategory', targetGoal.categoryId);
+            }
+            navigate(`/route?${routeParams.toString()}`, {replace: true});
         } catch (error) {
             setRequestError(
                 createdProductId
@@ -274,7 +281,7 @@ export const useProductForm = (productId?: string) => {
         price,
         location,
         status,
-        targetProductId,
+        targetGoal,
         errors,
         requestError,
         isLoading,
@@ -286,7 +293,7 @@ export const useProductForm = (productId?: string) => {
         setPrice,
         setLocation,
         setStatus,
-        setTargetProductId,
+        setTargetGoal,
         handleSubmit,
     };
 };
