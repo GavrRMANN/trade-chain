@@ -1,4 +1,4 @@
-import type { ChangeEvent, SubmitEvent } from 'react';
+import type { ChangeEvent, FormEvent } from 'react';
 
 import ControlStyles from '../control/Control.module.css';
 import Styles from './SearchInput.module.css';
@@ -33,7 +33,7 @@ export const useSearchInput = ({
         error?.showError && Styles['btn--error'],
     ].filter(Boolean).join(' ');
     const handleChange = (event: ChangeEvent<HTMLInputElement>) => onChange?.(event.target.value);
-    const handleSubmit = (event: SubmitEvent<HTMLFormElement>) => {
+    const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         (onSearch ?? onChange)?.(value);
     };

@@ -11,7 +11,7 @@ type TUseImageUploadOptions = {
 
 type TUseImageUploadReturn = {
     /** Ref для скрытого <input type="file">. */
-    fileInputRef: React.RefObject<HTMLInputElement | null>;
+    fileInputRef: React.RefObject<HTMLInputElement>;
     /** Текст ошибки валидации изображения. */
     imageError: string | undefined;
     /** Обработчик onChange для <input type="file">. */
