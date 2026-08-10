@@ -177,42 +177,12 @@ func (s *chainService) Decide(ctx context.Context, id string, action exchange.Ac
 	if err != nil {
 		return nil, mapExchangeError(err)
 	}
-	if action == exchange.ActionAccept {
-		if err := s.validateAcceptableProducts(ctx, chain, deal); err != nil {
-			return nil, mapExchangeError(err)
-		}
-	}
 	if err := s.repo.UpdateStatus(ctx, id, next); err != nil {
 		return nil, normalizeError(err)
 	}
 
 	updated, err := s.repo.GetByID(ctx, id)
 	return updated, normalizeError(err)
-}
-
-// validateAcceptableProducts не даёт принять предложение после того, как
-// товар уже ушёл в другой завершённый обмен. Само предложение не отменяем:
-// оно остаётся в истории, а недоступность определяется статусом товара.
-func (s *chainService) validateAcceptableProducts(ctx context.Context, chain *domain.Chain, deal exchange.Deal) error {
-	offered, err := s.products.GetByID(ctx, chain.FromProductID)
-	if err != nil {
-		return normalizeError(err)
-	}
-	if offered.Status != domain.ProductActive || offered.CustomerID != deal.InitiatorID {
-		return domain.ErrProductUnavailable
-	}
-
-	if chain.ToProductID == nil {
-		return nil
-	}
-	requested, err := s.products.GetByID(ctx, *chain.ToProductID)
-	if err != nil {
-		return normalizeError(err)
-	}
-	if requested.Status != domain.ProductActive || requested.CustomerID != deal.RecipientID {
-		return domain.ErrProductUnavailable
-	}
-	return nil
 }
 
 // Confirm записывает решение стороны об итоге обмена и, если высказались оба,
@@ -231,11 +201,6 @@ func (s *chainService) Confirm(ctx context.Context, id, actorID string, success 
 		return nil, normalizeError(err)
 	}
 	deal := dealOf(chain)
-	if success {
-		if err := s.validateAcceptableProducts(ctx, chain, deal); err != nil {
-			return nil, mapExchangeError(err)
-		}
-	}
 
 	existing, err := s.negotiations.ListConfirmations(ctx, id)
 	if err != nil {
