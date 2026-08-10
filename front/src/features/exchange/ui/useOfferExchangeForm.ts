@@ -1,4 +1,4 @@
-import {FormEvent, useEffect, useState} from 'react';
+import {FormEvent, useEffect, useReducer} from 'react';
 
 import {useCreateChainMutation} from '@entities/chain';
 import {useGetProductsByCustomerQuery} from '@entities/product';
@@ -12,6 +12,22 @@ type TOfferExchangeFormParams = {
     onClose: () => void;
 };
 
+type TFormState = {selectedProductId: string; message: string; requestError?: string};
+type TFormAction =
+    | {type: 'setProduct'; value: string}
+    | {type: 'setMessage'; value: string}
+    | {type: 'setError'; value?: string}
+    | {type: 'reset'};
+
+const formReducer = (state: TFormState, action: TFormAction): TFormState => {
+    switch (action.type) {
+        case 'setProduct': return {...state, selectedProductId: action.value};
+        case 'setMessage': return {...state, message: action.value};
+        case 'setError': return {...state, requestError: action.value};
+        case 'reset': return {selectedProductId: '', message: ''};
+    }
+};
+
 export const useOfferExchangeForm = ({
     isOpen,
     targetProductId,
@@ -19,9 +35,10 @@ export const useOfferExchangeForm = ({
     onSuccess,
     onClose,
 }: TOfferExchangeFormParams) => {
-    const [selectedProductId, setSelectedProductId] = useState('');
-    const [message, setMessage] = useState('');
-    const [requestError, setRequestError] = useState<string>();
+    const [{selectedProductId, message, requestError}, dispatch] = useReducer(formReducer, {
+        selectedProductId: '',
+        message: '',
+    });
 
     const {data: myProducts = [], isLoading: isProductsLoading} = useGetProductsByCustomerQuery(
         currentCustomerId ?? '',
@@ -31,9 +48,7 @@ export const useOfferExchangeForm = ({
 
     useEffect(() => {
         if (isOpen) {
-            setSelectedProductId('');
-            setMessage('');
-            setRequestError(undefined);
+            dispatch({type: 'reset'});
         }
     }, [isOpen]);
 
@@ -41,10 +56,10 @@ export const useOfferExchangeForm = ({
 
     const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
-        setRequestError(undefined);
+        dispatch({type: 'setError'});
 
         if (!selectedProductId) {
-            setRequestError('Выберите товар для обмена');
+            dispatch({type: 'setError', value: 'Выберите товар для обмена'});
             return;
         }
 
@@ -59,7 +74,7 @@ export const useOfferExchangeForm = ({
             onSuccess?.(created.chain_id);
             onClose();
         } catch (error) {
-            setRequestError(parseApiError(error, 'Не удалось отправить предложение. Попробуйте ещё раз.'));
+            dispatch({type: 'setError', value: parseApiError(error, 'Не удалось отправить предложение. Попробуйте ещё раз.')});
         }
     };
 
@@ -71,8 +86,8 @@ export const useOfferExchangeForm = ({
         message,
         requestError,
         canSubmit,
-        setSelectedProductId,
-        setMessage,
+        setSelectedProductId: (value: string) => dispatch({type: 'setProduct', value}),
+        setMessage: (value: string) => dispatch({type: 'setMessage', value}),
         handleSubmit,
     };
 };

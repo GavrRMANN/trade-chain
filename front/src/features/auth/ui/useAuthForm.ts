@@ -1,4 +1,4 @@
-import { FormEvent, useCallback, useState } from 'react';
+import { FormEvent, useCallback, useReducer } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 import {
@@ -13,6 +13,31 @@ import { getBackgroundRoute } from '@features/auth';
 type TMode = 'login' | 'register';
 type TField = 'email' | 'password' | 'confirmPassword';
 type TErrors = Partial<Record<TField, string>>;
+type TAuthState = {
+    mode: TMode;
+    email: string;
+    password: string;
+    confirmPassword: string;
+    errors: TErrors;
+    requestError?: string;
+    successMessage?: string;
+};
+type TAuthAction =
+    | {type: 'setField'; field: 'email' | 'password' | 'confirmPassword'; value: string}
+    | {type: 'setMode'; value: TMode}
+    | {type: 'setErrors'; value: TErrors}
+    | {type: 'setRequestError'; value?: string}
+    | {type: 'setSuccessMessage'; value?: string};
+
+const authReducer = (state: TAuthState, action: TAuthAction): TAuthState => {
+    switch (action.type) {
+        case 'setField': return {...state, [action.field]: action.value};
+        case 'setMode': return {...state, mode: action.value};
+        case 'setErrors': return {...state, errors: action.value};
+        case 'setRequestError': return {...state, requestError: action.value};
+        case 'setSuccessMessage': return {...state, successMessage: action.value};
+    }
+};
 
 const validate = (email: string, password: string, confirmPassword: string, mode: TMode): TErrors => {
     const errors: TErrors = {};
@@ -39,15 +64,12 @@ const validate = (email: string, password: string, confirmPassword: string, mode
 export const useAuthForm = () => {
     const navigate = useNavigate();
     const location = useLocation();
-    const dispatch = useAppDispatch();
+    const reduxDispatch = useAppDispatch();
 
-    const [mode, setMode] = useState<TMode>('login');
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [confirmPassword, setConfirmPassword] = useState('');
-    const [errors, setErrors] = useState<TErrors>({});
-    const [requestError, setRequestError] = useState<string>();
-    const [successMessage, setSuccessMessage] = useState<string>();
+    const [{mode, email, password, confirmPassword, errors, requestError, successMessage}, dispatch] = useReducer(
+        authReducer,
+        {mode: 'login', email: '', password: '', confirmPassword: '', errors: {}},
+    );
 
     const [loginUser, { isLoading: isLoginLoading }] = useLoginUserMutation();
     const [registerUser, { isLoading: isRegisterLoading }] = useRegisterUserMutation();
@@ -55,11 +77,11 @@ export const useAuthForm = () => {
     const isLoading = isLoginLoading || isRegisterLoading;
 
     const switchMode = () => {
-        setMode((currentMode) => currentMode === 'login' ? 'register' : 'login');
-        setErrors({});
-        setRequestError(undefined);
-        setSuccessMessage(undefined);
-        setConfirmPassword('');
+        dispatch({type: 'setMode', value: mode === 'login' ? 'register' : 'login'});
+        dispatch({type: 'setErrors', value: {}});
+        dispatch({type: 'setRequestError'});
+        dispatch({type: 'setSuccessMessage'});
+        dispatch({type: 'setField', field: 'confirmPassword', value: ''});
     };
 
     const getBackgroundRouteCallback = useCallback(() => {
@@ -68,12 +90,12 @@ export const useAuthForm = () => {
 
     const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
-        setRequestError(undefined);
-        setSuccessMessage(undefined);
+        dispatch({type: 'setRequestError'});
+        dispatch({type: 'setSuccessMessage'});
 
         const validationErrors = validate(email, password, confirmPassword, mode);
 
-        setErrors(validationErrors);
+        dispatch({type: 'setErrors', value: validationErrors});
 
         if (Object.keys(validationErrors).length > 0) {
             return;
@@ -83,7 +105,7 @@ export const useAuthForm = () => {
             if (mode === 'login') {
                 const response = await loginUser({email: email.trim(), password}).unwrap();
 
-                dispatch(setCredentials(response.token));
+                reduxDispatch(setCredentials(response.token));
                 navigate(getBackgroundRouteCallback(), { replace: true });
 
                 return;
@@ -91,10 +113,10 @@ export const useAuthForm = () => {
 
             const response = await registerUser({email: email.trim(), password}).unwrap();
 
-            dispatch(setCredentials(response.token));
+            reduxDispatch(setCredentials(response.token));
             navigate(getBackgroundRouteCallback(), { replace: true });
         } catch (error) {
-            setRequestError(parseApiError(error));
+            dispatch({type: 'setRequestError', value: parseApiError(error)});
         }
     };
 
@@ -107,9 +129,9 @@ export const useAuthForm = () => {
         requestError,
         successMessage,
         isLoading,
-        setEmail,
-        setPassword,
-        setConfirmPassword,
+        setEmail: (value: string) => dispatch({type: 'setField', field: 'email', value}),
+        setPassword: (value: string) => dispatch({type: 'setField', field: 'password', value}),
+        setConfirmPassword: (value: string) => dispatch({type: 'setField', field: 'confirmPassword', value}),
         handleSubmit,
         switchMode,
     };

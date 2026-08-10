@@ -1,6 +1,6 @@
-import {useState} from 'react';
+import {useReducer} from 'react';
 
 export const useMobileRouteStep = () => {
-    const [mobileStep, setMobileStep] = useState<1 | 2>(1);
+    const [mobileStep, setMobileStep] = useReducer((_: 1 | 2, next: 1 | 2) => next, 1);
     return {mobileStep, goToNextStep: () => setMobileStep(2), goToPreviousStep: () => setMobileStep(1)};
 };

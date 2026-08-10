@@ -1,4 +1,4 @@
-import {useMemo, useState} from 'react';
+import {useMemo, useReducer} from 'react';
 
 import type {TCategory} from '@entities/category';
 
@@ -8,8 +8,13 @@ export const useCategoryPicker = (
     disabled: boolean,
     onChange: (value: string) => void,
 ) => {
-    const [expandedParent, setExpandedParent] = useState<string | null>(null);
-    const [search, setSearch] = useState('');
+    const [{expandedParent, search}, dispatch] = useReducer(
+        (state: {expandedParent: string | null; search: string}, action: {type: 'expand' | 'search'; value: string | null}) =>
+            action.type === 'expand'
+                ? {...state, expandedParent: action.value as string | null}
+                : {...state, search: action.value as string},
+        {expandedParent: null, search: ''},
+    );
     const roots = useMemo(() => categories.filter((category) => !category.parent_id), [categories]);
     const children = useMemo(
         () => categories.filter((category) => category.parent_id === expandedParent),
@@ -40,19 +45,19 @@ export const useCategoryPicker = (
         : undefined;
 
     const handleExpand = (parentId: string) => {
-        if (!disabled) setExpandedParent((current) => (current === parentId ? null : parentId));
+        if (!disabled) dispatch({type: 'expand', value: expandedParent === parentId ? null : parentId});
     };
     const handleSelect = (category: TCategory) => {
         if (disabled) return;
         onChange(category.category_id);
-        setExpandedParent(null);
-        setSearch('');
+        dispatch({type: 'expand', value: null});
+        dispatch({type: 'search', value: ''});
     };
 
     return {
         expandedParent,
         search,
-        setSearch,
+        setSearch: (value: string) => dispatch({type: 'search', value}),
         roots,
         children,
         searchResults,
