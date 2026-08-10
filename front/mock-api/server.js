@@ -175,8 +175,12 @@ async function handleProducts(request, response, url) {
         return productRecommendations(request, response, parts[0]);
     }
 
-    // /search и /by-customer на бэкенде не смонтированы — поэтому здесь их нет:
-    // такие запросы уходят в ветку {id} и возвращают 404.
+    if (request.method === 'GET' && parts.length === 2 && parts[0] === 'by-customer') {
+        const customerId = parts[1];
+        const user = requireUser(request);
+        if (!user || user.id !== customerId) return sendError(response, 403, 'operation forbidden');
+        return sendJson(response, 200, products.filter((product) => product.customer_id === customerId));
+    }
 
     if (parts.length === 2 && parts[1] === 'image') {
         const index = products.findIndex(({ product_id: id }) => id === parts[0]);

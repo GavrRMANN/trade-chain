@@ -31,6 +31,7 @@ export type TExchangeRouteGroup = {
     goalCategoryId?: string;
     goalProduct?: TProduct;
     sourceProduct?: TProduct;
+    sourceProductId: string;
     offersCount: number;
     openOffersCount: number;
     completedOffersCount: number;
@@ -153,6 +154,7 @@ export const useExchanges = () => {
                     goalId,
                     goalCategoryId,
                     goalProduct: productsById.get(goalId),
+                    sourceProductId: chain.route_step_id ?? chain.from_product_id,
                     sourceProduct: productsById.get(chain.route_step_id ?? chain.from_product_id),
                     offersCount: 1,
                     openOffersCount: isOpen ? 1 : 0,
@@ -168,6 +170,7 @@ export const useExchanges = () => {
 
             if (chain.updated_at > current.updatedAt) {
                 current.updatedAt = chain.updated_at;
+                current.sourceProductId = chain.route_step_id ?? chain.from_product_id;
                 current.sourceProduct = productsById.get(
                     chain.route_step_id ?? chain.from_product_id,
                 );

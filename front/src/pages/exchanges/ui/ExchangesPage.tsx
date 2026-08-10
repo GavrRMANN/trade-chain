@@ -209,7 +209,7 @@ export const ExchangesPage = () => {
                                                 onClick={() =>
                                                     openRoute(
                                                         group.goalId,
-                                                        group.sourceProduct?.product_id,
+                                                        group.sourceProductId,
                                                         group.goalCategoryId,
                                                     )
                                                 }

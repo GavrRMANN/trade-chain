@@ -5,7 +5,7 @@ import { usePageTitle } from '@app/providers/pageTitle';
 import { useGetCategoriesQuery } from '@entities/category';
 import { useCreateChainMutation, useGetMyChainsQuery } from '@entities/chain';
 import type { TChain } from '@entities/chain';
-import { useGetProductsQuery } from '@entities/product';
+import { useGetProductsByCustomerQuery, useGetProductsQuery } from '@entities/product';
 import type { TProduct } from '@entities/product';
 import { useFindChainQuery } from '@entities/search';
 import { useGetCurrentUserQuery } from '@entities/user';
@@ -33,7 +33,12 @@ export const useRoute = () => {
         { skip: !targetId || !sourceId || Boolean(targetCategoryId), refetchOnMountOrArgChange: true },
     );
     const currentUserQuery = useGetCurrentUserQuery();
+    const currentCustomerId = currentUserQuery.data?.customer_id;
     const categoriesQuery = useGetCategoriesQuery();
+    const myProductsQuery = useGetProductsByCustomerQuery(currentCustomerId ?? '', {
+        skip: !currentCustomerId,
+        refetchOnMountOrArgChange: true,
+    });
     const productsQuery = useGetProductsQuery(
         { limit: 100 },
         { skip: !targetId && !targetCategoryId, refetchOnMountOrArgChange: true },
@@ -57,14 +62,10 @@ export const useRoute = () => {
         const products = routeQuery.data?.chain ?? [];
         return [...products];
     }, [routeQuery.data?.chain]);
-    const currentCustomerId = currentUserQuery.data?.customer_id;
     const sourceProducts = useMemo(
         () =>
-            (productsQuery.data ?? []).filter(
-                (product) =>
-                    product.customer_id === currentCustomerId && product.status === 'active',
-            ),
-        [currentCustomerId, productsQuery.data],
+            (myProductsQuery.data ?? []).filter((product) => product.status === 'active'),
+        [myProductsQuery.data],
     );
 
     const selectSource = useCallback(
@@ -81,11 +82,14 @@ export const useRoute = () => {
         for (const product of productsQuery.data ?? []) {
             map.set(product.product_id, product);
         }
+        for (const product of myProductsQuery.data ?? []) {
+            map.set(product.product_id, product);
+        }
         for (const product of chain) {
             map.set(product.product_id, product);
         }
         return map;
-    }, [chain, productsQuery.data]);
+    }, [chain, myProductsQuery.data, productsQuery.data]);
 
     const routeSource = chain[0];
     const requestedSource = sourceId ? productsById.get(sourceId) : undefined;
@@ -339,8 +343,16 @@ export const useRoute = () => {
     );
     const goHome = useCallback(() => navigate('/'), [navigate]);
 
-    const isLoading = routeQuery.isLoading || productsQuery.isLoading || myChainsQuery.isLoading;
-    const isError = routeQuery.isError || productsQuery.isError || myChainsQuery.isError;
+    const isLoading =
+        routeQuery.isLoading ||
+        productsQuery.isLoading ||
+        myProductsQuery.isLoading ||
+        myChainsQuery.isLoading;
+    const isError =
+        routeQuery.isError ||
+        productsQuery.isError ||
+        myProductsQuery.isError ||
+        myChainsQuery.isError;
     const isEmpty = !isLoading && !isError && (!currentProduct || (!targetCategoryId && !goalProduct));
 
     return {

@@ -2,7 +2,7 @@ import { useMemo, useReducer } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { useGetCategoriesQuery } from '@entities/category';
-import { useGetProductsQuery } from '@entities/product';
+import { useGetProductsByCustomerQuery, useGetProductsQuery } from '@entities/product';
 import type { TProduct, TTargetGoal } from '@entities/product';
 import { useGetCurrentUserQuery } from '@entities/user';
 
@@ -11,6 +11,9 @@ export const useRouteBuilder = () => {
     const navigate = useNavigate();
     const currentUserQuery = useGetCurrentUserQuery();
     const currentCustomerId = currentUserQuery.data?.customer_id ?? '';
+    const myProductsQuery = useGetProductsByCustomerQuery(currentCustomerId, {
+        skip: !currentCustomerId,
+    });
     const productsQuery = useGetProductsQuery({ offset: 0, limit: 100 });
     const categoriesQuery = useGetCategoriesQuery();
 
@@ -24,11 +27,8 @@ export const useRouteBuilder = () => {
 
     const sourceProducts = useMemo(
         () =>
-            (productsQuery.data ?? []).filter(
-                (product) =>
-                    product.status === 'active' && product.customer_id === currentCustomerId,
-            ),
-        [currentCustomerId, productsQuery.data],
+            (myProductsQuery.data ?? []).filter((product) => product.status === 'active'),
+        [myProductsQuery.data],
     );
 
     const selectedSource = sourceProducts.find((product) => product.product_id === sourceId);
@@ -73,7 +73,7 @@ export const useRouteBuilder = () => {
         targetLabel,
         sourceProductMeta,
         hasTarget,
-        isSourcesLoading: currentUserQuery.isLoading || productsQuery.isLoading,
+        isSourcesLoading: currentUserQuery.isLoading || myProductsQuery.isLoading,
         isTargetsLoading: categoriesQuery.isLoading || productsQuery.isLoading,
         hasTargetError: categoriesQuery.isError || productsQuery.isError,
         setSourceId: (value: string) => dispatch({type: 'source', value}),
