@@ -2,6 +2,7 @@ package search
 
 import (
 	"context"
+
 	"trade-chain/internal/domain"
 	"trade-chain/internal/service"
 )

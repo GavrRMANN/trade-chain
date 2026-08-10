@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"testing"
+
 	"trade-chain/internal/domain"
 	"trade-chain/internal/exchange"
 	"trade-chain/internal/repository"

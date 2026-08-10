@@ -3,6 +3,7 @@ package service
 import (
 	"errors"
 	"testing"
+
 	"trade-chain/internal/domain"
 )
 

@@ -3,6 +3,7 @@ package search
 import (
 	"context"
 	"fmt"
+
 	"trade-chain/internal/domain"
 	"trade-chain/internal/service"
 )
