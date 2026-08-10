@@ -349,16 +349,19 @@ func (r *chainRepository) CompleteExchange(ctx context.Context, chainID string) 
 	// предложений существует момент, когда чужой оффер ещё можно принять.
 	_, err = tx.Exec(ctx, `
 		UPDATE chains
-		SET status = $1, updated_at = CURRENT_TIMESTAMP
+		SET status = CASE
+			WHEN (from_product_id = $4 AND initiator_id = $7)
+			  OR (from_product_id = $5 AND initiator_id = $8)
+			THEN $1
+			ELSE $9
+		END,
+		updated_at = CURRENT_TIMESTAMP
 		WHERE chain_id <> $2
 		  AND status IN ($3, $6)
-		  AND (
-			(from_product_id = $4 AND initiator_id = $7)
-			OR (from_product_id = $5 AND initiator_id = $8)
-		  )
+		  AND (from_product_id IN ($4, $5) OR to_product_id IN ($4, $5))
 		`, string(domain.ChainCancelled), chainID, string(domain.ChainPending),
 		chain.FromProductID, toProductID, string(domain.ChainActive),
-		chain.InitiatorID, *chain.RecipientID)
+		chain.InitiatorID, *chain.RecipientID, string(domain.ChainUnavailable))
 	if err != nil {
 		return err
 	}

@@ -191,8 +191,8 @@ func (s *chainService) Decide(ctx context.Context, id string, action exchange.Ac
 }
 
 // validateAcceptableProducts не даёт принять предложение после того, как
-// товар уже ушёл в другой завершённый обмен. Само предложение не отменяем:
-// оно остаётся в истории, а недоступность определяется статусом товара.
+// товар уже ушёл в другой завершённый обмен. Такое предложение сохраняется
+// в истории и получает отдельный статус unavailable при завершении сделки.
 func (s *chainService) validateAcceptableProducts(ctx context.Context, chain *domain.Chain, deal exchange.Deal) error {
 	offered, err := s.products.GetByID(ctx, chain.FromProductID)
 	if err != nil {
@@ -242,6 +242,18 @@ func (s *chainService) Confirm(ctx context.Context, id, actorID string, success 
 		return nil, normalizeError(err)
 	}
 	if err := exchange.CanConfirm(deal, actorID, existing); err != nil {
+		// Подтверждение могло сохраниться, а финализация сделки упасть позже
+		// (например, из-за ограничения базы). Повторный запрос должен повторить
+		// финализацию, а не оставлять обмен навсегда активным.
+		if errors.Is(err, domain.ErrAlreadyConfirmed) {
+			if status, settled := exchange.Resolve(deal, existing); settled {
+				if settleErr := s.settle(ctx, id, status); settleErr != nil {
+					return nil, settleErr
+				}
+				updated, getErr := s.repo.GetByID(ctx, id)
+				return updated, normalizeError(getErr)
+			}
+		}
 		return nil, mapExchangeError(err)
 	}
 

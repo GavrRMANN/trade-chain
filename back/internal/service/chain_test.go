@@ -137,8 +137,12 @@ func (f *fakeChainRepo) CompleteExchange(_ context.Context, id string) error {
 		if otherID == id || (other.Status != string(domain.ChainPending) && other.Status != string(domain.ChainActive)) {
 			continue
 		}
-		if touchesSameProducts(other, c) && isOutgoingCompetingOffer(other, c) {
-			other.Status = string(domain.ChainCancelled)
+		if touchesSameProducts(other, c) {
+			if isOutgoingCompetingOffer(other, c) {
+				other.Status = string(domain.ChainCancelled)
+			} else {
+				other.Status = string(domain.ChainUnavailable)
+			}
 			f.chains[otherID] = other
 		}
 	}
@@ -403,7 +407,7 @@ func TestCompletionClosesCompetingOffers(t *testing.T) {
 	}
 }
 
-func TestCompletionKeepsIncomingOfferButMakesProductUnavailable(t *testing.T) {
+func TestCompletionMarksIncomingOfferAsUnavailable(t *testing.T) {
 	f := newFixture(domain.ChainActive)
 	ctx := context.Background()
 
@@ -424,8 +428,8 @@ func TestCompletionKeepsIncomingOfferButMakesProductUnavailable(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if got := f.chains.chains[incoming.ChainID].Status; got != string(domain.ChainActive) {
-		t.Errorf("входящий обмен в статусе %q, ожидался %q", got, domain.ChainActive)
+	if got := f.chains.chains[incoming.ChainID].Status; got != string(domain.ChainUnavailable) {
+		t.Errorf("входящий обмен в статусе %q, ожидался %q", got, domain.ChainUnavailable)
 	}
 	if f.products.products[requestedID].Status != domain.ProductExchanged {
 		t.Errorf("статус товара %q, ожидался %q", f.products.products[requestedID].Status, domain.ProductExchanged)
@@ -448,8 +452,8 @@ func TestIncomingOfferCannotBeAcceptedAfterProductIsExchanged(t *testing.T) {
 		ProductID: requestedID, CustomerID: recipient, Status: domain.ProductExchanged,
 	}
 
-	if _, err := f.service.Decide(ctx, incomingID, exchange.ActionAccept, recipient); !errors.Is(err, ErrInvalidInput) {
-		t.Fatalf("принятие предложения с недоступным товаром вернуло %v, ожидалась ошибка валидации", err)
+	if _, err := f.service.Decide(ctx, incomingID, exchange.ActionAccept, recipient); !errors.Is(err, ErrConflict) {
+		t.Fatalf("принятие предложения с недоступным товаром вернуло %v, ожидался конфликт", err)
 	}
 	if got := f.chains.chains[incomingID].Status; got != string(domain.ChainPending) {
 		t.Errorf("входящее предложение изменило статус на %q", got)
@@ -509,6 +513,23 @@ func TestSecondConfirmationFromSameSideIsConflict(t *testing.T) {
 	}
 	if _, err := f.service.Confirm(ctx, chainID, initiator, true, ""); !errors.Is(err, ErrConflict) {
 		t.Fatalf("ошибка %v, ожидалась ErrConflict", err)
+	}
+}
+
+func TestRepeatedConfirmationRetriesFailedSettlement(t *testing.T) {
+	f := newFixture(domain.ChainActive)
+	ctx := context.Background()
+	f.negotiations.confirmations = []domain.ChainConfirmation{
+		{ChainID: chainID, CustomerID: initiator, Success: true},
+		{ChainID: chainID, CustomerID: recipient, Success: true},
+	}
+
+	chain, err := f.service.Confirm(ctx, chainID, recipient, true, "")
+	if err != nil {
+		t.Fatalf("повторное подтверждение должно завершить обмен: %v", err)
+	}
+	if chain.Status != string(domain.ChainCompleted) {
+		t.Errorf("статус %q, ожидался %q", chain.Status, domain.ChainCompleted)
 	}
 }
 
