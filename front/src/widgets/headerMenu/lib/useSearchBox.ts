@@ -5,7 +5,7 @@ type TUseSearchBoxProps = {
 };
 
 type TUseSearchBoxReturn = {
-    containerRef: RefObject<HTMLDivElement | null>;
+    containerRef: RefObject<HTMLDivElement>;
     showSuggestions: boolean;
     openSuggestions: () => void;
     closeSuggestions: () => void;
