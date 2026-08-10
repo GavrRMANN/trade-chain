@@ -1,4 +1,4 @@
-import {FormEvent, useEffect, useMemo, useState} from 'react';
+import {FormEvent, useEffect, useMemo, useReducer} from 'react';
 import {useNavigate} from 'react-router-dom';
 
 import {
@@ -21,6 +21,27 @@ export type TField =
     | 'targetGoal';
 
 export type TErrors = Partial<Record<TField, string>>;
+
+type TFormState = {
+    title: string;
+    categoryId: string;
+    description: string;
+    image: string;
+    price: string;
+    location: string;
+    status: TProductStatus;
+    targetGoal: TTargetGoal;
+    createdProductId?: string;
+    errors: TErrors;
+    requestError?: string;
+    isOwnerError: boolean;
+    isInitialized: boolean;
+};
+type TFormAction = {type: 'update'; payload: Partial<TFormState>};
+const formReducer = (state: TFormState, action: TFormAction): TFormState => ({
+    ...state,
+    ...action.payload,
+});
 
 const getErrorMessage = (error: unknown) => {
     if (typeof error === 'object' && error !== null && 'data' in error) {
@@ -104,20 +125,24 @@ export const useProductForm = (productId?: string) => {
     const [createChain, {isLoading: isChainCreating}] = useCreateChainMutation();
     const [updateProduct, {isLoading: isUpdating}] = useUpdateProductMutation();
 
-    const [title, setTitle] = useState('');
-    const [categoryId, setCategoryId] = useState('');
-    const [description, setDescription] = useState('');
-    const [image, setImage] = useState('');
-    const [price, setPrice] = useState('');
-    const [location, setLocation] = useState('');
-    const [status, setStatus] = useState<TProductStatus>('active');
-    const [targetGoal, setTargetGoal] = useState<TTargetGoal>({});
-    const [createdProductId, setCreatedProductId] = useState<string>();
-
-    const [errors, setErrors] = useState<TErrors>({});
-    const [requestError, setRequestError] = useState<string>();
-    const [isOwnerError, setIsOwnerError] = useState(false);
-    const [isInitialized, setIsInitialized] = useState(false);
+    const [state, dispatch] = useReducer(formReducer, {
+        title: '', categoryId: '', description: '', image: '', price: '', location: '',
+        status: 'active', targetGoal: {}, errors: {}, isOwnerError: false, isInitialized: false,
+    });
+    const {
+        title, categoryId, description, image, price, location, status, targetGoal,
+        createdProductId, errors, requestError, isOwnerError, isInitialized,
+    } = state;
+    const update = <K extends keyof TFormState>(key: K, value: TFormState[K]) =>
+        dispatch({type: 'update', payload: {[key]: value}});
+    const setTitle = (value: string) => update('title', value);
+    const setCategoryId = (value: string) => update('categoryId', value);
+    const setDescription = (value: string) => update('description', value);
+    const setImage = (value: string) => update('image', value);
+    const setPrice = (value: string) => update('price', value);
+    const setLocation = (value: string) => update('location', value);
+    const setStatus = (value: TProductStatus) => update('status', value);
+    const setTargetGoal = (value: TTargetGoal) => update('targetGoal', value);
 
     const editableProduct = productQuery.data;
 
@@ -131,22 +156,20 @@ export const useProductForm = (productId?: string) => {
         }
         // Проверяем владельца: редактировать может только собственник.
         if (user && editableProduct.customer_id !== user.customer_id) {
-            setIsOwnerError(true);
-            setIsInitialized(true);
+            dispatch({type: 'update', payload: {isOwnerError: true, isInitialized: true}});
             return;
         }
-        setTitle(editableProduct.title);
-        setCategoryId(editableProduct.category_id ?? '');
-        setDescription(editableProduct.description ?? '');
-        setImage(editableProduct.image ?? '');
-        setPrice(
-            editableProduct.price !== undefined && editableProduct.price !== null
-                ? String(editableProduct.price)
-                : '',
-        );
-        setLocation(editableProduct.location ?? '');
-        setStatus(editableProduct.status);
-        setIsInitialized(true);
+        dispatch({type: 'update', payload: {
+            title: editableProduct.title,
+            categoryId: editableProduct.category_id ?? '',
+            description: editableProduct.description ?? '',
+            image: editableProduct.image ?? '',
+            price: editableProduct.price !== undefined && editableProduct.price !== null
+                ? String(editableProduct.price) : '',
+            location: editableProduct.location ?? '',
+            status: editableProduct.status,
+            isInitialized: true,
+        }});
     }, [isEdit, isInitialized, editableProduct, user]);
 
     const isLoading = isCreating || isUpdating || isChainCreating;
@@ -171,7 +194,7 @@ export const useProductForm = (productId?: string) => {
 
     const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
-        setRequestError(undefined);
+        update('requestError', undefined);
 
         const validationErrors = validate(
             title,
@@ -182,7 +205,7 @@ export const useProductForm = (productId?: string) => {
             targetGoal,
             isEdit,
         );
-        setErrors(validationErrors);
+        update('errors', validationErrors);
 
         if (Object.keys(validationErrors).length > 0) {
             return;
@@ -210,7 +233,7 @@ export const useProductForm = (productId?: string) => {
             }
 
             if (!user) {
-                setRequestError('Не удалось определить пользователя. Войдите в аккаунт.');
+                update('requestError', 'Не удалось определить пользователя. Войдите в аккаунт.');
                 return;
             }
 
@@ -227,7 +250,7 @@ export const useProductForm = (productId?: string) => {
                     location: location.trim(),
                 }).unwrap();
                 sourceProductId = created.product_id;
-                setCreatedProductId(sourceProductId);
+                update('createdProductId', sourceProductId);
             }
 
             await createChain({
@@ -248,7 +271,7 @@ export const useProductForm = (productId?: string) => {
             }
             navigate(`/route?${routeParams.toString()}`, {replace: true});
         } catch (error) {
-            setRequestError(
+            update('requestError',
                 createdProductId
                     ? `Объявление уже создано. ${getErrorMessage(error)} Повторите отправку предложения.`
                     : getErrorMessage(error),

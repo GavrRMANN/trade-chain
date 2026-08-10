@@ -1,4 +1,4 @@
-import {useCallback, useMemo, useState} from 'react';
+import {useCallback, useMemo, useReducer} from 'react';
 import {useNavigate} from 'react-router-dom';
 
 import {useGetMyChainsQuery} from '@entities/chain';
@@ -42,6 +42,18 @@ export type TExchangeRouteTab = 'active' | 'completed';
 
 export type TExchangeView = 'routes' | 'exchanges';
 
+type TExchangeUiState = {
+    activeTab: TExchangeTab;
+    activeRouteTab: TExchangeRouteTab;
+    activeView: TExchangeView;
+    isBuilderOpen: boolean;
+};
+type TExchangeUiAction = {type: 'update'; payload: Partial<TExchangeUiState>};
+const exchangeUiReducer = (state: TExchangeUiState, action: TExchangeUiAction): TExchangeUiState => ({
+    ...state,
+    ...action.payload,
+});
+
 const formatActiveOffers = (count: number): string => {
     const lastTwo = count % 100;
     const last = count % 10;
@@ -71,10 +83,17 @@ export const useExchanges = () => {
     const navigate = useNavigate();
 
     // UI-состояние
-    const [activeTab, setActiveTab] = useState<TExchangeTab>('active');
-    const [activeRouteTab, setActiveRouteTab] = useState<TExchangeRouteTab>('active');
-    const [activeView, setActiveView] = useState<TExchangeView>('routes');
-    const [isBuilderOpen, setIsBuilderOpen] = useState(false);
+    const [uiState, dispatchUi] = useReducer(exchangeUiReducer, {
+        activeTab: 'active',
+        activeRouteTab: 'active',
+        activeView: 'routes',
+        isBuilderOpen: false,
+    });
+    const {activeTab, activeRouteTab, activeView, isBuilderOpen} = uiState;
+    const setActiveTab = (value: TExchangeTab) => dispatchUi({type: 'update', payload: {activeTab: value}});
+    const setActiveRouteTab = (value: TExchangeRouteTab) => dispatchUi({type: 'update', payload: {activeRouteTab: value}});
+    const setActiveView = (value: TExchangeView) => dispatchUi({type: 'update', payload: {activeView: value}});
+    const setIsBuilderOpen = (value: boolean) => dispatchUi({type: 'update', payload: {isBuilderOpen: value}});
 
     const {data: currentUser} = useGetCurrentUserQuery();
     const currentUserId = currentUser?.customer_id ?? '';
