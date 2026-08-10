@@ -84,6 +84,7 @@ export const useExchangeRoom = () => {
     const isPendingLike = chain?.status === 'pending' || chain?.status === 'countered';
     const isActive = chain?.status === 'active';
     const isCompleted = chain?.status === 'completed';
+    const isUnavailable = chain?.status === 'unavailable';
     const hasConfirmedSuccessfulOutcome = Boolean(
         currentUserId &&
             chainDetailsQuery.data?.confirmations.some(
@@ -186,6 +187,7 @@ export const useExchangeRoom = () => {
         isPendingLike,
         isActive,
         isCompleted,
+        isUnavailable,
         isWaitingForOtherConfirmation,
         // навигация
         openProduct,

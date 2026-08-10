@@ -15,7 +15,16 @@ services:
 
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./back/infrastructure/migrations:/docker-entrypoint-initdb.d
+      # test_case.sql намеренно не монтируется: он очищает БД и предназначен
+      # только для ручного тестирования, а не для стартового набора mock API.
+      - ./back/infrastructure/migrations/001_create_tables.sql:/docker-entrypoint-initdb.d/001_create_tables.sql:ro
+      - ./back/infrastructure/migrations/002_create_search_extension.sql:/docker-entrypoint-initdb.d/002_create_search_extension.sql:ro
+      - ./back/infrastructure/migrations/003_align_schema_with_domain.sql:/docker-entrypoint-initdb.d/003_align_schema_with_domain.sql:ro
+      - ./back/infrastructure/migrations/004_exchange_negotiation.sql:/docker-entrypoint-initdb.d/004_exchange_negotiation.sql:ro
+      - ./back/infrastructure/migrations/005_exchange_offer_details.sql:/docker-entrypoint-initdb.d/005_exchange_offer_details.sql:ro
+      - ./back/infrastructure/migrations/006_seed_mock_data.sql:/docker-entrypoint-initdb.d/006_seed_mock_data.sql:ro
+      - ./back/infrastructure/migrations/007_category_goal.sql:/docker-entrypoint-initdb.d/007_category_goal.sql:ro
+      - ./back/infrastructure/migrations/008_unavailable_chain_status.sql:/docker-entrypoint-initdb.d/008_unavailable_chain_status.sql:ro
 
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]

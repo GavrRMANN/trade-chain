@@ -30,6 +30,7 @@ export const ExchangeRoomPage = () => {
         isPendingLike,
         isActive,
         isCompleted,
+        isUnavailable,
         isWaitingForOtherConfirmation,
         openProduct,
         messageDraft,
@@ -167,7 +168,9 @@ export const ExchangeRoomPage = () => {
 
                     {!isPendingLike && !isActive && (
                         <p className={Styles['actions__note']}>
-                            Сделка завершена, действия недоступны.
+                            {isUnavailable
+                                ? 'Товар уже недоступен: он участвует в другом завершённом обмене.'
+                                : 'Сделка завершена, действия недоступны.'}
                         </p>
                     )}
 
