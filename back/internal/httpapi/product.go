@@ -27,9 +27,10 @@ func mountProductRoutes(r chi.Router, s service.ProductService, w service.Wishli
 	h := productHandler{s, w, ss}
 
 	r.Route("/products", func(r chi.Router) {
+		r.With(auth.OptionalAuthMiddleware).Get("/", h.list)
 		// Публичные маршруты. Статические сегменты объявлены до {productID}:
 		// иначе «search» приезжает в обработчик товара как идентификатор.
-		r.Get("/", h.list)
+		//r.Get("/", h.list)
 		r.Get("/search", h.searchProducts)
 		r.Get("/by-customer/{customerID}", h.byCustomer)
 		r.Get("/{productID}", h.get)
