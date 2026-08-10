@@ -158,6 +158,16 @@ func touchesSameProducts(a, b domain.Chain) bool {
 	return false
 }
 
+func isOutgoingCompetingOffer(other, completed domain.Chain) bool {
+	if other.InitiatorID == completed.InitiatorID && other.FromProductID == completed.FromProductID {
+		return true
+	}
+	return completed.ToProductID != nil &&
+		completed.RecipientID != nil &&
+		other.InitiatorID == *completed.RecipientID &&
+		other.FromProductID == *completed.ToProductID
+}
+
 func (f *fakeChainRepo) GetByProductID(context.Context, string) ([]domain.Chain, error) {
 	return nil, nil
 }
