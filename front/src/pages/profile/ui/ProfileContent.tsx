@@ -14,6 +14,7 @@ type TProfileContentViewModel = {
     activeTab: TProfileTab;
     setActiveTab: (tab: TProfileTab) => void;
     products: TProduct[];
+    archivedProducts: TProduct[];
     reviews: TReview[];
     exchanges: TProfileExchange[];
     rating: number;
@@ -42,6 +43,7 @@ type TProfileContentProps = {
 
 const OWNER_TABS: {id: TProfileTab; label: string}[] = [
     {id: 'products', label: 'Товары'},
+    {id: 'archive', label: 'Архив'},
     {id: 'exchanges', label: 'Цепочки обменов'},
     {id: 'reviews', label: 'Отзывы'},
 ];
@@ -114,9 +116,9 @@ export const ProfileContent = ({
 
         return (
             <>
-                {viewModel.products.length ? (
+                {(viewModel.activeTab === 'archive' ? viewModel.archivedProducts : viewModel.products).length ? (
                     <div className={Styles.list}>
-                        {viewModel.products.map((product) => (
+                        {(viewModel.activeTab === 'archive' ? viewModel.archivedProducts : viewModel.products).map((product) => (
                             <ProfileProductRow
                                 key={product.product_id}
                                 product={product}
@@ -128,10 +130,10 @@ export const ProfileContent = ({
                     </div>
                 ) : (
                     <EmptyState
-                        title={isOwner ? 'У вас пока нет товаров' : 'У пользователя пока нет товаров'}
-                        description={isOwner ? 'Добавьте первый товар, чтобы начать обмен.' : 'Здесь появятся активные объявления пользователя.'}
-                        actionLabel={isOwner ? 'Добавить товар' : undefined}
-                        onAction={isOwner ? viewModel.openCreate : undefined}
+                        title={viewModel.activeTab === 'archive' ? 'Архив пока пуст' : isOwner ? 'У вас пока нет товаров' : 'У пользователя пока нет товаров'}
+                        description={viewModel.activeTab === 'archive' ? 'Здесь сохраняются товары после завершённых обменов и снятые с обмена объявления.' : isOwner ? 'Добавьте первый товар, чтобы начать обмен.' : 'Здесь появятся активные объявления пользователя.'}
+                        actionLabel={isOwner && viewModel.activeTab !== 'archive' ? 'Добавить товар' : undefined}
+                        onAction={isOwner && viewModel.activeTab !== 'archive' ? viewModel.openCreate : undefined}
                     />
                 )}
 
@@ -188,8 +190,8 @@ export const ProfileContent = ({
                 <div className={Styles.heading}>
                     <div>
                         <h2>
-                            {viewModel.activeTab === 'products'
-                                ? isOwner ? 'Мои товары' : 'Товары пользователя'
+                            {viewModel.activeTab === 'products' || viewModel.activeTab === 'archive'
+                                ? viewModel.activeTab === 'archive' ? 'Архив товаров' : isOwner ? 'Мои товары' : 'Товары пользователя'
                                 : viewModel.activeTab === 'exchanges'
                                     ? 'Мои цепочки обменов'
                                     : 'Отзывы'}

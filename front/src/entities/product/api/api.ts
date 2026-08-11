@@ -26,6 +26,9 @@ export const productApi = createApi({
         getProductsByCustomer: builder.query<TProduct[], string>({
             query: (customerId) => `/products/by-customer/${customerId}`,
         }),
+        getMyProducts: builder.query<TProduct[], void>({
+            query: () => '/products/mine',
+        }),
         getProduct: builder.query<TProduct, string>({
             query: (productId) => `/products/${productId}`,
         }),
@@ -54,6 +57,7 @@ export const productApi = createApi({
 export const {
     useGetProductsQuery,
     useGetProductsByCustomerQuery,
+    useGetMyProductsQuery,
     useLazyGetProductsQuery,
     useGetProductQuery,
     useGetProductRecommendationsQuery,

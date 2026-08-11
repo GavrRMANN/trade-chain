@@ -1,7 +1,7 @@
 import {useCallback, useMemo, useReducer} from 'react';
 import {useNavigate} from 'react-router-dom';
 
-import {useGetProductsByCustomerQuery} from '@entities/product';
+import {useGetMyProductsQuery, useGetProductsByCustomerQuery} from '@entities/product';
 import type {TProduct} from '@entities/product';
 import {useGetCustomerRatingQuery, useGetReviewsByCustomerQuery} from '@entities/review';
 import type {TReview} from '@entities/review';
@@ -10,7 +10,7 @@ import type {TChain} from '@entities/chain';
 import {useGetProductsQuery} from '@entities/product';
 import type {TUser} from '@entities/user';
 
-export type TProfileTab = 'products' | 'exchanges' | 'reviews';
+export type TProfileTab = 'products' | 'archive' | 'exchanges' | 'reviews';
 
 export type TProfileExchange = {
     chain: TChain;
@@ -37,16 +37,27 @@ export const useProfile = (user?: TUser, isOwner = false) => {
         skip: !customerId,
         refetchOnMountOrArgChange: true,
     });
+    const ownProductsQuery = useGetMyProductsQuery(undefined, {
+        skip: !customerId || !isOwner,
+        refetchOnMountOrArgChange: true,
+    });
     const ratingQuery = useGetCustomerRatingQuery(customerId, {skip: !customerId});
     const reviewsQuery = useGetReviewsByCustomerQuery(customerId, {skip: !customerId});
     const chainsQuery = useGetMyChainsQuery(undefined, {skip: !customerId || !isOwner});
     const allProductsQuery = useGetProductsQuery({limit: 100}, {skip: !customerId || !isOwner});
 
-    const receivedProducts = useMemo(() => productsQuery.data ?? [], [productsQuery.data]);
+    const receivedProducts = useMemo(
+        () => (isOwner ? ownProductsQuery.data : productsQuery.data) ?? [],
+        [isOwner, ownProductsQuery.data, productsQuery.data],
+    );
     const reviews = useMemo<TReview[]>(() => reviewsQuery.data ?? [], [reviewsQuery.data]);
 
     const products = useMemo(
         () => receivedProducts.filter(({status}) => status !== 'archived'),
+        [receivedProducts],
+    );
+    const archivedProducts = useMemo(
+        () => receivedProducts.filter(({status}) => status === 'archived'),
         [receivedProducts],
     );
 
@@ -100,22 +111,24 @@ export const useProfile = (user?: TUser, isOwner = false) => {
     const getTabCount = useCallback(
         (tab: TProfileTab): number => {
             if (tab === 'products') return products.length;
+            if (tab === 'archive') return archivedProducts.length;
             if (tab === 'exchanges') return exchanges.length;
             return reviews.length;
         },
-        [products.length, exchanges.length, reviews.length],
+        [archivedProducts.length, products.length, exchanges.length, reviews.length],
     );
 
     return {
         activeTab,
         setActiveTab,
         products,
+        archivedProducts,
         reviews,
         exchanges,
         rating: ratingQuery.data?.average_rating ?? 0,
         reviewsCount: reviews.length,
-        isProductsLoading: productsQuery.isLoading,
-        isProductsError: productsQuery.isError,
+        isProductsLoading: isOwner ? ownProductsQuery.isLoading : productsQuery.isLoading,
+        isProductsError: isOwner ? ownProductsQuery.isError : productsQuery.isError,
         isReviewsLoading: reviewsQuery.isLoading,
         isReviewsError: reviewsQuery.isError,
         isExchangesLoading: isOwner && (chainsQuery.isLoading || allProductsQuery.isLoading),
