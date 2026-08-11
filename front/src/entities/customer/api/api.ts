@@ -11,6 +11,9 @@ type TUpdateCustomerArgs = {
 export const customerApi = createApi({
     reducerPath: 'customerApi',
     baseQuery: apiBaseQuery,
+    refetchOnFocus: true,
+    refetchOnReconnect: true,
+    refetchOnMountOrArgChange: true,
     endpoints: (builder) => ({
         getCustomers: builder.query<TCustomer[], TCustomerListRequest | void>({
             query: (params) => ({

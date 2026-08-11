@@ -75,6 +75,7 @@ export const buildNotifications = (
             status: chain.status,
             updated_at: chain.updated_at,
             href,
+            read_at: null,
             ...describe(kind, fromProduct, toProduct),
         } satisfies TNotification;
 

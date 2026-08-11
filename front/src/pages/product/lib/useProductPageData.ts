@@ -1,26 +1,26 @@
-import {useMemo} from 'react';
+import { useMemo } from 'react';
 
-import {useGetCategoryQuery} from '@entities/category';
-import {useGetChainsByProductQuery, useGetMyChainsQuery} from '@entities/chain';
-import {useGetCustomerQuery} from '@entities/customer';
+import { useGetCategoryQuery } from '@entities/category';
+import { useGetChainsByProductQuery, useGetMyChainsQuery } from '@entities/chain';
+import { useGetCustomerQuery } from '@entities/customer';
 import {
     useGetProductQuery,
     useGetProductRecommendationsQuery,
     useGetProductsByCustomerQuery,
     useGetProductsQuery,
 } from '@entities/product';
-import {useGetCustomerRatingQuery, useGetReviewsByCustomerQuery} from '@entities/review';
-import {selectIsAuthenticated, useGetCurrentUserQuery} from '@entities/user';
-import {useGetWishlistByProductQuery, useGetWishlistOptionsQuery} from '@entities/wishlist';
-import {useAppSelector} from '@app/redux';
+import { useGetCustomerRatingQuery, useGetReviewsByCustomerQuery } from '@entities/review';
+import { selectIsAuthenticated, useGetCurrentUserQuery } from '@entities/user';
+import { useGetWishlistByProductQuery, useGetWishlistOptionsQuery } from '@entities/wishlist';
+import { useAppSelector } from '@app/redux';
 
 const OPEN_CHAIN_STATUSES = new Set(['pending', 'active', 'countered']);
 
 export const useProductPageData = (productId?: string) => {
-    const productQuery = useGetProductQuery(productId ?? '', {skip: !productId});
+    const productQuery = useGetProductQuery(productId ?? '', { skip: !productId });
     const product = productQuery.data;
     const isAuthenticated = useAppSelector(selectIsAuthenticated);
-    const currentUserQuery = useGetCurrentUserQuery(undefined, {skip: !isAuthenticated});
+    const currentUserQuery = useGetCurrentUserQuery(undefined, { skip: !isAuthenticated });
     const currentUserId = currentUserQuery.data?.customer_id;
     const isOwner = Boolean(product && currentUserId && product.customer_id === currentUserId);
 
@@ -30,7 +30,7 @@ export const useProductPageData = (productId?: string) => {
     const categoryQuery = useGetCategoryQuery(product?.category_id ?? '', {
         skip: !product?.category_id,
     });
-    const wishlistQuery = useGetWishlistByProductQuery(productId ?? '', {skip: !productId});
+    const wishlistQuery = useGetWishlistByProductQuery(productId ?? '', { skip: !productId });
     const optionsQuery = useGetWishlistOptionsQuery(wishlistQuery.data?.wishlist_id ?? '', {
         skip: !wishlistQuery.data,
     });
@@ -44,14 +44,13 @@ export const useProductPageData = (productId?: string) => {
     const myProductsQuery = useGetProductsByCustomerQuery(currentUserId ?? '', {
         skip: !currentUserId || isOwner,
     });
-    const catalogQuery = useGetProductsQuery(undefined, {skip: !isOwner});
+    const catalogQuery = useGetProductsQuery(undefined, { skip: !currentUserId });
     const chainsQuery = useGetChainsByProductQuery(productId ?? '', {
         skip: !productId || !isOwner,
     });
-    const recommendationsQuery = useGetProductRecommendationsQuery(
-        productId ?? '',
-        {skip: !productId || !currentUserId || isOwner},
-    );
+    const recommendationsQuery = useGetProductRecommendationsQuery(productId ?? '', {
+        skip: !productId || !currentUserId || isOwner,
+    });
     const myChainsQuery = useGetMyChainsQuery(undefined, {
         skip: !currentUserId || isOwner,
     });
@@ -99,9 +98,37 @@ export const useProductPageData = (productId?: string) => {
                         chain.exchange_goal_id === productId ||
                         (!chain.exchange_goal_id && chain.to_product_id === productId),
                 )
-                .sort((left, right) => Date.parse(right.updated_at) - Date.parse(left.updated_at))[0],
+                .sort(
+                    (left, right) => Date.parse(right.updated_at) - Date.parse(left.updated_at),
+                )[0],
         [myChainsQuery.data, productId],
     );
+
+    const myProductOffers = useMemo(() => {
+        const productsById = new Map(
+            (catalogQuery.data ?? []).map((item) => [item.product_id, item]),
+        );
+        if (product) productsById.set(product.product_id, product);
+
+        return (myChainsQuery.data ?? [])
+            .filter(
+                (chain) =>
+                    OPEN_CHAIN_STATUSES.has(chain.status) &&
+                    chain.initiator_id === currentUserId &&
+                    (chain.from_product_id === productId || chain.to_product_id === productId),
+            )
+            .sort((a, b) => Date.parse(b.updated_at) - Date.parse(a.updated_at))
+            .map((chain) => ({
+                chain,
+                fromProduct: productsById.get(chain.from_product_id),
+                toProduct: chain.to_product_id ? productsById.get(chain.to_product_id) : undefined,
+                goalProduct: chain.exchange_goal_id
+                    ? productsById.get(chain.exchange_goal_id)
+                    : chain.to_product_id
+                      ? productsById.get(chain.to_product_id)
+                      : undefined,
+            }));
+    }, [catalogQuery.data, currentUserId, myChainsQuery.data, product, productId]);
 
     return {
         product,
@@ -115,6 +142,7 @@ export const useProductPageData = (productId?: string) => {
         averageRating: ratingQuery.data?.average_rating,
         incomingOffers,
         productOffers,
+        myProductOffers,
         targetChain,
         isOwner,
         isAuthenticated,

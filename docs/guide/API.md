@@ -1,6 +1,6 @@
 # API бекенда
 
-Документ описывает текущую реализацию HTTP API в `back/internal/httpapi`.
+Документ описывает текущую реализацию HTTP API в `../../back/internal/httpapi`.
 
 ## Общие сведения
 

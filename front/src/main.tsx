@@ -5,7 +5,7 @@ import { BrowserRouter } from 'react-router-dom';
 import 'antd/dist/reset.css';
 import './index.css';
 
-import { StoreProvider } from '@app/providers';
+import { RealtimeProvider, StoreProvider } from '@app/providers';
 import { AppRouter } from '@app/router';
 import {PageTitleProvider} from "@app/providers/pageTitle";
 import { store } from '@app/redux';
@@ -18,20 +18,22 @@ store.dispatch(initAuth());
 createRoot(document.getElementById('root')!).render(
     <StrictMode>
         <StoreProvider>
-            <ConfigProvider
-                theme={{
-                    token: {
-                        colorPrimary: '#1677ff',
-                        colorBgLayout: '#ffffff'
-                    },
-                }}
-            >
-                <PageTitleProvider>
-                    <BrowserRouter>
-                        <AppRouter />
-                    </BrowserRouter>
-                </PageTitleProvider>
-            </ConfigProvider>
+            <RealtimeProvider>
+                <ConfigProvider
+                    theme={{
+                        token: {
+                            colorPrimary: '#1677ff',
+                            colorBgLayout: '#ffffff'
+                        },
+                    }}
+                >
+                    <PageTitleProvider>
+                        <BrowserRouter>
+                            <AppRouter />
+                        </BrowserRouter>
+                    </PageTitleProvider>
+                </ConfigProvider>
+            </RealtimeProvider>
         </StoreProvider>
     </StrictMode>,
 );

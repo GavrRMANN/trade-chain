@@ -5,7 +5,7 @@ import { usePageTitle } from '@app/providers/pageTitle';
 import { useGetCategoriesQuery } from '@entities/category';
 import { useCreateChainMutation, useGetMyChainsQuery } from '@entities/chain';
 import type { TChain } from '@entities/chain';
-import { useGetProductsByCustomerQuery, useGetProductsQuery } from '@entities/product';
+import { useGetProductsByCustomerQuery, useGetProductsQuery, useProductsById } from '@entities/product';
 import type { TProduct } from '@entities/product';
 import { useFindChainQuery } from '@entities/search';
 import { useGetCurrentUserQuery } from '@entities/user';
@@ -77,19 +77,25 @@ export const useRoute = () => {
         [navigate, searchParams],
     );
 
-    const productsById = useMemo(() => {
-        const map = new Map<string, TProduct>();
-        for (const product of productsQuery.data ?? []) {
-            map.set(product.product_id, product);
-        }
-        for (const product of myProductsQuery.data ?? []) {
-            map.set(product.product_id, product);
-        }
-        for (const product of chain) {
-            map.set(product.product_id, product);
-        }
-        return map;
-    }, [chain, myProductsQuery.data, productsQuery.data]);
+    const productIds = useMemo(
+        () => [
+            targetId,
+            sourceId,
+            ...chain.map((product) => product.product_id),
+            ...(myChainsQuery.data ?? []).flatMap((item) => [
+                item.from_product_id,
+                item.to_product_id,
+                item.exchange_goal_id,
+                item.route_step_id,
+            ]),
+        ],
+        [chain, myChainsQuery.data, sourceId, targetId],
+    );
+    const availableProducts = useMemo(
+        () => [...(productsQuery.data ?? []), ...(myProductsQuery.data ?? []), ...chain],
+        [chain, myProductsQuery.data, productsQuery.data],
+    );
+    const productsById = useProductsById(productIds, availableProducts);
 
     const routeSource = chain[0];
     const requestedSource = sourceId ? productsById.get(sourceId) : undefined;

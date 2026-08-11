@@ -20,6 +20,7 @@ type ProductService interface {
 	Create(context.Context, *domain.CreateProductDTO) (*domain.Product, error)
 	GetByID(context.Context, string) (*domain.Product, error)
 	GetByCustomerID(context.Context, string) ([]domain.Product, error)
+	GetOwnByCustomerID(context.Context, string) ([]domain.Product, error)
 	Update(context.Context, string, *domain.UpdateProductDTO) (*domain.Product, error)
 	Delete(context.Context, string, string) error
 	List(context.Context, *string, string, *string, int, int) ([]domain.Product, error)
@@ -37,8 +38,15 @@ type ChainService interface {
 	Confirm(ctx context.Context, chainID, actorID string, success bool, reason string) (*domain.Chain, error)
 	Messages(ctx context.Context, chainID, actorID string) ([]domain.ChainMessage, error)
 	SendMessage(ctx context.Context, chainID, actorID, body string) (*domain.ChainMessage, error)
+	ExpireOffers(ctx context.Context) error
 	CanReview(ctx context.Context, chainID, actorID string) (string, error)
-	Delete(context.Context, string) error
+	Delete(ctx context.Context, chainID, actorID string) error
+}
+
+type NotificationService interface {
+	ListReads(ctx context.Context, customerID string) ([]domain.NotificationRead, error)
+	MarkRead(ctx context.Context, customerID, chainID string, kind domain.NotificationKind) error
+	MarkAllRead(ctx context.Context, customerID string) error
 }
 
 // OfferService — экран предложений: отправить, ответить, довести до итога.

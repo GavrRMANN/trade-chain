@@ -3,12 +3,12 @@ import {MainSection} from '@shared/ui/mainSection';
 import {PageError} from '@shared/ui/pageError';
 import {Preloader} from '@shared/ui/preloader';
 import {ExchangeRow} from '@widgets/exchangeRow';
-import {ProductImage} from '@entities/product';
 import {Modal} from '@shared/ui/modal';
 import {formatDate} from '@shared/lib';
 import {RouteBuilder} from '@features/routeBuilder';
 
 import Styles from './exchanges-page.module.css';
+import {RouteGroupCard} from './RouteGroupCard';
 import {useExchanges} from '../lib';
 import type {TExchangeRouteTab, TExchangeTab} from '../lib/useExchanges';
 
@@ -149,75 +149,21 @@ export const ExchangesPage = () => {
                         ) : (
                             <div className={Styles['exchanges-page__routes-list']}>
                                 {visibleRouteGroups.map((group) => (
-                                    <article
+                                    <RouteGroupCard
                                         key={group.goalId}
-                                        className={Styles['exchanges-page__route-card']}
-                                    >
-                                        <div className={Styles['exchanges-page__route-path']}>
-                                            <div className={Styles['exchanges-page__route-product']}>
-                                                <span>Сейчас</span>
-                                                <div className={Styles['exchanges-page__route-media']}>
-                                                    <ProductImage
-                                                        src={group.sourceProduct?.image}
-                                                        alt={group.sourceProduct?.title ?? ''}
-                                                        title={
-                                                            group.sourceProduct?.title ??
-                                                            'Текущий товар'
-                                                        }
-                                                    />
-                                                </div>
-                                                <strong>
-                                                    {group.sourceProduct?.title ?? 'Текущий товар'}
-                                                </strong>
-                                            </div>
-                                            <div className={Styles['exchanges-page__route-line']} aria-hidden="true">
-                                                <span>{group.completedOffersCount}</span>
-                                                <i>→</i>
-                                            </div>
-                                            <div className={Styles['exchanges-page__route-product']}>
-                                                <span>Цель</span>
-                                                <div className={Styles['exchanges-page__route-media']}>
-                                                    <ProductImage
-                                                        src={group.goalProduct?.image}
-                                                        alt={group.goalProduct?.title ?? ''}
-                                                        title={
-                                                            group.goalProduct?.title ??
-                                                            'Цель недоступна'
-                                                        }
-                                                    />
-                                                </div>
-                                                <strong>
-                                                    {group.goalProduct?.title ?? 'Цель недоступна'}
-                                                </strong>
-                                            </div>
-                                        </div>
-
-                                        <div className={Styles['exchanges-page__route-info']}>
-                                            <div>
-                                                <span>
-                                                    {group.openOffersCount > 0
-                                                        ? formatActiveOffers(group.openOffersCount)
-                                                        : 'Нет активных предложений'}
-                                                </span>
-                                                <small>
-                                                    Всего обменов: {group.offersCount} · Обновлено{' '}
-                                                    {formatDate(group.updatedAt)}
-                                                </small>
-                                            </div>
-                                            <Button
-                                                variant="secondary"
-                                                onClick={() =>
-                                                    openRoute(
-                                                        group.goalId,
-                                                        group.sourceProductId,
-                                                        group.goalCategoryId,
-                                                    )
-                                                }
-                                            >
-                                                Открыть цепочку
-                                            </Button>
-                                        </div>
-                                    </article>
+                                        sourceProduct={group.sourceProduct}
+                                        goalProduct={group.goalProduct}
+                                        openOffersCount={group.openOffersCount}
+                                        offersCount={group.offersCount}
+                                        updatedAt={group.updatedAt}
+                                        formatActiveOffers={formatActiveOffers}
+                                        formatDate={formatDate}
+                                        onOpen={() => openRoute(
+                                            group.goalId,
+                                            group.sourceProductId,
+                                            group.goalCategoryId,
+                                        )}
+                                    />
                                 ))}
                             </div>
                         )}

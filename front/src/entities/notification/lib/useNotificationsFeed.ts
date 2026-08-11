@@ -1,68 +1,67 @@
 import {useMemo} from 'react';
 
 import {useGetMyChainsQuery} from '@entities/chain';
-import {useGetProductsQuery} from '@entities/product';
+import {useGetProductsQuery, useProductsById} from '@entities/product';
 import {selectIsAuthenticated, useGetCurrentUserQuery} from '@entities/user';
 import {useAppSelector} from '@app/redux';
 
 import {buildNotifications} from './buildNotifications';
+import {useGetNotificationReadsQuery} from '../api';
 import type {TNotification} from '../types';
-
-const POLLING_INTERVAL = 30_000;
-
-type TFeedOptions = {
-    /** Включить периодический опрос. Выключают на страницах с собственным refetch. */
-    polling?: boolean;
-};
 
 /**
  * Общий источник уведомлений для шапки и страницы.
  *
- * Опрашивает «Мои обмены» раз в 30 секунд (бэкенд уведомлений/WebSocket
- * отсутствует — см. docs/PRODUCT_FLOW.md §4) и превращает сделки в ленту событий.
+ * SSE обновляет кэш сделок, а этот хук превращает его в ленту событий.
  */
-export const useNotificationsFeed = (options: TFeedOptions = {}) => {
-    const {polling = true} = options;
+export const useNotificationsFeed = () => {
     const isAuthenticated = useAppSelector(selectIsAuthenticated);
 
-    const {data: currentUser} = useGetCurrentUserQuery(undefined, {
+    const {data: currentUser, isLoading: isCurrentUserLoading} = useGetCurrentUserQuery(undefined, {
         skip: !isAuthenticated,
     });
     const {
         data: chains = [],
-        isLoading,
+        isLoading: isChainsLoading,
         isFetching,
         isError,
     } = useGetMyChainsQuery(undefined, {
         skip: !isAuthenticated,
-        pollingInterval: polling ? POLLING_INTERVAL : undefined,
     });
     const {data: products = []} = useGetProductsQuery(undefined, {
+        skip: !isAuthenticated,
+    });
+    const {data: reads = [], isLoading: isReadsLoading, isFetching: isReadsFetching, isError: isReadsError} = useGetNotificationReadsQuery(undefined, {
         skip: !isAuthenticated,
     });
 
     const currentUserId = currentUser?.customer_id ?? '';
 
-    const productsById = useMemo(() => {
-        const map = new Map<string, import('@entities/product').TProduct>();
-        for (const product of products) {
-            map.set(product.product_id, product);
-        }
-        return map;
-    }, [products]);
+    const productIds = useMemo(
+        () => chains.flatMap((chain) => [chain.from_product_id, chain.to_product_id]),
+        [chains],
+    );
+    const productsById = useProductsById(productIds, products);
 
-    const notifications = useMemo<TNotification[]>(
-        () =>
-            currentUserId
-                ? buildNotifications(chains, productsById, currentUserId)
-                : [],
-        [chains, productsById, currentUserId],
+    const readAtByNotificationId = useMemo(
+        () => new Map(reads.map((item) => [`${item.chain_id}:${item.kind}`, item.read_at])),
+        [reads],
     );
 
-    /** Предложения, ожидающие моего ответа — основа бейджа в шапке. */
+    const notifications = useMemo<TNotification[]>(
+        () => (currentUserId
+            ? buildNotifications(chains, productsById, currentUserId)
+            : []
+        ).map((notification) => ({
+            ...notification,
+            read_at: readAtByNotificationId.get(notification.id) ?? null,
+        })),
+        [chains, currentUserId, productsById, readAtByNotificationId],
+    );
+
+    /** Непрочитанные события показываются бейджами в навигации. */
     const unreadCount = useMemo(
-        () =>
-            notifications.filter((item) => item.kind === 'incoming_offer').length,
+        () => notifications.filter((item) => item.read_at === null).length,
         [notifications],
     );
 
@@ -70,8 +69,8 @@ export const useNotificationsFeed = (options: TFeedOptions = {}) => {
         isAuthenticated,
         notifications,
         unreadCount,
-        isLoading,
-        isFetching,
-        isError,
+        isLoading: isChainsLoading || isCurrentUserLoading || isReadsLoading,
+        isFetching: isFetching || isReadsFetching,
+        isError: isError || isReadsError,
     };
 };

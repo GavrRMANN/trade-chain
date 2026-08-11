@@ -11,6 +11,9 @@ export const userApi = createApi({
     reducerPath: 'userApi',
     baseQuery: apiBaseQuery,
     tagTypes: ['CurrentUser'],
+    refetchOnFocus: true,
+    refetchOnReconnect: true,
+    refetchOnMountOrArgChange: true,
     endpoints: (builder) => ({
         loginUser: builder.mutation<TAuthResponse, TLoginPayload>({
             query: (body) => ({url: '/auth/login', method: 'POST', body}),

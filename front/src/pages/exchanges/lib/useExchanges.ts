@@ -1,13 +1,12 @@
-import {useCallback, useMemo, useReducer} from 'react';
-import {useNavigate} from 'react-router-dom';
+import {useCallback, useEffect, useLayoutEffect, useMemo, useReducer} from 'react';
+import {useNavigate, useSearchParams} from 'react-router-dom';
 
 import {useGetMyChainsQuery} from '@entities/chain';
 import type {TChain, TChainStatus} from '@entities/chain';
-import {useGetProductsQuery} from '@entities/product';
+import {useGetProductsQuery, useProductsById} from '@entities/product';
 import type {TProduct} from '@entities/product';
 import {useGetCurrentUserQuery} from '@entities/user';
 import {usePageTitle} from '@app/providers/pageTitle';
-import {useLayoutEffect} from 'react';
 
 /** Статусы, считающиеся терминальными — обмен завершён и больше не активен. */
 const FINAL_STATUSES: ReadonlySet<TChainStatus> = new Set<TChainStatus>([
@@ -45,9 +44,6 @@ export type TExchangeRouteTab = 'active' | 'completed';
 export type TExchangeView = 'routes' | 'exchanges';
 
 type TExchangeUiState = {
-    activeTab: TExchangeTab;
-    activeRouteTab: TExchangeRouteTab;
-    activeView: TExchangeView;
     isBuilderOpen: boolean;
 };
 type TExchangeUiAction = {type: 'update'; payload: Partial<TExchangeUiState>};
@@ -55,6 +51,12 @@ const exchangeUiReducer = (state: TExchangeUiState, action: TExchangeUiAction): 
     ...state,
     ...action.payload,
 });
+
+const isExchangeTab = (value: string | null): value is TExchangeTab =>
+    value === 'active' || value === 'incoming' || value === 'outgoing' || value === 'completed';
+
+const isRouteTab = (value: string | null): value is TExchangeRouteTab =>
+    value === 'active' || value === 'completed';
 
 const formatActiveOffers = (count: number): string => {
     const lastTwo = count % 100;
@@ -83,19 +85,55 @@ const formatActiveOffers = (count: number): string => {
 export const useExchanges = () => {
     const {setTitle} = usePageTitle();
     const navigate = useNavigate();
+    const [searchParams, setSearchParams] = useSearchParams();
 
     // UI-состояние
     const [uiState, dispatchUi] = useReducer(exchangeUiReducer, {
-        activeTab: 'active',
-        activeRouteTab: 'active',
-        activeView: 'routes',
         isBuilderOpen: false,
     });
-    const {activeTab, activeRouteTab, activeView, isBuilderOpen} = uiState;
-    const setActiveTab = (value: TExchangeTab) => dispatchUi({type: 'update', payload: {activeTab: value}});
-    const setActiveRouteTab = (value: TExchangeRouteTab) => dispatchUi({type: 'update', payload: {activeRouteTab: value}});
-    const setActiveView = (value: TExchangeView) => dispatchUi({type: 'update', payload: {activeView: value}});
+    const {isBuilderOpen} = uiState;
+    const activeView: TExchangeView = searchParams.get('view') === 'exchanges' ? 'exchanges' : 'routes';
+    const tab = searchParams.get('tab');
+    const activeTab: TExchangeTab = isExchangeTab(tab)
+        ? tab
+        : 'active';
+    const activeRouteTab: TExchangeRouteTab = isRouteTab(tab)
+        ? tab
+        : 'active';
+    const selectedTab = activeView === 'exchanges' ? activeTab : activeRouteTab;
+    const setActiveTab = (value: TExchangeTab) => setSearchParams((currentParams) => {
+        currentParams.set('view', 'exchanges');
+        currentParams.set('tab', value);
+        return currentParams;
+    });
+    const setActiveRouteTab = (value: TExchangeRouteTab) => setSearchParams((currentParams) => {
+        currentParams.set('view', 'routes');
+        currentParams.set('tab', value);
+        return currentParams;
+    });
+    const setActiveView = (value: TExchangeView) => setSearchParams((currentParams) => {
+        const currentTab = currentParams.get('tab');
+        currentParams.set('view', value);
+        currentParams.set(
+            'tab',
+            value === 'exchanges'
+                ? (isExchangeTab(currentTab) ? currentTab : 'active')
+                : (isRouteTab(currentTab) ? currentTab : 'active'),
+        );
+        return currentParams;
+    });
     const setIsBuilderOpen = (value: boolean) => dispatchUi({type: 'update', payload: {isBuilderOpen: value}});
+
+    useEffect(() => {
+        if (searchParams.get('view') === activeView && searchParams.get('tab') === selectedTab) {
+            return;
+        }
+        setSearchParams((currentParams) => {
+            currentParams.set('view', activeView);
+            currentParams.set('tab', selectedTab);
+            return currentParams;
+        }, {replace: true});
+    }, [activeView, searchParams, selectedTab, setSearchParams]);
 
     const {data: currentUser} = useGetCurrentUserQuery();
     const currentUserId = currentUser?.customer_id ?? '';
@@ -109,13 +147,16 @@ export const useExchanges = () => {
 
     const {data: products = []} = useGetProductsQuery();
 
-    const productsById = useMemo(() => {
-        const map = new Map<string, TProduct>();
-        for (const product of products) {
-            map.set(product.product_id, product);
-        }
-        return map;
-    }, [products]);
+    const productIds = useMemo(
+        () => chains.flatMap((chain) => [
+            chain.from_product_id,
+            chain.to_product_id,
+            chain.exchange_goal_id,
+            chain.route_step_id,
+        ]),
+        [chains],
+    );
+    const productsById = useProductsById(productIds, products);
 
     const buildRow = useMemo(() => {
         return (chain: TChain): TExchangeRow => ({

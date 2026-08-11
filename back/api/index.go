@@ -13,6 +13,8 @@ import (
 	"os"
 	"sync"
 
+	"trade-chain/internal/auth"
+	"trade-chain/internal/events"
 	"trade-chain/internal/httpapi"
 	"trade-chain/internal/repository"
 	"trade-chain/internal/search"
@@ -30,6 +32,11 @@ var (
 )
 
 func build() {
+	if err := auth.RequireSigningSecret(); err != nil {
+		initErr = err
+		return
+	}
+
 	dbURL := os.Getenv("DATABASE_URL")
 	if dbURL == "" {
 		initErr = errNoDatabaseURL
@@ -55,25 +62,31 @@ func build() {
 	chainRepo := repository.NewChainRepository(pool)
 	negotiationRepo := repository.NewNegotiationRepository(pool)
 	reviewRepo := repository.NewReviewRepository(pool)
+	notificationRepo := repository.NewNotificationRepository(pool)
 
 	customerService := service.NewCustomerService(customerRepo)
 	productService := service.NewProductService(productRepo, customerRepo)
 	categoryService := service.NewCategoryService(categoryRepo)
 	wishlistService := service.NewWishlistService(wishlistRepo, productRepo)
-	chainService := service.NewChainService(chainRepo, productRepo, negotiationRepo)
+	eventBroker := events.NewBroker(pool)
+	chainService := service.NewChainService(chainRepo, productRepo, negotiationRepo, eventBroker)
 	offerService := service.NewOfferService(chainService, chainRepo, negotiationRepo)
 	reviewService := service.NewReviewService(reviewRepo, customerRepo, productRepo, chainService)
+	notificationService := service.NewNotificationService(chainRepo, notificationRepo)
 	searchService := search.NewSearchService(productService, categoryService)
 
 	router = httpapi.NewRouter(httpapi.Dependencies{
-		Customers:  customerService,
-		Products:   productService,
-		Chains:     chainService,
-		Offers:     offerService,
-		Reviews:    reviewService,
-		Categories: categoryService,
-		Wishlists:  wishlistService,
-		Search:     searchService,
+		Customers:     customerService,
+		Products:      productService,
+		Chains:        chainService,
+		Offers:        offerService,
+		Reviews:       reviewService,
+		Categories:    categoryService,
+		Wishlists:     wishlistService,
+		Notifications: notificationService,
+		Search:        searchService,
+		Events:        eventBroker,
+		CronSecret:    os.Getenv("CRON_SECRET"),
 	})
 }
 

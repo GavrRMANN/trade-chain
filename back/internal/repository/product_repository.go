@@ -172,6 +172,55 @@ func (r *productRepository) GetByCustomerID(ctx context.Context, customerID stri
 	return products, rows.Err()
 }
 
+// GetOwnByCustomerID возвращает все товары владельца, включая архивные.
+func (r *productRepository) GetOwnByCustomerID(ctx context.Context, customerID string) ([]domain.Product, error) {
+	query := `
+		SELECT
+			product_id,
+			customer_id,
+			COALESCE(category_id::text, ''),
+			title,
+			COALESCE(description, ''),
+			COALESCE(image, ''),
+			price,
+			COALESCE(location, ''),
+			status,
+			created_at,
+			updated_at
+		FROM products
+		WHERE customer_id = $1
+		ORDER BY created_at DESC
+	`
+
+	rows, err := r.db.Query(ctx, query, customerID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var products []domain.Product
+	for rows.Next() {
+		var p domain.Product
+		if err := rows.Scan(
+			&p.ProductID,
+			&p.CustomerID,
+			&p.CategoryID,
+			&p.Title,
+			&p.Description,
+			&p.Image,
+			&p.Price,
+			&p.Location,
+			&p.Status,
+			&p.CreatedAt,
+			&p.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		products = append(products, p)
+	}
+	return products, rows.Err()
+}
+
 func (r *productRepository) Update(ctx context.Context, id string, dto *domain.UpdateProductDTO) (*domain.Product, error) {
 	query := `
 		UPDATE products
@@ -183,7 +232,7 @@ func (r *productRepository) Update(ctx context.Context, id string, dto *domain.U
 			price = COALESCE($5, price),
 			location = COALESCE($6, location),
 			status = COALESCE($7, status)
-		WHERE product_id = $8
+		WHERE product_id = $8 AND status != 'archived'
 		RETURNING
 			product_id,
 			customer_id,
@@ -258,11 +307,9 @@ func (r *productRepository) List(
 	customerID *string,
 	q string,
 	categoryID *string,
-	page int,
+	offset int,
 	limit int,
 ) ([]domain.Product, error) {
-	offset := (page - 1) * limit
-
 	query := `
 		SELECT
 			product_id,
@@ -388,11 +435,11 @@ func (r *productRepository) List(
 	}
 
 	log.Printf(
-		"PRODUCT LIST SUCCESS: customerID=%v q=%q category=%v page=%d limit=%d got=%d",
+		"PRODUCT LIST SUCCESS: customerID=%v q=%q category=%v offset=%d limit=%d got=%d",
 		customerID,
 		q,
 		categoryID,
-		page,
+		offset,
 		limit,
 		len(products),
 	)

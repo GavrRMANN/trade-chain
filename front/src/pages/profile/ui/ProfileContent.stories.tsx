@@ -10,6 +10,7 @@ const baseViewModel = {
     activeTab: 'products' as const,
     setActiveTab: () => undefined,
     products: [],
+    archivedProducts: [],
     reviews: [],
     exchanges: [],
     rating: 0,

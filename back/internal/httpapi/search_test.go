@@ -41,6 +41,10 @@ func (f *fakeProductService) GetByCustomerID(_ context.Context, customerID strin
 	return f.byOwner[customerID], nil
 }
 
+func (f *fakeProductService) GetOwnByCustomerID(_ context.Context, customerID string) ([]domain.Product, error) {
+	return f.byOwner[customerID], nil
+}
+
 func (f *fakeProductService) Update(context.Context, string, *domain.UpdateProductDTO) (*domain.Product, error) {
 	return nil, nil
 }

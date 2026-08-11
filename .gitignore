@@ -65,4 +65,4 @@ go.work.sum
 # .vscode/
 .idea/
 .vscode/
-/docs/CODE_CHECK.md
+/docs/code_review/CODE_CHECK.md

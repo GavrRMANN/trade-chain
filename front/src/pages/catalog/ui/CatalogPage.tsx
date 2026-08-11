@@ -15,8 +15,10 @@ export const CatalogPage = () => {
         isLoading,
         isFetching,
         isError,
+        hasMore,
         isCategoriesLoading,
         isCategoriesError,
+        loadMoreRef,
         selectCategory,
         openProduct,
         openCreateProduct,
@@ -44,19 +46,17 @@ export const CatalogPage = () => {
                 ))}
             </div>
             <div className={Styles['catalog-page']}>
-                {(isLoading || isFetching) && (
+                {(isLoading || (isFetching && products.length === 0)) && (
                     <div className={Styles['catalog-state']}>
                         <Preloader />
                     </div>
                 )}
 
-                {!isLoading && !isFetching && isError && (
+                {!isLoading && isError && products.length === 0 && (
                     <p className={Styles['catalog-state']}>Не удалось загрузить товары</p>
                 )}
 
                 {!isLoading &&
-                    !isFetching &&
-                    !isError &&
                     products?.map((product) => (
                         <ProductCard
                             key={product.product_id}
@@ -68,12 +68,22 @@ export const CatalogPage = () => {
                         />
                     ))}
 
-                {!isLoading && !isFetching && !isError && products?.length === 0 && (
+                {!isLoading && !isFetching && !isError && products.length === 0 && (
                     <div className={Styles.emptyState}>
                         <h2>В этой категории пока ничего нет</h2>
                         <p>Но вы можете добавить сюда первый товар.</p>
                         <Button onClick={openCreateProduct}>Добавить товар</Button>
                     </div>
+                )}
+
+                {products.length > 0 && hasMore && (
+                    <div ref={loadMoreRef} className={Styles['catalog-state']}>
+                        {isFetching && <Preloader />}
+                    </div>
+                )}
+
+                {!isLoading && isError && products.length > 0 && (
+                    <p className={Styles['catalog-state']}>Не удалось загрузить следующие товары</p>
                 )}
             </div>
         </MainSection>

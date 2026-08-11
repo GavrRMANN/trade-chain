@@ -7,6 +7,7 @@ import {reviewApi} from '@/entities/review';
 import {searchApi} from '@/entities/search';
 import {logout, setCredentials, userApi} from '@/entities/user';
 import {wishlistApi} from '@/entities/wishlist';
+import {notificationApi} from '@/entities/notification/api';
 
 const apiSlices = [
     userApi,
@@ -17,10 +18,11 @@ const apiSlices = [
     reviewApi,
     searchApi,
     wishlistApi,
+    notificationApi,
 ];
 
 /**
- * Перехватывает неудачные запросы RTK Query.
+ * Синхронизирует кэш RTK Query при смене сессии и межсущностных изменениях.
  *
  * При смене сессии очищает кеши RTK Query, чтобы ответы с прежним токеном не
  * были показаны новому пользователю. Это применяется и к logout, и к успешному
@@ -35,7 +37,7 @@ const apiSlices = [
  * Тип `unknown` для state/dispatch используется намеренно, чтобы не тянуть
  * циклический импорт типов из store.ts.
  */
-export const rtkQueryAuthMiddleware: Middleware =
+export const rtkQueryCacheMiddleware: Middleware =
     (api) => (next) => (action) => {
         if (isAnyOf(setCredentials, logout)(action)) {
             for (const apiSlice of apiSlices) {
@@ -51,5 +53,11 @@ export const rtkQueryAuthMiddleware: Middleware =
             }
         }
 
-        return next(action);
+        const result = next(action);
+
+        if (chainApi.endpoints.confirmChain.matchFulfilled(action)) {
+            api.dispatch(productApi.util.invalidateTags(['Product']));
+        }
+
+        return result;
     };

@@ -25,6 +25,7 @@ services:
       - ./back/infrastructure/migrations/006_seed_mock_data.sql:/docker-entrypoint-initdb.d/006_seed_mock_data.sql:ro
       - ./back/infrastructure/migrations/007_category_goal.sql:/docker-entrypoint-initdb.d/007_category_goal.sql:ro
       - ./back/infrastructure/migrations/008_unavailable_chain_status.sql:/docker-entrypoint-initdb.d/008_unavailable_chain_status.sql:ro
+      - ./back/infrastructure/migrations/010_notification_reads.sql:/docker-entrypoint-initdb.d/010_notification_reads.sql:ro
 
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
@@ -48,6 +49,7 @@ services:
     environment:
       DATABASE_URL: postgres://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@postgres:5432/${DB_NAME:-trade_chain}?sslmode=disable
       PORT: 8080
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required and must contain at least 32 characters}
       CORS_ALLOWED_ORIGINS: http://localhost:3000,http://localhost:5173
 
     ports:
