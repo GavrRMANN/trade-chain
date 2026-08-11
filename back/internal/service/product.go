@@ -148,11 +148,11 @@ func (s *productService) List(
 	customerID *string,
 	q string,
 	categoryID *string,
-	page int,
+	offset int,
 	limit int,
 ) ([]domain.Product, error) {
-	if page < 1 {
-		page = 1
+	if offset < 0 {
+		offset = 0
 	}
 
 	if limit < 1 {
@@ -168,7 +168,7 @@ func (s *productService) List(
 		customerID,
 		q,
 		categoryID,
-		page,
+		offset,
 		limit,
 	)
 	if err != nil {

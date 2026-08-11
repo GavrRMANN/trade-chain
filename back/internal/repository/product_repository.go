@@ -307,11 +307,9 @@ func (r *productRepository) List(
 	customerID *string,
 	q string,
 	categoryID *string,
-	page int,
+	offset int,
 	limit int,
 ) ([]domain.Product, error) {
-	offset := (page - 1) * limit
-
 	query := `
 		SELECT
 			product_id,
@@ -437,11 +435,11 @@ func (r *productRepository) List(
 	}
 
 	log.Printf(
-		"PRODUCT LIST SUCCESS: customerID=%v q=%q category=%v page=%d limit=%d got=%d",
+		"PRODUCT LIST SUCCESS: customerID=%v q=%q category=%v offset=%d limit=%d got=%d",
 		customerID,
 		q,
 		categoryID,
-		page,
+		offset,
 		limit,
 		len(products),
 	)
