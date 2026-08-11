@@ -86,6 +86,7 @@ export const {
     useGetMyProductsQuery,
     useLazyGetProductsQuery,
     useGetProductQuery,
+    useLazyGetProductQuery,
     useGetProductRecommendationsQuery,
     useCreateProductMutation,
     useUpdateProductMutation,

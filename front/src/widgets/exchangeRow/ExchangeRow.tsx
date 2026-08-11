@@ -1,4 +1,5 @@
 import type { TChain } from '@entities/chain';
+import { useGetProductQuery } from '@entities/product';
 import type { TProduct } from '@entities/product';
 import { ChainStatusBadge } from '@entities/chain';
 import { ExchangeDirection } from '@shared/ui/exchangeDirection';
@@ -26,7 +27,18 @@ type TExchangeRowProps = {
  * Используется в «Мои обмены», профиле и центре уведомлений.
  */
 export const ExchangeRow = ({ row, onOpen, className }: TExchangeRowProps) => {
-    const { chain, fromProduct, toProduct, goalProduct } = row;
+    const { chain, fromProduct: listedFromProduct, toProduct: listedToProduct, goalProduct: listedGoalProduct } = row;
+    // Каталог содержит только активные товары, поэтому историю подгружаем по ID.
+    const fromProductQuery = useGetProductQuery(chain.from_product_id, { skip: Boolean(listedFromProduct) });
+    const toProductQuery = useGetProductQuery(chain.to_product_id ?? '', {
+        skip: Boolean(listedToProduct) || !chain.to_product_id,
+    });
+    const goalProductQuery = useGetProductQuery(chain.exchange_goal_id ?? '', {
+        skip: Boolean(listedGoalProduct) || !chain.exchange_goal_id,
+    });
+    const fromProduct = listedFromProduct ?? fromProductQuery.data;
+    const toProduct = listedToProduct ?? toProductQuery.data;
+    const goalProduct = listedGoalProduct ?? goalProductQuery.data;
     const { sellerEmail } = useExchangeSeller(toProduct?.customer_id);
     const classes = [Styles['exchange-row'], className].filter(Boolean).join(' ');
 
