@@ -19,6 +19,7 @@ type ProductRepository interface {
 	Create(ctx context.Context, product *domain.CreateProductDTO) (*domain.Product, error)
 	GetByID(ctx context.Context, id string) (*domain.Product, error)
 	GetByCustomerID(ctx context.Context, customerID string) ([]domain.Product, error)
+	GetOwnByCustomerID(ctx context.Context, customerID string) ([]domain.Product, error)
 	Update(ctx context.Context, id string, product *domain.UpdateProductDTO) (*domain.Product, error)
 	Delete(ctx context.Context, id string, customerID string) error
 	List(ctx context.Context, customerID *string, q string, categoryID *string, page int, limit int) ([]domain.Product, error)

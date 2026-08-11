@@ -44,6 +44,9 @@ func (f *fakeProductRepo) Create(context.Context, *domain.CreateProductDTO) (*do
 func (f *fakeProductRepo) GetByCustomerID(context.Context, string) ([]domain.Product, error) {
 	return nil, nil
 }
+func (f *fakeProductRepo) GetOwnByCustomerID(context.Context, string) ([]domain.Product, error) {
+	return nil, nil
+}
 func (f *fakeProductRepo) Update(context.Context, string, *domain.UpdateProductDTO) (*domain.Product, error) {
 	return nil, nil
 }

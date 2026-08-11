@@ -38,6 +38,9 @@ export const productApi = createApi({
                 ...(result ?? []).map(({ product_id }) => ({ type: 'Product' as const, id: product_id })),
             ],
         }),
+        getMyProducts: builder.query<TProduct[], void>({
+            query: () => '/products/mine',
+        }),
         getProduct: builder.query<TProduct, string>({
             query: (productId) => `/products/${productId}`,
             providesTags: (_result, _error, productId) => [{ type: 'Product', id: productId }],
@@ -80,6 +83,7 @@ export const productApi = createApi({
 export const {
     useGetProductsQuery,
     useGetProductsByCustomerQuery,
+    useGetMyProductsQuery,
     useLazyGetProductsQuery,
     useGetProductQuery,
     useGetProductRecommendationsQuery,

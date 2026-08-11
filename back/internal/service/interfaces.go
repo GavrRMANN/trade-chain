@@ -20,6 +20,7 @@ type ProductService interface {
 	Create(context.Context, *domain.CreateProductDTO) (*domain.Product, error)
 	GetByID(context.Context, string) (*domain.Product, error)
 	GetByCustomerID(context.Context, string) ([]domain.Product, error)
+	GetOwnByCustomerID(context.Context, string) ([]domain.Product, error)
 	Update(context.Context, string, *domain.UpdateProductDTO) (*domain.Product, error)
 	Delete(context.Context, string, string) error
 	List(context.Context, *string, string, *string, int, int) ([]domain.Product, error)

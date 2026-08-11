@@ -231,7 +231,8 @@ func (r *chainRepository) UpdateStatus(ctx context.Context, id string, status do
 	return nil
 }
 
-// CompleteExchange завершает обмен: меняет владельцев товаров и обновляет статус
+// CompleteExchange завершает обмен: создаёт копии товаров у новых владельцев,
+// архивирует исходные записи и обновляет статус цепочки.
 func (r *chainRepository) CompleteExchange(ctx context.Context, chainID string) error {
 	tx, err := r.db.Begin(ctx)
 	if err != nil {
@@ -242,7 +243,7 @@ func (r *chainRepository) CompleteExchange(ctx context.Context, chainID string) 
 	// 1. Получить цепочку
 	var chain domain.Chain
 	err = tx.QueryRow(ctx, `
-			SELECT chain_id, from_product_id, to_product_id, initiator_id, status
+			SELECT chain_id, from_product_id, to_product_id, initiator_id, recipient_id, status
 			FROM chains
 			WHERE chain_id = $1
 			FOR UPDATE
@@ -251,6 +252,7 @@ func (r *chainRepository) CompleteExchange(ctx context.Context, chainID string) 
 		&chain.FromProductID,
 		&chain.ToProductID,
 		&chain.InitiatorID,
+		&chain.RecipientID,
 		&chain.Status,
 	)
 	if err != nil {
@@ -279,9 +281,10 @@ func (r *chainRepository) CompleteExchange(ctx context.Context, chainID string) 
 			SELECT product_id, customer_id
 			FROM products
 			WHERE product_id IN ($1, $2)
+			  AND status = $3
 			ORDER BY product_id
 			FOR UPDATE
-		`, chain.FromProductID, toProductID)
+		`, chain.FromProductID, toProductID, string(domain.ProductActive))
 	if err != nil {
 		return err
 	}
@@ -307,20 +310,31 @@ func (r *chainRepository) CompleteExchange(ctx context.Context, chainID string) 
 		return sql.ErrNoRows
 	}
 
-	// 3. Обменять владельцев
+	// 3. Создать новые активные карточки у получателей. Исходные карточки
+	// сохраняются у прежних владельцев для истории обменов.
 	_, err = tx.Exec(ctx, `
-			UPDATE products
-			SET customer_id = $1, status = $3
+			INSERT INTO products (customer_id, category_id, title, description, image, price, location, status)
+			SELECT $1, category_id, title, description, image, price, location, $3
+			FROM products
 			WHERE product_id = $2
-		`, toOwner, chain.FromProductID, string(domain.ProductExchanged))
+		`, toOwner, chain.FromProductID, string(domain.ProductActive))
+	if err != nil {
+		return err
+	}
+	_, err = tx.Exec(ctx, `
+			INSERT INTO products (customer_id, category_id, title, description, image, price, location, status)
+			SELECT $1, category_id, title, description, image, price, location, $3
+			FROM products
+			WHERE product_id = $2
+		`, fromOwner, toProductID, string(domain.ProductActive))
 	if err != nil {
 		return err
 	}
 	_, err = tx.Exec(ctx, `
 			UPDATE products
-			SET customer_id = $1, status = $3
-			WHERE product_id = $2
-		`, fromOwner, toProductID, string(domain.ProductExchanged))
+			SET status = $1, updated_at = CURRENT_TIMESTAMP
+			WHERE product_id IN ($2, $3)
+		`, string(domain.ProductArchived), chain.FromProductID, toProductID)
 	if err != nil {
 		return err
 	}

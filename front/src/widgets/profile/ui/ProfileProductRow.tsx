@@ -48,8 +48,8 @@ export const ProfileProductRow = ({
             {product.location && <p className={Styles.location}>{product.location}</p>}
             {product.description && <p className={Styles.description}>{product.description}</p>}
             <div className={Styles.actions}>
-                <Button variant="secondary" onClick={onOpen}>{openLabel}</Button>
-                {isOwner && <Button variant="text" onClick={onEdit}>Редактировать</Button>}
+                {product.status !== 'archived' && <Button variant="secondary" onClick={onOpen}>{openLabel}</Button>}
+                {isOwner && product.status !== 'archived' && <Button variant="text" onClick={onEdit}>Редактировать</Button>}
             </div>
         </div>
     </article>
