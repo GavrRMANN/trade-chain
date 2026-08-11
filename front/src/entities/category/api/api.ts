@@ -14,6 +14,9 @@ type TUpdateCategoryArgs = {
 export const categoryApi = createApi({
     reducerPath: 'categoryApi',
     baseQuery: apiBaseQuery,
+    refetchOnFocus: true,
+    refetchOnReconnect: true,
+    refetchOnMountOrArgChange: true,
     endpoints: (builder) => ({
         getCategories: builder.query<TCategory[], void>({
             query: () => '/categories',

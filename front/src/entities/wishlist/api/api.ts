@@ -12,6 +12,9 @@ export const wishlistApi = createApi({
     reducerPath: 'wishlistApi',
     baseQuery: apiBaseQuery,
     tagTypes: ['Wishlist', 'WishlistOptions'],
+    refetchOnFocus: true,
+    refetchOnReconnect: true,
+    refetchOnMountOrArgChange: true,
     endpoints: (builder) => ({
         createWishlist: builder.mutation<TWishlist, TCreateWishlistRequest>({
             query: (body) => ({ url: '/wishlists', method: 'POST', body }),

@@ -128,12 +128,11 @@ export const useExchangeRoom = () => {
             dispatch({type: 'update', payload: {statusError: undefined}});
             try {
                 await updateChainStatus({ id: chainId, body: { status } }).unwrap();
-                chainQuery.refetch();
             } catch (error) {
                 dispatch({type: 'update', payload: {statusError: getErrorMessage(error)}});
             }
         },
-        [chainId, updateChainStatus, chainQuery],
+        [chainId, updateChainStatus],
     );
 
     const handleConfirm = useCallback(
@@ -142,13 +141,11 @@ export const useExchangeRoom = () => {
             dispatch({type: 'update', payload: {statusError: undefined}});
             try {
                 await confirmChain({ id: chainId, body: { success } }).unwrap();
-                chainQuery.refetch();
-                chainDetailsQuery.refetch();
             } catch (error) {
                 dispatch({type: 'update', payload: {statusError: getErrorMessage(error)}});
             }
         },
-        [chainId, confirmChain, chainQuery, chainDetailsQuery],
+        [chainId, confirmChain],
     );
 
     const handleSendMessage = useCallback(async () => {
@@ -159,11 +156,10 @@ export const useExchangeRoom = () => {
         try {
             await sendChainMessage({ id: chainId, body: { body } }).unwrap();
             setMessageDraft('');
-            messagesQuery.refetch();
         } catch (error) {
             dispatch({type: 'update', payload: {messageError: getErrorMessage(error)}});
         }
-    }, [chainId, messageDraft, sendChainMessage, messagesQuery]);
+    }, [chainId, messageDraft, sendChainMessage]);
 
     const handleSendReview = useCallback(async () => {
         if (!chainId || rating < 1) return;

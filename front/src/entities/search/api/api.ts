@@ -6,6 +6,9 @@ import type { TFindChainRequest, TFindChainResponse } from '../types';
 export const searchApi = createApi({
     reducerPath: 'searchApi',
     baseQuery: apiBaseQuery,
+    refetchOnFocus: true,
+    refetchOnReconnect: true,
+    refetchOnMountOrArgChange: true,
     endpoints: (builder) => ({
         findChain: builder.query<TFindChainResponse, TFindChainRequest>({
             query: (params) => ({ url: '/search/chain', params }),
