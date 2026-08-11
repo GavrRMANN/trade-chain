@@ -5,7 +5,10 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
+	"trade-chain/internal/auth"
+	"trade-chain/internal/events"
 	"trade-chain/internal/httpapi"
 	"trade-chain/internal/repository"
 	"trade-chain/internal/search"
@@ -16,6 +19,9 @@ import (
 
 func main() {
 	ctx := context.Background()
+	if err := auth.RequireSigningSecret(); err != nil {
+		log.Fatal(err)
+	}
 
 	dbURL := os.Getenv("DATABASE_URL")
 	if dbURL == "" {
@@ -46,7 +52,8 @@ func main() {
 	productService := service.NewProductService(productRepo, customerRepo)
 	categoryService := service.NewCategoryService(categoryRepo)
 	wishlistService := service.NewWishlistService(wishlistRepo, productRepo)
-	chainService := service.NewChainService(chainRepo, productRepo, negotiationRepo)
+	eventBroker := events.NewBroker()
+	chainService := service.NewChainService(chainRepo, productRepo, negotiationRepo, eventBroker)
 	offerService := service.NewOfferService(chainService, chainRepo, negotiationRepo)
 	reviewService := service.NewReviewService(reviewRepo, customerRepo, productRepo, chainService)
 
@@ -63,6 +70,7 @@ func main() {
 		Categories: categoryService,
 		Wishlists:  wishlistService,
 		Search:     searchService,
+		Events:     eventBroker,
 	}
 	router := httpapi.NewRouter(deps)
 
@@ -71,7 +79,14 @@ func main() {
 		port = "8080"
 	}
 	log.Printf("starting server on port %s", port)
-	if err := http.ListenAndServe(":"+port, router); err != nil {
+	server := &http.Server{
+		Addr:              ":" + port,
+		Handler:           router,
+		ReadHeaderTimeout: 5 * time.Second,
+		IdleTimeout:       65 * time.Second,
+		MaxHeaderBytes:    1 << 20,
+	}
+	if err := server.ListenAndServe(); err != nil {
 		log.Fatal(err)
 	}
 }

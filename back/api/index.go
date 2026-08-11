@@ -13,6 +13,8 @@ import (
 	"os"
 	"sync"
 
+	"trade-chain/internal/auth"
+	"trade-chain/internal/events"
 	"trade-chain/internal/httpapi"
 	"trade-chain/internal/repository"
 	"trade-chain/internal/search"
@@ -30,6 +32,11 @@ var (
 )
 
 func build() {
+	if err := auth.RequireSigningSecret(); err != nil {
+		initErr = err
+		return
+	}
+
 	dbURL := os.Getenv("DATABASE_URL")
 	if dbURL == "" {
 		initErr = errNoDatabaseURL
@@ -60,7 +67,8 @@ func build() {
 	productService := service.NewProductService(productRepo, customerRepo)
 	categoryService := service.NewCategoryService(categoryRepo)
 	wishlistService := service.NewWishlistService(wishlistRepo, productRepo)
-	chainService := service.NewChainService(chainRepo, productRepo, negotiationRepo)
+	eventBroker := events.NewBroker()
+	chainService := service.NewChainService(chainRepo, productRepo, negotiationRepo, eventBroker)
 	offerService := service.NewOfferService(chainService, chainRepo, negotiationRepo)
 	reviewService := service.NewReviewService(reviewRepo, customerRepo, productRepo, chainService)
 	searchService := search.NewSearchService(productService, categoryService)
@@ -74,6 +82,7 @@ func build() {
 		Categories: categoryService,
 		Wishlists:  wishlistService,
 		Search:     searchService,
+		Events:     eventBroker,
 	})
 }
 

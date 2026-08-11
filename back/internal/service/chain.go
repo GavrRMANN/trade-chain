@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"trade-chain/internal/domain"
+	"trade-chain/internal/events"
 	"trade-chain/internal/exchange"
 	"trade-chain/internal/repository"
 )
@@ -15,14 +16,31 @@ type chainService struct {
 	repo         repository.ChainRepository
 	products     repository.ProductRepository
 	negotiations repository.NegotiationRepository
+	events       *events.Broker
 }
 
 func NewChainService(
 	repo repository.ChainRepository,
 	products repository.ProductRepository,
 	negotiations repository.NegotiationRepository,
+	brokers ...*events.Broker,
 ) ChainService {
-	return &chainService{repo: repo, products: products, negotiations: negotiations}
+	var broker *events.Broker
+	if len(brokers) > 0 {
+		broker = brokers[0]
+	}
+	return &chainService{repo: repo, products: products, negotiations: negotiations, events: broker}
+}
+
+func (s *chainService) publish(eventType string, chain *domain.Chain) {
+	if s.events == nil || chain == nil {
+		return
+	}
+	recipients := []string{chain.InitiatorID}
+	if chain.RecipientID != nil && *chain.RecipientID != chain.InitiatorID {
+		recipients = append(recipients, *chain.RecipientID)
+	}
+	s.events.Publish(events.Event{Type: eventType, ChainID: chain.ChainID}, recipients...)
 }
 
 // dealOf собирает взгляд на звено, с которым работают правила согласования.
@@ -105,7 +123,11 @@ func (s *chainService) Create(ctx context.Context, c *domain.Chain) (*domain.Cha
 	if errors.Is(err, domain.ErrOfferDuplicate) {
 		return nil, mapExchangeError(err)
 	}
-	return v, normalizeError(err)
+	if err != nil {
+		return nil, normalizeError(err)
+	}
+	s.publish(events.ExchangeOfferCreated, v)
+	return v, nil
 }
 
 func (s *chainService) GetByID(ctx context.Context, id string) (*domain.Chain, error) {
@@ -188,7 +210,11 @@ func (s *chainService) Decide(ctx context.Context, id string, action exchange.Ac
 	}
 
 	updated, err := s.repo.GetByID(ctx, id)
-	return updated, normalizeError(err)
+	if err != nil {
+		return nil, normalizeError(err)
+	}
+	s.publish(events.ExchangeChainUpdated, updated)
+	return updated, nil
 }
 
 // validateAcceptableProducts не даёт принять предложение после того, как
@@ -281,7 +307,14 @@ func (s *chainService) Confirm(ctx context.Context, id, actorID string, success 
 	}
 
 	updated, err := s.repo.GetByID(ctx, id)
-	return updated, normalizeError(err)
+	if err != nil {
+		return nil, normalizeError(err)
+	}
+	s.publish(events.ExchangeConfirmationCreated, updated)
+	if updated.Status == string(domain.ChainCompleted) {
+		s.publish(events.ExchangeCompleted, updated)
+	}
+	return updated, nil
 }
 
 // settle закрывает звено итоговым статусом.
@@ -345,7 +378,11 @@ func (s *chainService) SendMessage(ctx context.Context, id, actorID, body string
 		CustomerID: actorID,
 		Body:       body,
 	})
-	return v, normalizeError(err)
+	if err != nil {
+		return nil, normalizeError(err)
+	}
+	s.publish(events.ExchangeMessageCreated, chain)
+	return v, nil
 }
 
 // CanReview сообщает, вправе ли пользователь оценить вторую сторону, и кого
