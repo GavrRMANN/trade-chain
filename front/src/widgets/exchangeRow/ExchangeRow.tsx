@@ -1,13 +1,11 @@
 import type { TChain } from '@entities/chain';
-import { useGetProductQuery } from '@entities/product';
 import type { TProduct } from '@entities/product';
 import { ChainStatusBadge } from '@entities/chain';
-import { ExchangeDirection } from '@shared/ui/exchangeDirection';
 import { formatDate } from '@shared/lib';
 
 import Styles from './ExchangeRow.module.css';
-import { ProductCard } from './ProductCard';
-import { useExchangeSeller } from './useExchangeSeller';
+import {ExchangeProducts} from './ExchangeProducts';
+import {useExchangeRow} from './useExchangeRow';
 
 export type TExchangeRowData = {
     chain: TChain;
@@ -28,38 +26,29 @@ type TExchangeRowProps = {
  */
 export const ExchangeRow = ({ row, onOpen, className }: TExchangeRowProps) => {
     const { chain, fromProduct: listedFromProduct, toProduct: listedToProduct, goalProduct: listedGoalProduct } = row;
-    // Каталог содержит только активные товары, поэтому историю подгружаем по ID.
-    const fromProductQuery = useGetProductQuery(chain.from_product_id, { skip: Boolean(listedFromProduct) });
-    const toProductQuery = useGetProductQuery(chain.to_product_id ?? '', {
-        skip: Boolean(listedToProduct) || !chain.to_product_id,
+    const {
+        fromProduct,
+        toProduct,
+        goalProduct,
+        sellerEmail,
+        interactive,
+        open,
+        handleKeyDown,
+    } = useExchangeRow({
+        chain,
+        fromProduct: listedFromProduct,
+        toProduct: listedToProduct,
+        goalProduct: listedGoalProduct,
+        onOpen,
     });
-    const goalProductQuery = useGetProductQuery(chain.exchange_goal_id ?? '', {
-        skip: Boolean(listedGoalProduct) || !chain.exchange_goal_id,
-    });
-    const fromProduct = listedFromProduct ?? fromProductQuery.data;
-    const toProduct = listedToProduct ?? toProductQuery.data;
-    const goalProduct = listedGoalProduct ?? goalProductQuery.data;
-    const { sellerEmail } = useExchangeSeller(toProduct?.customer_id);
     const classes = [Styles['exchange-row'], className].filter(Boolean).join(' ');
-
-    const interactive = Boolean(onOpen);
-    const handleOpen = onOpen ? () => onOpen(chain.chain_id) : undefined;
-    const handleKeyDown = (event: React.KeyboardEvent) => {
-        if (!onOpen) {
-            return;
-        }
-        if (event.key === 'Enter' || event.key === ' ') {
-            event.preventDefault();
-            onOpen(chain.chain_id);
-        }
-    };
 
     return (
         <div
             className={classes}
             role={interactive ? 'button' : undefined}
             tabIndex={interactive ? 0 : undefined}
-            onClick={handleOpen}
+            onClick={interactive ? open : undefined}
             onKeyDown={handleKeyDown}
         >
             <div className={Styles['exchange-row__meta']}>
@@ -72,18 +61,15 @@ export const ExchangeRow = ({ row, onOpen, className }: TExchangeRowProps) => {
                 </div>
                 <span className={Styles['exchange-row__date']}>{formatDate(chain.created_at)}</span>
             </div>
-            <div className={Styles['exchange-row__products']}>
-                <ProductCard
-                    product={toProduct}
-                    label="Получаю"
-                    sellerEmail={sellerEmail}
-                    tone="target"
-                />
-                <div className={Styles['exchange-row__connector']}>
-                    <ExchangeDirection />
-                </div>
-                <ProductCard product={fromProduct} label="Отдаю" tone="source" />
-            </div>
+            <ExchangeProducts
+                first={{
+                    product: toProduct,
+                    label: 'Получаю',
+                    sellerEmail,
+                    tone: 'target',
+                }}
+                second={{product: fromProduct, label: 'Отдаю', tone: 'source'}}
+            />
             {chain.message && <p className={Styles['exchange-row__message']}>{chain.message}</p>}
         </div>
     );
