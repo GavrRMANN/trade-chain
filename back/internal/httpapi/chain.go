@@ -29,7 +29,7 @@ func mountChainRoutes(r chi.Router, s service.ChainService) {
 		r.With(auth.AuthMiddleware).Post("/{id}/confirm", h.confirm)
 		r.With(auth.AuthMiddleware).Get("/{id}/messages", h.messages)
 		r.With(auth.AuthMiddleware).Post("/{id}/messages", h.sendMessage)
-		r.Delete("/{id}", h.delete)
+		r.With(auth.AuthMiddleware).Delete("/{id}", h.delete)
 		r.Get("/by-product/{productID}", h.byProduct)
 	})
 }
@@ -176,7 +176,12 @@ func (h chainHandler) status(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} ErrorResponse
 // @Router /chains/{id} [delete]
 func (h chainHandler) delete(w http.ResponseWriter, r *http.Request) {
-	if err := h.s.Delete(r.Context(), chi.URLParam(r, "id")); err != nil {
+	userID, ok := auth.UserIDFromContext(r.Context())
+	if !ok {
+		writeError(w, service.ErrForbidden)
+		return
+	}
+	if err := h.s.Delete(r.Context(), chi.URLParam(r, "id"), userID); err != nil {
 		writeError(w, err)
 		return
 	}

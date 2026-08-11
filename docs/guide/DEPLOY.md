@@ -26,6 +26,8 @@
 
 - `DATABASE_URL` — строка подключения к Postgres. Для serverless берём
   pooled-хост (`-pooler`) и небольшой `pool_max_conns`.
+- `CRON_SECRET` — случайный секрет для Vercel Cron. Платформа передаёт его в
+  `Authorization: Bearer ...` при вызове задачи истечения предложений.
 
 Фронт (`tvchbmen-front`):
 

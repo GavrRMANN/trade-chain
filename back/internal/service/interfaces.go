@@ -38,8 +38,15 @@ type ChainService interface {
 	Confirm(ctx context.Context, chainID, actorID string, success bool, reason string) (*domain.Chain, error)
 	Messages(ctx context.Context, chainID, actorID string) ([]domain.ChainMessage, error)
 	SendMessage(ctx context.Context, chainID, actorID, body string) (*domain.ChainMessage, error)
+	ExpireOffers(ctx context.Context) error
 	CanReview(ctx context.Context, chainID, actorID string) (string, error)
-	Delete(context.Context, string) error
+	Delete(ctx context.Context, chainID, actorID string) error
+}
+
+type NotificationService interface {
+	ListReads(ctx context.Context, customerID string) ([]domain.NotificationRead, error)
+	MarkRead(ctx context.Context, customerID, chainID string, kind domain.NotificationKind) error
+	MarkAllRead(ctx context.Context, customerID string) error
 }
 
 // OfferService — экран предложений: отправить, ответить, довести до итога.

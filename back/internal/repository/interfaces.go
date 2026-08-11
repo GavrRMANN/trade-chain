@@ -65,8 +65,10 @@ type ChainRepository interface {
 	List(ctx context.Context, filter ChainFilter) ([]domain.Chain, error)
 	GetFullChain(ctx context.Context, chainID string) ([]domain.Chain, error)
 	UpdateStatus(ctx context.Context, id string, status domain.ChainStatus) error
+	UpdateStatusIfCurrent(ctx context.Context, id string, current, next domain.ChainStatus) error
 	CompleteExchange(ctx context.Context, chainID string) error // добавить
-	Delete(ctx context.Context, id string) error
+	ExpirePending(ctx context.Context) ([]domain.Chain, error)
+	Delete(ctx context.Context, id, initiatorID string) error
 }
 
 // NegotiationRepository хранит то, чем звено обрастает в переговорах:
@@ -76,6 +78,11 @@ type NegotiationRepository interface {
 	ListMessages(ctx context.Context, chainID string) ([]domain.ChainMessage, error)
 	Confirm(ctx context.Context, confirmation *domain.ChainConfirmation) error
 	ListConfirmations(ctx context.Context, chainID string) ([]domain.ChainConfirmation, error)
+}
+
+type NotificationRepository interface {
+	ListReads(ctx context.Context, customerID string) ([]domain.NotificationRead, error)
+	MarkRead(ctx context.Context, customerID, chainID string, kind domain.NotificationKind) error
 }
 
 type ReviewRepository interface {

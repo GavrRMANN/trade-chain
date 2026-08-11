@@ -231,6 +231,22 @@ func (r *chainRepository) UpdateStatus(ctx context.Context, id string, status do
 	return nil
 }
 
+func (r *chainRepository) UpdateStatusIfCurrent(ctx context.Context, id string, current, next domain.ChainStatus) error {
+	result, err := r.db.Exec(ctx, `
+		UPDATE chains
+		SET status = $1, updated_at = CURRENT_TIMESTAMP
+		WHERE chain_id = $2 AND status = $3
+		  AND (status <> $4 OR expires_at > CURRENT_TIMESTAMP)
+	`, next, id, current, domain.ChainPending)
+	if err != nil {
+		return err
+	}
+	if result.RowsAffected() == 0 {
+		return sql.ErrNoRows
+	}
+	return nil
+}
+
 // CompleteExchange завершает обмен: создаёт копии товаров у новых владельцев,
 // архивирует исходные записи и обновляет статус цепочки.
 func (r *chainRepository) CompleteExchange(ctx context.Context, chainID string) error {
@@ -376,9 +392,22 @@ func (r *chainRepository) CompleteExchange(ctx context.Context, chainID string) 
 	return tx.Commit(ctx)
 }
 
-func (r *chainRepository) Delete(ctx context.Context, id string) error {
-	query := `DELETE FROM chains WHERE chain_id = $1`
-	result, err := r.db.Exec(ctx, query, id)
+func (r *chainRepository) ExpirePending(ctx context.Context) ([]domain.Chain, error) {
+	return r.queryChains(ctx, `
+		UPDATE chains
+		SET status = $1, updated_at = CURRENT_TIMESTAMP
+		WHERE status = $2 AND expires_at <= CURRENT_TIMESTAMP
+		RETURNING `+chainColumns,
+		domain.ChainExpired,
+		domain.ChainPending,
+	)
+}
+
+func (r *chainRepository) Delete(ctx context.Context, id, initiatorID string) error {
+	result, err := r.db.Exec(ctx, `
+		DELETE FROM chains
+		WHERE chain_id = $1 AND initiator_id = $2 AND status = $3
+	`, id, initiatorID, domain.ChainPending)
 	if err != nil {
 		return err
 	}

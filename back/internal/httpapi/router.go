@@ -21,15 +21,17 @@ import (
 )
 
 type Dependencies struct {
-	Customers  service.CustomerService
-	Products   service.ProductService
-	Chains     service.ChainService
-	Offers     service.OfferService
-	Reviews    service.ReviewService
-	Categories service.CategoryService
-	Wishlists  service.WishlistService
-	Search     *search.SearchService
-	Events     *events.Broker
+	Customers     service.CustomerService
+	Products      service.ProductService
+	Chains        service.ChainService
+	Offers        service.OfferService
+	Reviews       service.ReviewService
+	Categories    service.CategoryService
+	Wishlists     service.WishlistService
+	Notifications service.NotificationService
+	Search        *search.SearchService
+	Events        *events.Broker
+	CronSecret    string
 }
 
 func NewRouter(d Dependencies) http.Handler {
@@ -77,6 +79,7 @@ func NewRouter(d Dependencies) http.Handler {
 
 	// Создаём обработчик для аутентификации
 	authHandler := NewAuthHandler(d.Customers)
+	mountExpirationRoute(r, d.Chains, d.CronSecret)
 
 	// Все маршруты. Верификацию делаю внутри маунтов
 	r.Route("/api/v1", func(r chi.Router) {
@@ -109,6 +112,9 @@ func NewRouter(d Dependencies) http.Handler {
 			}
 			if d.Wishlists != nil {
 				mountWishlistRoutes(r, d.Wishlists)
+			}
+			if d.Notifications != nil {
+				mountNotificationRoutes(r, d.Notifications)
 			}
 			if d.Search != nil {
 				mountSearchRoutes(r, d.Search)

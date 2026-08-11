@@ -46,31 +46,35 @@ func main() {
 	chainRepo := repository.NewChainRepository(pool)
 	negotiationRepo := repository.NewNegotiationRepository(pool)
 	reviewRepo := repository.NewReviewRepository(pool)
+	notificationRepo := repository.NewNotificationRepository(pool)
 
 	// Сервисы
 	customerService := service.NewCustomerService(customerRepo)
 	productService := service.NewProductService(productRepo, customerRepo)
 	categoryService := service.NewCategoryService(categoryRepo)
 	wishlistService := service.NewWishlistService(wishlistRepo, productRepo)
-	eventBroker := events.NewBroker()
+	eventBroker := events.NewBroker(pool)
 	chainService := service.NewChainService(chainRepo, productRepo, negotiationRepo, eventBroker)
 	offerService := service.NewOfferService(chainService, chainRepo, negotiationRepo)
 	reviewService := service.NewReviewService(reviewRepo, customerRepo, productRepo, chainService)
+	notificationService := service.NewNotificationService(chainRepo, notificationRepo)
 
 	// Сервис поиска
 	searchService := search.NewSearchService(productService, categoryService)
 
 	// HTTP роутер
 	deps := httpapi.Dependencies{
-		Customers:  customerService,
-		Products:   productService,
-		Chains:     chainService,
-		Offers:     offerService,
-		Reviews:    reviewService,
-		Categories: categoryService,
-		Wishlists:  wishlistService,
-		Search:     searchService,
-		Events:     eventBroker,
+		Customers:     customerService,
+		Products:      productService,
+		Chains:        chainService,
+		Offers:        offerService,
+		Reviews:       reviewService,
+		Categories:    categoryService,
+		Wishlists:     wishlistService,
+		Notifications: notificationService,
+		Search:        searchService,
+		Events:        eventBroker,
+		CronSecret:    os.Getenv("CRON_SECRET"),
 	}
 	router := httpapi.NewRouter(deps)
 

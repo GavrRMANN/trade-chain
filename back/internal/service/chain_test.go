@@ -106,6 +106,17 @@ func (f *fakeChainRepo) UpdateStatus(_ context.Context, id string, status domain
 	return nil
 }
 
+func (f *fakeChainRepo) UpdateStatusIfCurrent(ctx context.Context, id string, current, next domain.ChainStatus) error {
+	chain, err := f.GetByID(ctx, id)
+	if err != nil {
+		return err
+	}
+	if chain.Status != string(current) {
+		return errNoRows
+	}
+	return f.UpdateStatus(ctx, id, next)
+}
+
 // CompleteExchange повторяет главное свойство настоящего: меняет владельцев
 // товаров местами и закрывает звено.
 func (f *fakeChainRepo) CompleteExchange(_ context.Context, id string) error {
@@ -219,7 +230,8 @@ func matchesStatus(c domain.Chain, statuses []domain.ChainStatus) bool {
 func (f *fakeChainRepo) GetFullChain(context.Context, string) ([]domain.Chain, error) {
 	return nil, nil
 }
-func (f *fakeChainRepo) Delete(context.Context, string) error { return nil }
+func (f *fakeChainRepo) ExpirePending(context.Context) ([]domain.Chain, error) { return nil, nil }
+func (f *fakeChainRepo) Delete(context.Context, string, string) error          { return nil }
 
 type fakeNegotiationRepo struct {
 	messages      []domain.ChainMessage

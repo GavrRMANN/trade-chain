@@ -25,6 +25,7 @@ services:
       - ./back/infrastructure/migrations/006_seed_mock_data.sql:/docker-entrypoint-initdb.d/006_seed_mock_data.sql:ro
       - ./back/infrastructure/migrations/007_category_goal.sql:/docker-entrypoint-initdb.d/007_category_goal.sql:ro
       - ./back/infrastructure/migrations/008_unavailable_chain_status.sql:/docker-entrypoint-initdb.d/008_unavailable_chain_status.sql:ro
+      - ./back/infrastructure/migrations/010_notification_reads.sql:/docker-entrypoint-initdb.d/010_notification_reads.sql:ro
 
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
