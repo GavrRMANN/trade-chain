@@ -8,34 +8,24 @@ import {useAppSelector} from '@app/redux';
 import {buildNotifications} from './buildNotifications';
 import type {TNotification} from '../types';
 
-const POLLING_INTERVAL = 30_000;
-
-type TFeedOptions = {
-    /** Включить периодический опрос. Выключают на страницах с собственным refetch. */
-    polling?: boolean;
-};
-
 /**
  * Общий источник уведомлений для шапки и страницы.
  *
- * Опрашивает «Мои обмены» раз в 30 секунд (бэкенд уведомлений/WebSocket
- * отсутствует — см. docs/PRODUCT_FLOW.md §4) и превращает сделки в ленту событий.
+ * SSE обновляет кэш сделок, а этот хук превращает его в ленту событий.
  */
-export const useNotificationsFeed = (options: TFeedOptions = {}) => {
-    const {polling = true} = options;
+export const useNotificationsFeed = () => {
     const isAuthenticated = useAppSelector(selectIsAuthenticated);
 
-    const {data: currentUser} = useGetCurrentUserQuery(undefined, {
+    const {data: currentUser, isLoading: isCurrentUserLoading} = useGetCurrentUserQuery(undefined, {
         skip: !isAuthenticated,
     });
     const {
         data: chains = [],
-        isLoading,
+        isLoading: isChainsLoading,
         isFetching,
         isError,
     } = useGetMyChainsQuery(undefined, {
         skip: !isAuthenticated,
-        pollingInterval: polling ? POLLING_INTERVAL : undefined,
     });
     const {data: products = []} = useGetProductsQuery(undefined, {
         skip: !isAuthenticated,
@@ -70,7 +60,7 @@ export const useNotificationsFeed = (options: TFeedOptions = {}) => {
         isAuthenticated,
         notifications,
         unreadCount,
-        isLoading,
+        isLoading: isChainsLoading || isCurrentUserLoading,
         isFetching,
         isError,
     };
