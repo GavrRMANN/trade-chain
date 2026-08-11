@@ -7,16 +7,16 @@
 
 | Часть | Vercel-проект | Корень | Конфиг |
 | --- | --- | --- | --- |
-| Фронт | `tvchbmen-front` | `front/` | `front/vercel.json` |
-| Бэкенд | `tvchbmen-api` | `back/` | `back/vercel.json`, `back/api/index.go` |
+| Фронт | `tvchbmen-front` | `../../front` | `../../front/vercel.json` |
+| Бэкенд | `tvchbmen-api` | `../../back` | `../../back/vercel.json`, `../../back/api/index.go` |
 
-- `back/api/index.go` — точка входа под Go-рантайм Vercel. Тот же
+- `../../back/api/index.go` — точка входа под Go-рантайм Vercel. Тот же
   `httpapi.NewRouter`, что и в `cmd/app`, но вместо `ListenAndServe` его
   вызывает платформа. Пул `pgxpool` и сервисы поднимаются один раз на инстанс
   (`sync.Once`), между тёплыми вызовами переиспользуются.
-- `back/vercel.json` — `rewrites` всех путей на `/api/index`, чтобы chi-роутер
+- `../../back/vercel.json` — `rewrites` всех путей на `/api/index`, чтобы chi-роутер
   видел исходный URL.
-- `front/vercel.json` — SPA-fallback на `index.html` плюс прокси `/api/v1/*`,
+- `../../front/vercel.json` — SPA-fallback на `index.html` плюс прокси `/api/v1/*`,
   `/health`, `/swagger/*` на домен бэкенда. Благодаря прокси фронт и API живут
   на одном origin, и CORS в проде не нужен.
 
@@ -31,7 +31,7 @@
 
 - `VITE_API_BASE_URL` — базовый origin API. Указывает на сам фронт
   (`https://tvchbmen-front.vercel.app`), так как `/api/v1` проксируется на
-  бэкенд через `front/vercel.json`.
+  бэкенд через `../../front/vercel.json`.
 
 ## Первый деплой
 

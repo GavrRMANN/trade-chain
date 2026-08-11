@@ -242,7 +242,7 @@ cd back
 go test ./...
 ```
 
-Сервисные тесты в `back/internal/service/chain_test.go` дополнительно
+Сервисные тесты в `../../back/internal/service/chain_test.go` дополнительно
 проверяют:
 
 - создание предложения со статусом `pending` и сохранение получателя;
