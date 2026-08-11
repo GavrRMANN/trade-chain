@@ -81,6 +81,13 @@
     object-fit: contain;
 }
 
+.icon {
+    align-self: flex-end;
+
+    font-size: clamp(16px, 20cqw, 24px);
+    line-height: 1;
+}
+
 @media (min-width: 900px) {
     .white-box {
         min-height: 92px;

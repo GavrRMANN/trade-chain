@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { formatAmount, formatDate } from './index';
+import { formatAmount, formatDate, pluralize } from './index';
 
 describe('formatDate', () => {
     it('возвращает прочерк для пустой даты', () => {
@@ -13,6 +13,24 @@ describe('formatDate', () => {
         expect(formatDate(date)).toBe('15 янв. 2026 г.');
         expect(formatDate(date, 'long')).toBe('15 января 2026 г.');
         expect(formatDate(date, 'longWithoutYear')).toBe('15 января');
+    });
+});
+
+describe('pluralize', () => {
+    const forms: [string, string, string] = ['товар', 'товара', 'товаров'];
+
+    it('согласует слово с числом', () => {
+        expect(pluralize(0, forms)).toBe('0 товаров');
+        expect(pluralize(1, forms)).toBe('1 товар');
+        expect(pluralize(3, forms)).toBe('3 товара');
+        expect(pluralize(7, forms)).toBe('7 товаров');
+    });
+
+    it('обрабатывает исключение для 11–14', () => {
+        expect(pluralize(11, forms)).toBe('11 товаров');
+        expect(pluralize(14, forms)).toBe('14 товаров');
+        expect(pluralize(21, forms)).toBe('21 товар');
+        expect(pluralize(112, forms)).toBe('112 товаров');
     });
 });
 

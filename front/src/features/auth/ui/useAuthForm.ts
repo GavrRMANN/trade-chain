@@ -86,7 +86,7 @@ export const useAuthForm = () => {
 
     const getBackgroundRouteCallback = useCallback(() => {
         return getBackgroundRoute(location);
-    }, [location.state]);
+    }, [location]);
 
     const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();

@@ -1,8 +1,7 @@
 import { useGetCategoriesQuery } from '@entities/category';
 import { useGetProductsQuery } from '@entities/product';
 import type { TProduct } from '@entities/product';
-import { usePageTitle } from '@app/providers/pageTitle';
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
 const PRODUCTS_PAGE_SIZE = 20;
@@ -10,12 +9,12 @@ const PRODUCTS_PAGE_SIZE = 20;
 type TCatalogCategory = {
     id: string;
     title: string;
+    icon?: string;
     image?: string;
 };
 
 /** Управляет данными, фильтром и навигацией каталога. */
 export const useCatalog = () => {
-    const { setTitle } = usePageTitle();
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
 
@@ -37,9 +36,10 @@ export const useCatalog = () => {
     const categoryFilters = useMemo<TCatalogCategory[]>(
         () => [
             { id: 'all', title: 'Все' },
-            ...categories.map(({ category_id, name, image }) => ({
+            ...categories.map(({ category_id, name, icon, image }) => ({
                 id: category_id,
                 title: name,
+                icon,
                 image,
             })),
         ],
@@ -110,15 +110,24 @@ export const useCatalog = () => {
         }
     }, [categoryFilters, categoryQuery, setSearchParams]);
 
-    useLayoutEffect(() => {
-        setTitle(
-            searchQuery
-                ? `Результаты поиска: ${searchQuery}`
-                : categoryQuery
-                  ? 'Объявления категории'
-                  : 'Вещи в обороте',
-        );
-    }, [categoryQuery, searchQuery, setTitle]);
+    const selectedCategory = categoryQuery || 'all';
+
+    const title = searchQuery
+        ? `Результаты поиска: ${searchQuery}`
+        : categoryQuery
+          ? 'Объявления категории'
+          : 'Вещи в обороте';
+
+    /* Название выбранной категории и число найденного — то, что должно
+       оставаться на виду при прокрутке длинной ленты. */
+    const categoryTitle = categoryFilters.find(({ id }) => id === selectedCategory)?.title;
+
+    // Лента отвечает на вопрос «почему мне это показали»: сверху идут вещи,
+    // владельцам которых подходит что-то из профиля пользователя. Разделение
+    // делается на клиенте, но порядок задаёт бэкенд — подходящие карточки
+    // приходят первыми во всей выдаче, а не только на текущей странице.
+    const matchedProducts = useMemo(() => products.filter(({ matched }) => matched), [products]);
+    const restProducts = useMemo(() => products.filter(({ matched }) => !matched), [products]);
 
     const selectCategory = (categoryId: string) => {
         setSearchParams(
@@ -144,11 +153,15 @@ export const useCatalog = () => {
     };
 
     return {
+        title,
+        categoryTitle,
         categoryFilters,
-        selectedCategory: categoryQuery || 'all',
+        selectedCategory,
         searchQuery,
         categoryQuery,
         products,
+        matchedProducts,
+        restProducts,
         isLoading,
         isFetching,
         isError,

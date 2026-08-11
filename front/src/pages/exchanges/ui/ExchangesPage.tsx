@@ -1,6 +1,7 @@
 import {Button} from '@shared/ui/button';
 import {MainSection} from '@shared/ui/mainSection';
 import {PageError} from '@shared/ui/pageError';
+import {PageHeader} from '@shared/ui/pageHeader';
 import {Preloader} from '@shared/ui/preloader';
 import {ExchangeRow} from '@widgets/exchangeRow';
 import {Modal} from '@shared/ui/modal';
@@ -70,32 +71,47 @@ export const ExchangesPage = () => {
 
     return (
         <MainSection>
-            <div className={Styles['exchanges-page']}>
-                <div className={Styles['exchanges-page__view-tabs']} role="tablist">
-                    <Button
-                        variant="text"
-                        active={activeView === 'routes'}
-                        className={formatClasses(
-                            Styles['exchanges-page__view-tab'],
-                            activeView === 'routes' && Styles['exchanges-page__view-tab--active'],
-                        )}
-                        onClick={() => setActiveView('routes')}
-                    >
-                        Цепочки обменов
-                    </Button>
-                    <Button
-                        variant="text"
-                        active={activeView === 'exchanges'}
-                        className={formatClasses(
-                            Styles['exchanges-page__view-tab'],
-                            activeView === 'exchanges' && Styles['exchanges-page__view-tab--active'],
-                        )}
-                        onClick={() => setActiveView('exchanges')}
-                    >
-                        Все обмены
-                    </Button>
-                </div>
+            {/* Переключатель разделов и создание цепочки закреплены: списки
+                длинные, и после прокрутки должно быть понятно, что именно
+                открыто и как добавить новое. */}
+            <PageHeader
+                title="Мои обмены"
+                tabs={
+                    <div className={Styles['exchanges-page__view-tabs']} role="tablist">
+                        <Button
+                            variant="text"
+                            active={activeView === 'routes'}
+                            className={formatClasses(
+                                Styles['exchanges-page__view-tab'],
+                                activeView === 'routes' &&
+                                    Styles['exchanges-page__view-tab--active'],
+                            )}
+                            onClick={() => setActiveView('routes')}
+                        >
+                            Цепочки обменов
+                        </Button>
+                        <Button
+                            variant="text"
+                            active={activeView === 'exchanges'}
+                            className={formatClasses(
+                                Styles['exchanges-page__view-tab'],
+                                activeView === 'exchanges' &&
+                                    Styles['exchanges-page__view-tab--active'],
+                            )}
+                            onClick={() => setActiveView('exchanges')}
+                        >
+                            Все обмены
+                        </Button>
+                    </div>
+                }
+                actions={
+                    activeView === 'routes' ? (
+                        <Button onClick={() => setIsBuilderOpen(true)}>Создать цепочку</Button>
+                    ) : undefined
+                }
+            />
 
+            <div className={Styles['exchanges-page']}>
                 {activeView === 'routes' ? (
                     <>
                         <div className={Styles['exchanges-page__routes-heading']}>
@@ -103,9 +119,6 @@ export const ExchangesPage = () => {
                                 <h2>Ваши цепочки</h2>
                                 <p>Каждая карточка объединяет предложения, ведущие к одной цели.</p>
                             </div>
-                            <Button onClick={() => setIsBuilderOpen(true)}>
-                                Создать цепочку
-                            </Button>
                         </div>
 
                         <div className={Styles['exchanges-page__tabs']} role="tablist">

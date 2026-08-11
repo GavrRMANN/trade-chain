@@ -1,4 +1,4 @@
-import { useCallback, useLayoutEffect, useMemo, useReducer } from 'react';
+import { useCallback, useMemo, useReducer } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import {
@@ -14,7 +14,6 @@ import { useGetProductQuery, useGetProductsQuery } from '@entities/product';
 import type { TProduct } from '@entities/product';
 import { useCreateReviewMutation } from '@entities/review';
 import { useGetCurrentUserQuery } from '@entities/user';
-import { usePageTitle } from '@app/providers/pageTitle';
 
 const getErrorMessage = (error: unknown) => {
     if (typeof error === 'object' && error !== null && 'data' in error) {
@@ -49,11 +48,6 @@ const roomReducer = (state: TRoomState, action: TRoomAction): TRoomState => ({
 export const useExchangeRoom = () => {
     const { chainId } = useParams<{ chainId: string }>();
     const navigate = useNavigate();
-    const { setTitle } = usePageTitle();
-
-    useLayoutEffect(() => {
-        setTitle('Сделка обмена');
-    }, [setTitle]);
 
     const chainQuery = useGetChainQuery(chainId ?? '', { skip: !chainId });
     const chainDetailsQuery = useGetChainDetailsQuery(chainId ?? '', { skip: !chainId });

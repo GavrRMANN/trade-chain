@@ -1,6 +1,7 @@
 import {MainSection} from '@shared/ui/mainSection';
 import {Preloader} from '@shared/ui/preloader';
 import {PageError} from '@shared/ui/pageError';
+import {PageHeader} from '@shared/ui/pageHeader';
 import {Button} from '@shared/ui/button';
 
 import {ProductForm} from '@features/productForm';
@@ -8,7 +9,7 @@ import Styles from './create-product-page.module.css';
 import {useCreateProductPage} from '../lib';
 
 export const CreateProductPage = () => {
-    const {form, goBack} = useCreateProductPage();
+    const {form, title, goBack} = useCreateProductPage();
 
     if (form.isCategoriesError) {
         return <PageError message="Не удалось загрузить категории. Обновите страницу." />;
@@ -21,6 +22,7 @@ export const CreateProductPage = () => {
     if (form.isOwnerError) {
         return (
             <MainSection>
+                <PageHeader title={title} />
                 <section className={Styles["page__guest-card"]}>
                     <h2>Это не ваше объявление</h2>
                     <p>Редактировать объявление может только его автор.</p>
@@ -40,6 +42,10 @@ export const CreateProductPage = () => {
 
     return (
         <MainSection>
+            <PageHeader
+                title={title}
+                subTitle="Чем подробнее описание, тем быстрее найдётся обмен"
+            />
             <div className={Styles.page}>
                 <ProductForm
                     isEdit={form.isEdit}

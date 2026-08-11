@@ -7,7 +7,6 @@ import './index.css';
 
 import { RealtimeProvider, StoreProvider } from '@app/providers';
 import { AppRouter } from '@app/router';
-import {PageTitleProvider} from "@app/providers/pageTitle";
 import { store } from '@app/redux';
 import { initAuth } from '@entities/user';
 
@@ -33,11 +32,9 @@ createRoot(document.getElementById('root')!).render(
                         },
                     }}
                 >
-                    <PageTitleProvider>
-                        <BrowserRouter>
-                            <AppRouter />
-                        </BrowserRouter>
-                    </PageTitleProvider>
+                    <BrowserRouter>
+                        <AppRouter />
+                    </BrowserRouter>
                 </ConfigProvider>
             </RealtimeProvider>
         </StoreProvider>

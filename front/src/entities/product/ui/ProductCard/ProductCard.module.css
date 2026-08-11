@@ -64,6 +64,29 @@
     line-clamp: 2;
 }
 
+/* Плашка лежит на фотографии, а не под ней: карточки в ленте стоят вплотную,
+   и отдельная строка над названием сбила бы общую сетку. */
+.matched {
+    position: absolute;
+    top: var(--space-2);
+    left: var(--space-2);
+    max-width: calc(100% - var(--space-2) * 2);
+
+    padding: var(--space-1) var(--space-3);
+
+    color: var(--text-inverse);
+    background: var(--color-brand);
+    border-radius: var(--radius-pill);
+
+    font-size: var(--text-xs-font-size);
+    line-height: var(--text-xs-line-height);
+    font-weight: 600;
+
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
 .desc-container {
     height: 100%;
 

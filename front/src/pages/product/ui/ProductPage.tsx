@@ -6,9 +6,9 @@ import { ExchangeRow } from '@widgets/exchangeRow';
 import { MainSection } from '@shared/ui/mainSection';
 import { Modal } from '@shared/ui/modal';
 import { PageError } from '@shared/ui/pageError';
+import { PageHeader } from '@shared/ui/pageHeader';
 import { Preloader } from '@shared/ui/preloader';
 import { ProductCard, ProductImage } from '@entities/product';
-import { Rating } from '@shared/ui/rating';
 import { SellerInfo } from '@widgets/sellerInfo';
 import { formatAmount, formatDate } from '@shared/lib';
 
@@ -64,10 +64,13 @@ export const ProductPage = () => {
 
     return (
         <MainSection>
-            <article className={Styles['product-page']}>
-                <header className={Styles['product-page__header']}>
-                    <h1>{product.title}</h1>
-                    <div className={Styles['product-page__meta']}>
+            {/* Название, цена и главное действие остаются на виду всю прокрутку:
+                страница длинная, а решение «обменять или нет» принимается по
+                этим трём вещам. */}
+            <PageHeader
+                title={product.title}
+                meta={
+                    <>
                         <strong className={Styles['product-page__price']}>
                             {product.price !== undefined
                                 ? formatAmount(product.price)
@@ -77,9 +80,25 @@ export const ProductPage = () => {
                             {statusLabels[status]}
                         </span>
                         {product.location && <span>{product.location}</span>}
-                    </div>
-                </header>
+                    </>
+                }
+                actions={
+                    isOwner ? (
+                        <Button
+                            variant="secondary"
+                            onClick={() => openEditProduct(product.product_id)}
+                        >
+                            Редактировать
+                        </Button>
+                    ) : (
+                        <Button onClick={openOffer} disabled={isAuthenticated && !canOffer}>
+                            {isAuthenticated ? 'Предложить обмен' : 'Войти, чтобы предложить'}
+                        </Button>
+                    )
+                }
+            />
 
+            <article className={Styles['product-page']}>
                 <div className={Styles['product-page__hero']}>
                     <div className={Styles['product-page__main']}>
                         <div className={Styles['product-page__overview']}>
@@ -252,10 +271,11 @@ export const ProductPage = () => {
 
                         <section className={Styles['product-page__panel']}>
                             <h2>{isOwner ? 'Ваш профиль' : 'Продавец'}</h2>
-                            {hasRating && <Rating value={averageRating ?? 0} />}
                             <SellerInfo
                                 name={sellerName}
                                 meta={ratingText}
+                                rating={averageRating}
+                                hasRating={hasRating}
                                 profileId={product.customer_id}
                             />
                         </section>

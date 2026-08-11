@@ -3,6 +3,7 @@ import { RouteRecommendations } from '@features/routeRecommendations';
 import { Button } from '@shared/ui/button';
 import { MainSection } from '@shared/ui/mainSection';
 import { PageError } from '@shared/ui/pageError';
+import { PageHeader } from '@shared/ui/pageHeader';
 import { Preloader } from '@shared/ui/preloader';
 import { ProductImage } from '@entities/product';
 import { ProfileProductRow } from '@widgets/profile';
@@ -45,6 +46,7 @@ export const RoutePage = () => {
     if (!targetId) {
         return (
             <MainSection>
+                <PageHeader title="Путь к цели" />
                 <div className={Styles['route-page__empty']}>
                     <h2>Цель не выбрана</h2>
                     <p>Выберите желаемый товар, чтобы построить маршрут обмена.</p>
@@ -65,6 +67,10 @@ export const RoutePage = () => {
     if (!sourceId) {
         return (
             <MainSection>
+                <PageHeader
+                    title="Путь к цели"
+                    subTitle="Шаг 1 из 2: выберите товар, с которого начнёте цепочку"
+                />
                 <div className={Styles['route-page__source-picker']}>
                     <div>
                         <h2>С чего начинаем?</h2>
@@ -93,6 +99,38 @@ export const RoutePage = () => {
 
     return (
         <MainSection>
+            {/* Цель и остаток шагов — то, ради чего открыт экран: они должны
+                оставаться на виду, пока пользователь листает рекомендации. */}
+            <PageHeader
+                title="Путь к цели"
+                meta={
+                    <>
+                        <strong>
+                            {goalProduct
+                                ? `Цель: ${goalProduct.title}`
+                                : `Категория: ${targetCategoryName ?? 'категория'}`}
+                        </strong>
+                        {goalProduct && (
+                            <span>
+                                {stepsRemaining === 0
+                                    ? 'Цель достигнута'
+                                    : `${formatExchangeCount(stepsRemaining)} до цели`}
+                            </span>
+                        )}
+                    </>
+                }
+                actions={
+                    goalProduct ? (
+                        <Button
+                            variant="text"
+                            onClick={() => openProduct(goalProduct.product_id)}
+                        >
+                            Открыть цель
+                        </Button>
+                    ) : undefined
+                }
+            />
+
             <div className={Styles['route-page']}>
                 {isEmpty || !currentProduct ? (
                     <div className={Styles['route-page__empty']}>

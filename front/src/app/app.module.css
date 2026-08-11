@@ -6,6 +6,9 @@
     background: var(--surface-page);
 }
 
+/* Именно min-height, а не height: закреплённая шапка страницы ездит внутри
+   своего родителя, и при фиксированной высоте она отрывалась и уезжала
+   вверх, как только контент оказывался длиннее экрана. */
 .content {
     display: flex;
     flex-direction: column;
@@ -14,7 +17,7 @@
 
     gap: var(--space-5);
 
-    height: calc(100vh - var(--header-height));
+    min-height: calc(100vh - var(--header-height));
     padding-bottom: var(--space-10);
 }
 

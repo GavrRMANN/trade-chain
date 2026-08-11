@@ -1,4 +1,4 @@
-import {useCallback, useEffect, useLayoutEffect, useMemo, useReducer} from 'react';
+import {useCallback, useEffect, useMemo, useReducer} from 'react';
 import {useNavigate, useSearchParams} from 'react-router-dom';
 
 import {useGetMyChainsQuery} from '@entities/chain';
@@ -6,7 +6,6 @@ import type {TChain, TChainStatus} from '@entities/chain';
 import {useGetProductsQuery, useProductsById} from '@entities/product';
 import type {TProduct} from '@entities/product';
 import {useGetCurrentUserQuery} from '@entities/user';
-import {usePageTitle} from '@app/providers/pageTitle';
 
 /** Статусы, считающиеся терминальными — обмен завершён и больше не активен. */
 const FINAL_STATUSES: ReadonlySet<TChainStatus> = new Set<TChainStatus>([
@@ -83,7 +82,6 @@ const formatActiveOffers = (count: number): string => {
  *   — «Исходящие»: незавершённые И инициатор — текущий пользователь.
  */
 export const useExchanges = () => {
-    const {setTitle} = usePageTitle();
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
 
@@ -261,10 +259,6 @@ export const useExchanges = () => {
         if (activeTab === 'outgoing') return outgoing;
         return completed;
     }, [activeTab, active, incoming, outgoing, completed]);
-
-    useLayoutEffect(() => {
-        setTitle('Мои обмены');
-    }, [setTitle]);
 
     const openExchange = useCallback((chainId: string) => {
         navigate(`/exchanges/${chainId}`);

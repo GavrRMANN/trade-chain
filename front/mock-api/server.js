@@ -46,6 +46,8 @@ const server = createServer(async (request, response) => {
             return login(request, response);
         if (url.pathname === '/api/v1/auth/register' && request.method === 'POST')
             return register(request, response);
+        if (url.pathname === '/api/v1/auth/demo-login' && request.method === 'POST')
+            return demoLogin(request, response);
         if (url.pathname === '/api/v1/auth/me' && request.method === 'GET')
             return currentUser(request, response);
 
@@ -96,9 +98,24 @@ async function register(request, response) {
         return sendError(response, 400, 'Некорректное тело запроса');
     if (customers.some((item) => item.email === body.email))
         return sendError(response, 409, 'Пользователь уже существует');
-    const customer = makeCustomer(body.email, body.password);
+    const customer = makeCustomer(body.email, body.password, body.full_name);
     customers.push(customer);
     return sendJson(response, 201, {
+        token: `mock-token:${customer.customer_id}`,
+        user: publicCustomer(customer),
+    });
+}
+
+// demoLogin повторяет httpapi.authHandler.demoLogin: вход по выбору участника
+// без пароля. В mock флаг DEMO_LOGIN_ENABLED всегда считается включённым —
+// сам mock-API и существует ради демонстрации.
+async function demoLogin(request, response) {
+    const body = await readJson(request);
+    const customer = customers.find(
+        (item) => item.customer_id === body?.customer_id && item.is_active,
+    );
+    if (!customer) return sendError(response, 404, 'Пользователь не найден');
+    return sendJson(response, 200, {
         token: `mock-token:${customer.customer_id}`,
         user: publicCustomer(customer),
     });
@@ -123,6 +140,17 @@ function requireUser(request) {
 
 async function handleCustomers(request, response, url) {
     const parts = getResourceParts(url.pathname, '/api/v1/customers');
+    // overview проверяется раньше разбора {id}: иначе слово уедет в поиск
+    // пользователя по идентификатору и вернёт 404.
+    if (request.method === 'GET' && parts.length === 1 && parts[0] === 'overview') {
+        return sendJson(
+            response,
+            200,
+            activeCustomers()
+                .slice(...sliceBounds(url.searchParams))
+                .map(customerOverview),
+        );
+    }
     // POST /customers на бэкенде не смонтирован — регистрация идёт через /auth/register.
     if (request.method === 'GET' && parts.length === 0) {
         return sendJson(
@@ -144,6 +172,7 @@ async function handleCustomers(request, response, url) {
             return sendError(response, 400, 'Некорректное тело запроса');
         if (body.email !== undefined) customers[index].email = body.email;
         if (body.password !== undefined) customers[index].password = body.password;
+        if (body.full_name !== undefined) customers[index].full_name = body.full_name;
         customers[index].updated_at = new Date().toISOString();
         return sendJson(response, 200, publicCustomer(customers[index]));
     }
@@ -168,7 +197,8 @@ async function handleProducts(request, response, url) {
         const list = hasSearch
             ? findProducts(query, categoryId)
             : activeProducts().sort(sortByDateDesc);
-        return sendJson(response, 200, list.slice(...sliceBounds(url.searchParams)));
+        const feed = withDirectMatch(list, requireUser(request)?.id);
+        return sendJson(response, 200, feed.slice(...sliceBounds(url.searchParams)));
     }
 
     if (request.method === 'GET' && parts.length === 2 && parts[1] === 'recommendations') {
@@ -322,6 +352,37 @@ function normalizeSearchText(value) {
         .toLocaleLowerCase('ru-RU')
         .normalize('NFKC')
         .trim();
+}
+
+/**
+ * Помечает карточки, владельцам которых подходит что-то из вещей зрителя,
+ * и поднимает их наверх выдачи. Повторяет выражение matched_by_product_id
+ * из productRepository.List (back/internal/repository/product_repository.go).
+ */
+function withDirectMatch(list, viewerId) {
+    if (!viewerId) return list;
+
+    const mine = products
+        .filter((item) => item.customer_id === viewerId && item.status === 'active')
+        .sort(sortByDateDesc);
+
+    if (mine.length === 0) return list;
+
+    const matched = list.map((product) => {
+        if (product.customer_id === viewerId) return product;
+
+        const wishlist = wishlists.find((item) => item.product_id === product.product_id);
+        const wanted = wishlist ? wishlistOptions[wishlist.wishlist_id] || [] : [];
+        const source = mine.find((item) => wanted.includes(item.category_id));
+
+        return source
+            ? { ...product, matched: true, matched_by_product_id: source.product_id }
+            : product;
+    });
+
+    // Сортировка стабильна, поэтому внутри групп сохраняется исходный порядок
+    // (релевантность поиска или дата публикации).
+    return matched.sort((left, right) => Number(!!right.matched) - Number(!!left.matched));
 }
 
 function sortByDateDesc(left, right) {
@@ -1142,11 +1203,12 @@ function fullChain(chain) {
     );
 }
 
-function makeCustomer(email, password) {
+function makeCustomer(email, password, fullName = '') {
     const now = new Date().toISOString();
     return {
         customer_id: randomUUID(),
         email,
+        full_name: fullName,
         password,
         is_active: true,
         created_at: now,
@@ -1191,6 +1253,28 @@ function publicCustomer(customer) {
     delete result.password;
     delete result.is_active;
     return result;
+}
+
+// customerOverview повторяет domain.CustomerOverview: профиль вместе с
+// показателями, которые бэкенд считает подзапросами по отзывам, товарам и
+// цепочкам, а не хранит полями.
+function customerOverview(customer) {
+    const id = customer.customer_id;
+    const received = reviews.filter((review) => review.to_customer_id === id);
+    const owned = products.filter((product) => product.customer_id === id);
+    return {
+        customer_id: id,
+        email: customer.email,
+        full_name: customer.full_name || '',
+        rating: average(received.map((review) => review.rating)),
+        review_count: received.length,
+        product_count: owned.length,
+        active_product_count: owned.filter((product) => product.status === 'active').length,
+        chain_count: chains.filter(
+            (chain) => chain.initiator_id === id || chain.recipient_id === id,
+        ).length,
+        created_at: customer.created_at,
+    };
 }
 
 function activeCustomers() {

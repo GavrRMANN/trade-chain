@@ -1,17 +1,22 @@
 import Styles from './catalog-page.module.css';
 import { MainSection } from '@shared/ui/mainSection';
-import { ProductCard } from '@entities/product';
+import { ProductCard, type TProduct } from '@entities/product';
 import { Preloader } from '@shared/ui/preloader';
 import { WhiteBox } from '@shared/ui/whiteBox';
 import { Button } from '@shared/ui/button';
-import { useCatalog } from '../lib';
+import { PageHeader } from '@shared/ui/pageHeader';
+import { formatProductCount, useCatalog } from '../lib';
 import { PageError } from '@shared/ui/pageError';
 
 export const CatalogPage = () => {
     const {
+        title,
+        categoryTitle,
         categoryFilters,
         selectedCategory,
         products,
+        matchedProducts,
+        restProducts,
         isLoading,
         isFetching,
         isError,
@@ -34,11 +39,27 @@ export const CatalogPage = () => {
 
     return (
         <MainSection>
+            <PageHeader
+                title={title}
+                meta={
+                    <>
+                        {categoryTitle && <span>{categoryTitle}</span>}
+                        {products.length > 0 && (
+                            <span>
+                                {formatProductCount(products.length)}
+                                {hasMore ? ' и ещё' : ''}
+                            </span>
+                        )}
+                    </>
+                }
+            />
+
             <div className={Styles.categories} aria-label="Быстрый фильтр по категориям">
                 {categoryFilters.map((category) => (
                     <WhiteBox
                         key={category.id}
                         title={category.title}
+                        icon={category.icon}
                         img={category.image}
                         active={selectedCategory === category.id}
                         onClick={() => selectCategory(category.id)}
@@ -56,17 +77,27 @@ export const CatalogPage = () => {
                     <p className={Styles['catalog-state']}>Не удалось загрузить товары</p>
                 )}
 
-                {!isLoading &&
-                    products?.map((product) => (
-                        <ProductCard
-                            key={product.product_id}
-                            title={product.title}
-                            img={product.image}
-                            price={product.price}
-                            location={product.location}
-                            onClick={() => openProduct(product.product_id)}
-                        />
-                    ))}
+                {/* Блок «Вам подойдёт» появляется, только когда обмен возможен
+                    напрямую: пустой заголовок обещал бы то, чего в ленте нет. */}
+                {!isLoading && matchedProducts.length > 0 && (
+                    <section className={Styles.section}>
+                        <h2 className={Styles['section-title']}>Вам подойдёт</h2>
+                        <p className={Styles['section-subtitle']}>
+                            Владельцам этих вещей подходит что-то из вашего профиля — обмен возможен
+                            напрямую
+                        </p>
+                        <ProductGrid products={matchedProducts} onOpen={openProduct} />
+                    </section>
+                )}
+
+                {!isLoading && restProducts.length > 0 && (
+                    <section className={Styles.section}>
+                        {matchedProducts.length > 0 && (
+                            <h2 className={Styles['section-title']}>Остальное в обороте</h2>
+                        )}
+                        <ProductGrid products={restProducts} onOpen={openProduct} />
+                    </section>
+                )}
 
                 {!isLoading && !isFetching && !isError && products.length === 0 && (
                     <div className={Styles.emptyState}>
@@ -89,3 +120,24 @@ export const CatalogPage = () => {
         </MainSection>
     );
 };
+
+type TProductGridProps = {
+    products: TProduct[];
+    onOpen: (productId: string) => void;
+};
+
+const ProductGrid = ({ products, onOpen }: TProductGridProps) => (
+    <div className={Styles.grid}>
+        {products.map((product) => (
+            <ProductCard
+                key={product.product_id}
+                title={product.title}
+                img={product.image}
+                price={product.price}
+                location={product.location}
+                matched={product.matched}
+                onClick={() => onOpen(product.product_id)}
+            />
+        ))}
+    </div>
+);
