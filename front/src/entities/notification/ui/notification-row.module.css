@@ -12,7 +12,6 @@
 
 .row:has(.row__content:hover) {
     border-color: var(--accent-primary);
-    box-shadow: 0 2px 8px var(--bg-shadows);
 }
 
 .row:has(.row__content:focus-visible) {

@@ -30,7 +30,6 @@
 
 .recommendation:hover {
     border-color: color-mix(in srgb, var(--accent-primary) 45%, var(--bg-shadows));
-    box-shadow: 0 6px 18px color-mix(in srgb, var(--bg-shadows) 70%, transparent);
     transform: translateY(-2px);
 }
 

@@ -19,8 +19,8 @@
 
 .error,
 .success {
-    padding: 10px 12px;
-    border-radius: 10px;
+    padding: var(--space-3) var(--space-4);
+    border-radius: var(--radius-md);
 }
 
 .error {

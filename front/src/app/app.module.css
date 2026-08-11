@@ -2,6 +2,8 @@
     max-width: var(--max-width);
     margin: 0 auto;
     padding-top: var(--header-height);
+
+    background: var(--surface-page);
 }
 
 .content {
@@ -10,21 +12,21 @@
     justify-content: start;
     align-items: start;
 
-    gap: var(--main-gap);
+    gap: var(--space-5);
 
     height: calc(100vh - var(--header-height));
-    padding-bottom: clamp(var(--space-4), 3vw, var(--space-8));
+    padding-bottom: var(--space-10);
 }
 
 .content--gradient {
-    background: var(--main-gradient);
+    background: var(--surface-page);
 }
 
 @media (max-width: 768px) {
     .content {
-        gap: var(--second-gap);
+        gap: var(--space-4);
         height: auto;
         min-height: calc(100vh - var(--header-height));
-        padding-bottom: calc(var(--mobile-nav-height) + var(--space-3));
+        padding-bottom: calc(var(--mobile-nav-height) + var(--space-4));
     }
 }

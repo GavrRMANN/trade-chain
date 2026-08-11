@@ -1,17 +1,35 @@
+/* Лента категорий листается вбок, а плитки имеют фиксированный размер —
+   растянутые на всю ширину они перестают читаться как ряд ярлыков. */
 .categories {
-    display: grid;
-    grid-template-columns: repeat(8, 1fr);
-    width: 100%;
-    gap: 10px;
+    display: flex;
+    gap: var(--space-2);
+    width: auto;
     flex: 0 0 auto;
+
+    padding-bottom: var(--space-1);
+
+    overflow-x: auto;
+    overflow-y: hidden;
+
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.categories::-webkit-scrollbar {
+    display: none;
+}
+
+.categories > * {
+    flex: 0 0 148px;
+    width: 148px;
+    min-height: 92px;
+    aspect-ratio: auto;
 }
 
 .catalog-page {
     display: grid;
-
-    grid-template-columns: repeat(5, 1fr);
-
-    gap: var(--main-gap);
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: var(--space-4);
 }
 
 .catalog-state {
@@ -22,7 +40,7 @@
     align-items: center;
     justify-content: center;
 
-    color: var(--neutral-secondary);
+    color: var(--text-secondary);
 }
 
 .emptyState {
@@ -33,66 +51,51 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 12px;
+    gap: var(--space-3);
 
+    padding: var(--space-10) var(--space-5);
     text-align: center;
 }
 
 .emptyState h2 {
     font-size: var(--h2-font-size);
     line-height: var(--h2-line-height);
+    font-weight: var(--font-weight-bold);
 }
 
 .emptyState p {
-    color: var(--neutral-secondary);
+    max-width: 42ch;
+    color: var(--text-secondary);
 }
 
 @media (max-width: 1200px) {
-    .categories {
-        grid-template-columns: repeat(5, 1fr);
-    }
-
     .catalog-page {
-        grid-template-columns: repeat(5, 1fr);
+        grid-template-columns: repeat(4, minmax(0, 1fr));
     }
 }
 
-@media (max-width: 1000px) {
+@media (max-width: 960px) {
     .catalog-page {
-        grid-template-columns: repeat(4, 1fr);
-    }
-}
-
-@media (max-width: 800px) {
-    .categories {
-        grid-template-columns: repeat(3, 1fr);
-    }
-
-    .catalog-page {
-        grid-template-columns: repeat(3, 1fr);
+        grid-template-columns: repeat(3, minmax(0, 1fr));
     }
 }
 
 @media (max-width: 768px) {
+    /* Ряд «протекает» под края экрана: так видно, что он листается,
+       а не обрезан по границе контейнера. */
     .categories {
-        width: 100%;
-        height: 72px;
-        display: flex;
-        overflow-x: auto;
-        overflow-y: hidden;
-        padding-bottom: 4px;
+        margin: 0 calc(var(--space-4) * -1);
+        padding: var(--space-1) var(--space-4) var(--space-3);
     }
 
     .categories > * {
-        width: 100px;
-        min-width: 100px;
-        height: 62px;
-        min-height: 92px;
-        flex: 0 0 150px;
-        aspect-ratio: auto;
+        flex: 0 0 116px;
+        width: 116px;
+        min-height: 74px;
     }
 
     .catalog-page {
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: var(--space-3);
     }
 }

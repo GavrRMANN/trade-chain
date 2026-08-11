@@ -1,42 +1,46 @@
+/* Плитка категории по эталону: серая подложка, крупное скругление,
+   подпись прижата к верхнему левому углу, иконка — к нижнему правому.
+   Выбранная плитка становится чёрной. */
 .white-box {
-    width: 100%;
-    min-height: 62px;
-    aspect-ratio: 1.62;
     container-type: inline-size;
 
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    align-items: center;
+    align-items: stretch;
 
-    padding: clamp(8px, 8cqw, 12px);
+    width: 100%;
+    min-height: 74px;
+    aspect-ratio: 1.6;
+    padding: var(--space-2) var(--space-3);
 
     color: inherit;
-    font: inherit;
     text-align: left;
 
-    border: 1px solid transparent;
-    border-radius: var(--radius-md);
+    font-family: var(--font-family);
+    font-size: var(--text-sm-font-size);
+    line-height: var(--line-height-tight);
+    font-weight: var(--font-weight-medium);
 
-    background-color: var(--bg-neutral);
+    border: none;
+    border-radius: var(--radius-lg);
+
+    background-color: var(--surface-muted);
 
     cursor: pointer;
 
-    transition: color, background-color var(--animation-normal);
+    transition: color var(--animation-normal), background-color var(--animation-normal);
 }
 
 .white-box:hover {
-    background-color: var(--bg-disabled);
+    background-color: var(--border-subtle);
 }
 
-.white-box--active {
-    background-color: #000;
-    color: var(--neutral-white);
-}
-
+.white-box--active,
 .white-box--active:hover {
-    background-color: #000;
-    color: var(--neutral-white);
+    color: var(--text-inverse);
+
+    background-color: var(--surface-dark);
 }
 
 .white-box--without-image {
@@ -45,6 +49,7 @@
 
 .white-box--disabled {
     pointer-events: none;
+
     cursor: default;
 }
 
@@ -53,22 +58,32 @@
 }
 
 .title {
-    align-self: start;
+    align-self: flex-start;
 
-    font-size: clamp(14px, 10cqw, 28px);
-    font-weight: 400;
-    line-height: 1.2;
+    font-family: var(--font-family);
+    font-size: clamp(12px, 9cqw, var(--text-sm-font-size));
+    font-weight: var(--font-weight-medium);
+    line-height: var(--line-height-tight);
 }
 
 .white-box--without-image .title {
     align-self: center;
+
     text-align: center;
 }
 
 .img {
-    align-self: end;
+    align-self: flex-end;
 
-    width: 40px;
-    height: 40px;
+    width: clamp(20px, 18cqw, 28px);
+    height: clamp(20px, 18cqw, 28px);
+
     object-fit: contain;
+}
+
+@media (min-width: 900px) {
+    .white-box {
+        min-height: 92px;
+        padding: var(--space-3);
+    }
 }

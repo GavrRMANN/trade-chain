@@ -1,3 +1,17 @@
+/*
+ * Дизайн-система проекта.
+ *
+ * Значения сняты с эталонной демки (docs/style-example): насыщенный синий
+ * у действий, почти чёрный текст на белом, серые подложки под плитки и
+ * поля ввода, границы вместо теней, плотная сетка отступов с шагом 4px.
+ *
+ * Ниже два блока токенов:
+ *   1. Канонические имена дизайн-системы (--color-*, --surface-*, --text-*).
+ *   2. Исторические имена (--accent-*, --neutral-*, --bg-*), оставленные
+ *      псевдонимами: на них ссылается вся существующая вёрстка, и смена
+ *      значения в одном месте перекрашивает интерфейс целиком.
+ */
+
 *,
 *::before,
 *::after {
@@ -5,110 +19,192 @@
 }
 
 :root {
-    --header-height: 75px;
-    --mobile-nav-height: 0px;
-    --max-width: 1200px;
+    /* ---------- Фирменные цвета ---------- */
+    --color-brand: #00aaff;
+    --color-brand-hover: #0098e3;
+    --color-brand-soft: #e6f6ff;
+    --color-success: #2ac94f;
+    --color-success-hover: #23b445;
+    --color-link: #0a84ff;
+    --color-warning: #ffb020;
+    --color-star: #ffb800;
+    --color-danger: #f5453d;
+    --color-danger-soft: #ffeceb;
 
-    /* Accent */
-    --accent-primary: #00aaff;
-    --accent-secondary: #0099f7;
-    --accent-success: #10b981;
-    --accent-danger: #ef4444;
-    --accent-rating: #ffb800;
+    /* ---------- Текст ---------- */
+    --text-primary: #000000;
+    --text-secondary: #8c8c8c;
+    --text-tertiary: #a3a3a3;
+    --text-inverse: #ffffff;
 
-    /* Text */
-    --neutral-primary: #1f2937;
-    --neutral-secondary: #6b7280;
-    --neutral-disable: #9ca3af;
-    --neutral-white: #ffffff;
+    /* ---------- Поверхности ---------- */
+    --surface-page: #ffffff;
+    --surface-muted: #f2f1f0;
+    --surface-raised: #ffffff;
+    --surface-dark: #000000;
+    --border-subtle: #e7e6e4;
+    --border-strong: #d5d3d0;
 
-    /* Background */
-    --bg-primary: #f9fafb;
-    --bg-secondary: #ffffff;
-    --bg-disabled: #f3f4f6;
-    --bg-neutral: #ececec;
+    /* ---------- Типографика ---------- */
+    --font-family: Manrope, 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 
-    /* Border / shadow */
-    --bg-shadows: #e5e7eb;
+    --font-weight-regular: 400;
+    --font-weight-medium: 600;
+    --font-weight-bold: 800;
 
-    --main-gradient:
-        radial-gradient(circle at 0% 15%, rgba(22, 185, 129, 0.28) 0, transparent 34%),
-        radial-gradient(circle at 16% 78%, rgba(47, 105, 246, 0.32) 0, transparent 32%),
-        radial-gradient(circle at 56% 86%, rgba(47, 105, 246, 0.24) 0, transparent 30%),
-        radial-gradient(circle at 74% 20%, rgba(255, 169, 38, 0.34) 0, transparent 32%),
-        radial-gradient(circle at 70% 78%, rgba(255, 169, 38, 0.22) 0, transparent 26%),
-        linear-gradient(90deg, #f8fbff 0%, #fff1f1 48%, #fffdf8 100%);
+    --line-height-tight: 1.15;
+    --line-height-normal: 1.35;
 
-    /* Radius */
-    --radius-xs: 4px;
+    /* ---------- Скругления ---------- */
+    --radius-xs: 6px;
     --radius-sm: 8px;
     --radius-md: 12px;
     --radius-lg: 16px;
+    --radius-pill: 999px;
 
-    /* Animation */
+    /* ---------- Тени. На референсе их почти нет: границы вместо теней. ---------- */
+    --shadow-sticky: 0 -2px 12px rgba(0, 0, 0, 0.08);
+    --shadow-raised: 0 2px 12px rgba(0, 0, 0, 0.1);
+    --shadow-overlay: 0 12px 32px rgba(0, 0, 0, 0.16);
+
+    /* ---------- Каркас ---------- */
+    --header-height: 60px;
+    --mobile-nav-height: 0px;
+    --max-width: 1240px;
+
+    /* ---------- Анимация ---------- */
     --animation-fast: 0.1s;
     --animation-normal: 0.3s;
     --animation-slow: 0.5s;
 
+    /* =========================================================
+       Псевдонимы для существующей вёрстки
+       ========================================================= */
+
+    /* Accent */
+    --accent-primary: var(--color-brand);
+    --accent-secondary: var(--color-brand-hover);
+    --accent-success: var(--color-success);
+    --accent-danger: var(--color-danger);
+    --accent-rating: var(--color-star);
+
     /* Text */
-    --font-heading: Roboto, Inter, sans-serif;
-    --font-text: Inter, Roboto, sans-serif;
+    --neutral-primary: var(--text-primary);
+    --neutral-secondary: var(--text-secondary);
+    --neutral-disable: var(--text-tertiary);
+    --neutral-white: var(--text-inverse);
 
-    --h1-font-size: 30px;
-    --h1-line-height: 1.2;
+    /* Background */
+    --bg-primary: var(--surface-muted);
+    --bg-secondary: var(--surface-page);
+    --bg-disabled: #ebeae8;
+    --bg-neutral: var(--surface-muted);
 
-    --h2-font-size: 24px;
-    --h2-line-height: 1.334;
+    /* Border */
+    --bg-shadows: var(--border-subtle);
 
-    --h3-font-size: 20px;
-    --h3-line-height: 1.4;
+    /* Референс обходится плоским белым фоном — градиент оставлен
+       псевдонимом, чтобы не ломать разметку, но визуально выключен. */
+    --main-gradient: var(--surface-page);
+
+    /* ---------- Шрифты (историческое разделение) ---------- */
+    --font-heading: var(--font-family);
+    --font-text: var(--font-family);
+
+    /* ---------- Размеры текста ---------- */
+    --font-size-display: 34px;
+
+    --h1-font-size: 26px;
+    --h1-line-height: var(--line-height-tight);
+
+    --h2-font-size: 20px;
+    --h2-line-height: 1.2;
+
+    --h3-font-size: 17px;
+    --h3-line-height: var(--line-height-normal);
 
     --h3-mobile-font-size: 16px;
-    --h3-mobile-line-height: 1.5;
+    --h3-mobile-line-height: var(--line-height-normal);
 
     --text-base-font-size: 16px;
-    --text-base-line-height: 1.5;
+    --text-base-line-height: var(--line-height-normal);
 
     --text-sm-font-size: 14px;
-    --text-sm-line-height: 1.43;
+    --text-sm-line-height: var(--line-height-normal);
 
-    --text-xs-font-size: 12px;
-    --text-xs-line-height: 1.34;
+    --text-xs-font-size: 13px;
+    --text-xs-line-height: 1.3;
 
-    /* Gap */
+    /* ---------- Отступы. Шаг 4 — как на референсе: интерфейс плотный. ---------- */
     --main-gap: 20px;
-    --second-gap: 10px;
+    --second-gap: 12px;
 
     --space-0: 0;
     --space-px: 1px;
-    --space-0-5: 0.125rem;
-    --space-1: 0.25rem;
-    --space-1-5: 0.375rem;
-    --space-2: 0.5rem;
-    --space-2-5: 0.625rem;
-    --space-3: 0.75rem;
-    --space-3-5: 0.875rem;
-    --space-4: 1rem;
-    --space-5: 1.25rem;
-    --space-6: 1.5rem;
-    --space-7: 1.75rem;
-    --space-8: 2rem;
-    --space-9: 2.25rem;
-    --space-10: 2.5rem;
-    --space-11: 2.75rem;
-    --space-12: 3rem;
-    --space-14: 3.5rem;
-    --space-16: 4rem;
-    --space-20: 5rem;
-    --space-24: 6rem;
-    --space-28: 7rem;
-    --space-32: 8rem;
-    --space-36: 9rem;
-    --space-40: 10rem;
+    --space-0-5: 2px;
+    --space-1: 4px;
+    --space-1-5: 6px;
+    --space-2: 8px;
+    --space-2-5: 10px;
+    --space-3: 12px;
+    --space-3-5: 14px;
+    --space-4: 16px;
+    --space-5: 20px;
+    --space-6: 24px;
+    --space-7: 28px;
+    --space-8: 32px;
+    --space-9: 36px;
+    --space-10: 40px;
+    --space-11: 44px;
+    --space-12: 48px;
+    --space-14: 56px;
+    --space-16: 64px;
+    --space-20: 80px;
+    --space-24: 96px;
+    --space-28: 112px;
+    --space-32: 128px;
+    --space-36: 144px;
+    --space-40: 160px;
+}
+
+html,
+body {
+    height: 100%;
+}
+
+body {
+    margin: 0;
+    overflow-x: clip;
+
+    background: var(--surface-page);
+    color: var(--text-primary);
+
+    font-family: var(--font-family);
+    font-size: var(--text-base-font-size);
+    line-height: var(--line-height-normal);
+
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
 #root,
-#storybook-root { min-height: 100%; }
+#storybook-root {
+    min-height: 100%;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    margin: 0;
+    padding: 0;
+
+    font-family: var(--font-family);
+    font-weight: var(--font-weight-bold);
+    letter-spacing: -0.01em;
+}
 
 h1 {
     font-size: var(--h1-font-size);
@@ -125,47 +221,85 @@ h3 {
     line-height: var(--h3-line-height);
 }
 
-h1, h2, h3, h4, h5, h6 {
-    font-family: var(--font-heading), sans-serif;
-    margin: 0;
-    padding: 0;
-}
-
 p {
     margin: 0;
     padding: 0;
 }
 
-html,
-body {
-    height: 100%;
-}
-
-body {
+ul,
+ol {
     margin: 0;
-    font-family: var(--font-text), sans-serif;
-    font-size: var(--text-base-font-size);
-    line-height: var(--text-base-line-height);
-    color: var(--neutral-primary);
-    background: var(--bg-secondary);
+    padding: 0;
+
+    list-style: none;
 }
 
 a {
     color: inherit;
+    text-decoration: none;
+}
+
+button {
+    font: inherit;
+    color: inherit;
+    cursor: pointer;
+}
+
+img {
+    display: block;
+    max-width: 100%;
+}
+
+input,
+textarea,
+select {
+    font: inherit;
+    color: inherit;
+}
+
+/* Видимый фокус обязателен: без него интерфейсом нельзя пользоваться
+   с клавиатуры. */
+:focus-visible {
+    outline: 2px solid var(--color-link);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+}
+
+/* Полоса прокрутки у горизонтальных лент прячется: на референсе её нет,
+   а листание пальцем и колесом работает и без неё. */
+.scroll-x {
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.scroll-x::-webkit-scrollbar {
+    display: none;
+}
+
+.visually-hidden {
+    position: absolute;
+
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    border: 0;
+
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
 }
 
 main {
-    padding: 24px 32px;
-
     display: grid;
-    gap: 32px;
     grid-template-columns: repeat(3, 1fr);
-
     grid-template-areas: 'left main right';
-
     justify-content: center;
-
     align-items: center;
+    gap: var(--space-6);
+
+    padding: var(--space-5) var(--space-6);
 }
 
 @media (max-width: 1200px) {
@@ -176,8 +310,8 @@ main {
 
 @media (max-width: 768px) {
     :root {
-        --header-height: 50px;
-        --mobile-nav-height: 72px;
+        --header-height: 56px;
+        --mobile-nav-height: 64px;
     }
 
     h3 {
@@ -186,8 +320,18 @@ main {
     }
 
     main {
-        padding: var(--space-5);
-        gap: var(--space-5);
         grid-template-columns: repeat(1, 1fr);
+        gap: var(--space-4);
+
+        padding: var(--space-4);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
     }
 }

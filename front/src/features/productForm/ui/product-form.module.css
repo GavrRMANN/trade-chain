@@ -45,10 +45,10 @@
 
 .form__field-label {
     color: var(--neutral-primary);
-    font-family: Inter, sans-serif;
-    font-size: 13px;
-    font-weight: 600;
-    line-height: 1.35;
+    font-family: var(--font-family);
+    font-size: var(--text-sm-font-size);
+    font-weight: var(--font-weight-medium);
+    line-height: var(--line-height-normal);
 }
 
 .form__row {

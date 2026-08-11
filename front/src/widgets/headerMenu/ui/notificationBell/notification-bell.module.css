@@ -3,36 +3,35 @@
 
     display: inline-flex;
     align-items: center;
-    gap: 8px;
+    gap: var(--space-2);
 
-    padding: 8px 16px;
+    padding: var(--space-2) var(--space-4);
 
-    border: 1px solid transparent;
-    border-radius: 6px;
+    border: none;
+    border-radius: var(--radius-pill);
 
-    color: var(--neutral-primary);
+    color: var(--text-primary);
     background: transparent;
 
-    font-family: Inter, sans-serif;
-    font-size: 16px;
-    line-height: 24px;
-    font-weight: 700;
+    font-family: var(--font-family);
+    font-size: var(--text-base-font-size);
+    line-height: var(--line-height-normal);
+    font-weight: var(--font-weight-medium);
     text-decoration: none;
 
     cursor: pointer;
-    transition: color var(--animation-normal) ease-in, border-color var(--animation-normal) ease-in;
+    transition: color var(--animation-normal) ease-in, background-color var(--animation-normal) ease-in;
 }
 
 .notification-bell:hover {
-    color: var(--accent-secondary);
+    background: var(--surface-muted);
 }
 
 .notification-bell:focus-visible {
-    outline: none;
-    border-color: var(--accent-primary);
+    outline: 2px solid var(--color-link);
+    outline-offset: 2px;
 }
 
-/* Активный маршрут /notifications */
 .notification-bell__label {
     white-space: nowrap;
 }
@@ -42,12 +41,12 @@
 
     width: 40px;
     height: 40px;
-    padding: 8px;
+    padding: 0;
 }
 
 .notification-bell__icon {
-    width: 24px;
-    height: 24px;
+    width: 22px;
+    height: 22px;
 
     fill: none;
     stroke: currentColor;
@@ -67,23 +66,22 @@
     align-items: center;
     justify-content: center;
 
-    min-width: 20px;
-    height: 20px;
-    padding: 0 6px;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
 
-    border-radius: 10px;
+    border-radius: var(--radius-pill);
 
-    background: var(--accent-danger);
-    color: var(--neutral-white);
+    background: var(--color-danger);
+    color: var(--text-inverse);
 
-    font-size: 12px;
-    line-height: 1;
-    font-weight: 700;
+    font-size: 10px;
+    line-height: 16px;
+    font-weight: var(--font-weight-bold);
 }
 
 @media (max-width: 768px) {
     .notification-bell {
-        font-size: 14px;
-        line-height: 20px;
+        font-size: var(--text-sm-font-size);
     }
 }

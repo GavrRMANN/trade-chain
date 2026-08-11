@@ -15,7 +15,6 @@
 
 .exchange-row[role='button']:hover {
     border-color: color-mix(in srgb, var(--accent-primary) 50%, var(--bg-shadows));
-    box-shadow: 0 4px 14px color-mix(in srgb, var(--neutral-primary) 8%, transparent);
 }
 
 .exchange-row[role='button']:focus-visible {

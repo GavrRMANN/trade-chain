@@ -9,20 +9,23 @@
     gap: var(--space-1);
     width: fit-content;
     padding: var(--space-1);
-    border-radius: var(--radius-md);
-    background: var(--bg-disabled);
+    border-radius: var(--radius-pill);
+    background: var(--surface-muted);
 }
 
-.exchanges-page__view-tab {
+.exchanges-page__view-tabs .exchanges-page__view-tab {
+    min-height: 36px;
     padding: var(--space-2) var(--space-4);
-    border-radius: var(--radius-sm);
-    color: var(--neutral-secondary);
+    border-radius: var(--radius-pill);
+    color: var(--text-secondary);
+    font-size: var(--text-sm-font-size);
 }
 
+/* Выбранный сегмент — чёрная пилюля: на референсе именно так помечен
+   активный выбор, без полутонов и теней. */
 .exchanges-page__view-tabs .exchanges-page__view-tab--active {
-    background: var(--bg-secondary);
-    color: var(--neutral-primary);
-    box-shadow: 0 1px 4px var(--bg-shadows);
+    background: var(--surface-dark);
+    color: var(--text-inverse);
 }
 
 .exchanges-page__routes-heading {
@@ -65,7 +68,6 @@
 
 .route-group-card:hover {
     border-color: color-mix(in srgb, var(--accent-primary) 50%, var(--bg-shadows));
-    box-shadow: 0 4px 14px color-mix(in srgb, var(--neutral-primary) 8%, transparent);
 }
 
 .route-group-card__footer {
@@ -138,30 +140,38 @@
     gap: var(--space-2);
 }
 
-.exchanges-page__tab {
-    padding: var(--space-2) var(--space-4);
+/* Фильтры — это Button variant="text", у которого свои правила для
+   активного состояния. Селекторы намеренно вложены в контейнер: без
+   этого правила кнопки перебивают чип по специфичности. */
+.exchanges-page__tabs .exchanges-page__tab {
+    display: inline-flex;
+    align-items: center;
+    height: 40px;
+    min-height: 40px;
+    padding: 0 var(--space-4);
 
-    border: 1px solid var(--bg-shadows);
-    border-radius: var(--radius-md);
+    border: none;
+    border-radius: var(--radius-pill);
 
-    background: var(--bg-secondary);
-    color: var(--neutral-secondary);
+    background: var(--surface-muted);
+    color: var(--text-primary);
 
-    font-size: var(--text-base-font-size);
-    line-height: var(--text-base-line-height);
+    font-size: var(--text-sm-font-size);
+    line-height: var(--line-height-normal);
+    white-space: nowrap;
 
     cursor: pointer;
-    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+    transition: background 0.15s ease, color 0.15s ease;
 }
 
-.exchanges-page__tab:hover {
-    background: var(--bg-primary);
+.exchanges-page__tabs .exchanges-page__tab:hover {
+    background: var(--border-subtle);
 }
 
-.exchanges-page__tab--active {
-    background: var(--accent-primary);
-    border-color: var(--accent-primary);
-    color: var(--neutral-white);
+.exchanges-page__tabs .exchanges-page__tab--active,
+.exchanges-page__tabs .exchanges-page__tab--active:hover {
+    background: var(--surface-dark);
+    color: var(--text-inverse);
 }
 
 .exchanges-page__state {
@@ -198,7 +208,6 @@
 
 .exchanges-page__row:hover {
     border-color: var(--accent-primary);
-    box-shadow: 0 2px 8px var(--bg-shadows);
 }
 
 .exchanges-page__row:focus-visible {

@@ -42,13 +42,22 @@
     display: flex;
     align-self: flex-start;
     padding: var(--space-1);
-    border-radius: var(--radius-sm);
-    background: var(--bg-neutral);
+    border-radius: var(--radius-pill);
+    background: var(--surface-muted);
 }
 
-.picker__mode--active {
-    background: var(--bg-secondary);
-    box-shadow: 0 1px 3px var(--bg-shadows);
+.picker__mode > .picker__mode--active {
+    min-height: 32px;
+    padding: var(--space-1-5) var(--space-3);
+    border-radius: var(--radius-pill);
+    background: var(--surface-dark);
+    color: var(--text-inverse);
+}
+
+.picker__mode > :not(.picker__mode--active) {
+    min-height: 32px;
+    padding: var(--space-1-5) var(--space-3);
+    color: var(--text-secondary);
 }
 
 .picker__grid {

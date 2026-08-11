@@ -15,7 +15,7 @@
     min-height: 40px;
     padding: 10px 14px;
     border: 1px solid var(--bg-shadows);
-    border-radius: 4px;
+    border-radius: var(--radius-md);
     background: var(--bg-primary);
     color: var(--neutral-primary);
     font-family: var(--font-text), sans-serif;
@@ -30,7 +30,6 @@
 .picker__search:focus {
     border-color: var(--accent-primary);
     outline: none;
-    box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent-primary) 13%, transparent);
 }
 
 .picker__grid {
@@ -115,12 +114,12 @@
 
 .picker__item--active {
     color: var(--neutral-white);
-    background: #000;
+    background: var(--surface-dark);
 }
 
 .picker__item--active:hover:not(:disabled) {
     color: var(--neutral-white);
-    background: #000;
+    background: var(--surface-dark);
 }
 
 .picker__item:disabled {

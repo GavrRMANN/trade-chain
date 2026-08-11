@@ -1,9 +1,9 @@
 .status-badge {
     display: inline-block;
 
-    padding: var(--space-1) var(--space-2-5);
+    padding: var(--space-1) var(--space-3);
 
-    border-radius: var(--radius-lg);
+    border-radius: var(--radius-pill);
 
     /* text-xs M */
     font-family: var(--font-text), sans-serif;
