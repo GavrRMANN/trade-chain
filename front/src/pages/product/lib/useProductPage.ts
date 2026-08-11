@@ -14,8 +14,8 @@ const statusLabels = {
     archived: 'В архиве',
 } as const;
 
-type TOfferState = {isOpen: boolean};
-type TOfferAction = {type: 'open'} | {type: 'close'};
+type TOfferState = { isOpen: boolean };
+type TOfferAction = { type: 'open' } | { type: 'close' };
 
 const offerReducer = (state: TOfferState, action: TOfferAction): TOfferState => ({
     isOpen: action.type === 'open',
@@ -26,7 +26,7 @@ export const useProductPage = () => {
     const navigate = useNavigate();
     const openModalRoute = useOpenModalRoute();
     const { setTitle } = usePageTitle();
-    const [offerState, dispatchOffer] = useReducer(offerReducer, {isOpen: false});
+    const [offerState, dispatchOffer] = useReducer(offerReducer, { isOpen: false });
 
     const {
         product,
@@ -40,6 +40,7 @@ export const useProductPage = () => {
         averageRating,
         incomingOffers,
         productOffers,
+        myProductOffers,
         targetChain,
         isOwner,
         isAuthenticated,
@@ -70,8 +71,8 @@ export const useProductPage = () => {
     const ratingText = hasRating
         ? `${averageRating.toFixed(1)} · Отзывов: ${reviews.length}`
         : reviews.length
-            ? `Отзывов: ${reviews.length}`
-            : 'Пока без отзывов';
+          ? `Отзывов: ${reviews.length}`
+          : 'Пока без отзывов';
     const canOffer = status === 'active' && !isOwner && isAuthenticated;
 
     const openOffer = useCallback(() => {
@@ -79,20 +80,17 @@ export const useProductPage = () => {
             openModalRoute('auth');
             return;
         }
-        if (status === 'active') dispatchOffer({type: 'open'});
+        if (status === 'active') dispatchOffer({ type: 'open' });
     }, [isAuthenticated, status, openModalRoute]);
 
-    const closeOffer = useCallback(() => dispatchOffer({type: 'close'}), []);
+    const closeOffer = useCallback(() => dispatchOffer({ type: 'close' }), []);
 
     const onOfferSuccess = useCallback(
         (chainId: string) => navigate(`/exchanges/${chainId}`),
         [navigate],
     );
 
-    const openProduct = useCallback(
-        (id: string) => navigate(`/product/${id}`),
-        [navigate],
-    );
+    const openProduct = useCallback((id: string) => navigate(`/product/${id}`), [navigate]);
 
     const openEditProduct = useCallback(
         (id: string) => navigate(`/product/${id}/edit`),
@@ -105,7 +103,7 @@ export const useProductPage = () => {
 
     const openRoute = useCallback(
         (productId: string, sourceProductId?: string) => {
-            const params = new URLSearchParams({target: productId});
+            const params = new URLSearchParams({ target: productId });
             if (sourceProductId) {
                 params.set('from', sourceProductId);
             }
@@ -132,6 +130,7 @@ export const useProductPage = () => {
         averageRating,
         incomingOffers,
         productOffers,
+        myProductOffers,
         targetChain,
         isOwner,
         isAuthenticated,
