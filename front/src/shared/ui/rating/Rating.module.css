@@ -1,25 +1,25 @@
 .rating {
     display: inline-flex;
     align-items: center;
-    gap: 2px;
+    gap: 1px;
 }
 
 .rating__star {
-    width: 18px;
-    height: 18px;
+    width: 16px;
+    height: 16px;
 
-    color: var(--neutral-disable);
+    color: var(--border-strong);
     fill: transparent;
 
     transition: color var(--animation-normal), fill var(--animation-normal);
 }
 
 .rating__star--filled {
-    color: var(--accent-success);
-    fill: var(--accent-success);
+    color: var(--color-star);
+    fill: var(--color-star);
 }
 
 .rating--rating .rating__star--filled {
-    color: var(--accent-rating);
-    fill: var(--accent-rating);
+    color: var(--color-star);
+    fill: var(--color-star);
 }

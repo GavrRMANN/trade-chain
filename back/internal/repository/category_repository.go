@@ -21,15 +21,16 @@ func NewCategoryRepository(db *pgxpool.Pool) CategoryRepository {
 
 func (r *categoryRepository) Create(ctx context.Context, category *domain.Category) (*domain.Category, error) {
 	query := `
-		INSERT INTO categories (name, parent_id)
-		VALUES ($1, $2)
-		RETURNING category_id, name, parent_id, created_at, updated_at
+		INSERT INTO categories (name, icon, parent_id)
+		VALUES ($1, $2, $3)
+		RETURNING category_id, name, icon, parent_id, created_at, updated_at
 	`
 
 	var created domain.Category
-	err := r.db.QueryRow(ctx, query, category.Name, category.ParentID).Scan(
+	err := r.db.QueryRow(ctx, query, category.Name, category.Icon, category.ParentID).Scan(
 		&created.CategoryID,
 		&created.Name,
+		&created.Icon,
 		&created.ParentID,
 		&created.CreatedAt,
 		&created.UpdatedAt,
@@ -42,7 +43,7 @@ func (r *categoryRepository) Create(ctx context.Context, category *domain.Catego
 
 func (r *categoryRepository) GetByID(ctx context.Context, id string) (*domain.Category, error) {
 	query := `
-		SELECT category_id, name, parent_id, created_at, updated_at
+		SELECT category_id, name, icon, parent_id, created_at, updated_at
 		FROM categories
 		WHERE category_id = $1
 	`
@@ -51,6 +52,7 @@ func (r *categoryRepository) GetByID(ctx context.Context, id string) (*domain.Ca
 	err := r.db.QueryRow(ctx, query, id).Scan(
 		&category.CategoryID,
 		&category.Name,
+		&category.Icon,
 		&category.ParentID,
 		&category.CreatedAt,
 		&category.UpdatedAt,
@@ -66,7 +68,7 @@ func (r *categoryRepository) GetByID(ctx context.Context, id string) (*domain.Ca
 
 func (r *categoryRepository) GetSubcategories(ctx context.Context, parentID string) ([]domain.Category, error) {
 	query := `
-		SELECT category_id, name, parent_id, created_at, updated_at
+		SELECT category_id, name, icon, parent_id, created_at, updated_at
 		FROM categories
 		WHERE parent_id = $1
 		ORDER BY name
@@ -84,6 +86,7 @@ func (r *categoryRepository) GetSubcategories(ctx context.Context, parentID stri
 		err := rows.Scan(
 			&cat.CategoryID,
 			&cat.Name,
+			&cat.Icon,
 			&cat.ParentID,
 			&cat.CreatedAt,
 			&cat.UpdatedAt,
@@ -100,15 +103,17 @@ func (r *categoryRepository) Update(ctx context.Context, id string, category *do
 	query := `
 		UPDATE categories
 		SET name = COALESCE($1, name),
-		    parent_id = COALESCE($2, parent_id)
-		WHERE category_id = $3
-		RETURNING category_id, name, parent_id, created_at, updated_at
+		    icon = COALESCE($2, icon),
+		    parent_id = COALESCE($3, parent_id)
+		WHERE category_id = $4
+		RETURNING category_id, name, icon, parent_id, created_at, updated_at
 	`
 
 	var updated domain.Category
-	err := r.db.QueryRow(ctx, query, category.Name, category.ParentID, id).Scan(
+	err := r.db.QueryRow(ctx, query, category.Name, category.Icon, category.ParentID, id).Scan(
 		&updated.CategoryID,
 		&updated.Name,
+		&updated.Icon,
 		&updated.ParentID,
 		&updated.CreatedAt,
 		&updated.UpdatedAt,
@@ -143,6 +148,7 @@ func (r *categoryRepository) Search(
 SELECT
 	category_id,
 	name,
+	icon,
 	parent_id,
 	updated_at,
 
@@ -182,6 +188,7 @@ ORDER BY
 		err := rows.Scan(
 			&category.CategoryID,
 			&category.Name,
+			&category.Icon,
 			&category.ParentID,
 			&category.UpdatedAt,
 			&score,
@@ -199,7 +206,7 @@ ORDER BY
 
 func (r *categoryRepository) List(ctx context.Context) ([]domain.Category, error) {
 	query := `
-		SELECT category_id, name, parent_id, created_at, updated_at
+		SELECT category_id, name, icon, parent_id, created_at, updated_at
 		FROM categories
 		ORDER BY name
 	`
@@ -216,6 +223,7 @@ func (r *categoryRepository) List(ctx context.Context) ([]domain.Category, error
 		err := rows.Scan(
 			&cat.CategoryID,
 			&cat.Name,
+			&cat.Icon,
 			&cat.ParentID,
 			&cat.CreatedAt,
 			&cat.UpdatedAt,

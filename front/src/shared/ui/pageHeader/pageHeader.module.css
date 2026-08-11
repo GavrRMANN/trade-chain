@@ -1,0 +1,165 @@
+/* Шапка прилипает под верхнюю панель приложения. Отрицательные поля тянут
+   подложку до краёв колонки контента: иначе прокручиваемый контент с
+   выносом за поля (ленты категорий, треки цепочек) выглядывал бы сбоку. */
+.page-header {
+    position: sticky;
+    z-index: 15;
+    top: var(--header-height);
+
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+
+    width: calc(100% + var(--space-6) * 2);
+    margin: 0 calc(var(--space-6) * -1);
+    padding: var(--space-4) var(--space-6);
+
+    background: var(--surface-page);
+
+    transition: padding var(--animation-fast) ease-in;
+}
+
+/* Линия появляется только после прилипания: пока шапка стоит в потоке,
+   она читается как заголовок, а не как панель. */
+.page-header--stuck {
+    padding-top: var(--space-3);
+    padding-bottom: var(--space-3);
+
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.page-header__bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4);
+    min-width: 0;
+}
+
+.page-header__titles {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    gap: var(--space-1);
+    min-width: 0;
+}
+
+.page-header__title {
+    overflow: hidden;
+
+    color: var(--text-primary);
+
+    font-size: var(--h1-font-size);
+    line-height: var(--line-height-tight);
+    font-weight: var(--font-weight-bold);
+    letter-spacing: -0.02em;
+    text-overflow: ellipsis;
+
+    transition: font-size var(--animation-fast) ease-in;
+}
+
+/* Прилипшая шапка уменьшает заголовок: на телефоне 26px во всю ширину
+   съедали бы четверть экрана всю дорогу. */
+.page-header--stuck .page-header__title {
+    font-size: var(--h2-font-size);
+    line-height: var(--h2-line-height);
+    white-space: nowrap;
+}
+
+.page-header__meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2) var(--space-3);
+    min-width: 0;
+
+    color: var(--text-secondary);
+
+    font-size: var(--text-sm-font-size);
+    line-height: var(--line-height-normal);
+}
+
+/* Пояснение — необязательный контекст: при прилипании уходит,
+   ключевые факты и действие остаются. */
+.page-header--stuck .page-header__subtitle {
+    display: none;
+}
+
+.page-header__subtitle {
+    color: var(--text-secondary);
+
+    font-size: var(--text-sm-font-size);
+    line-height: var(--line-height-normal);
+}
+
+.page-header__actions {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.page-header__tabs {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    min-width: 0;
+
+    overflow-x: auto;
+
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.page-header__tabs::-webkit-scrollbar {
+    display: none;
+}
+
+@media (max-width: 768px) {
+    .page-header {
+        gap: var(--space-2);
+
+        width: calc(100% + var(--space-4) * 2);
+        margin: 0 calc(var(--space-4) * -1);
+        padding: var(--space-3) var(--space-4);
+    }
+
+    .page-header--stuck {
+        padding-top: var(--space-2);
+        padding-bottom: var(--space-2);
+    }
+
+    .page-header__bar {
+        align-items: flex-start;
+        flex-wrap: wrap;
+        gap: var(--space-2) var(--space-3);
+    }
+
+    .page-header--stuck .page-header__title {
+        font-size: var(--h3-mobile-font-size);
+        line-height: var(--h3-mobile-line-height);
+    }
+
+    .page-header__meta {
+        font-size: var(--text-xs-font-size);
+        line-height: var(--text-xs-line-height);
+    }
+
+    /* Действие уезжает под заголовок только пока шапка в потоке: у
+       прилипшей полосы место экономнее, и кнопка остаётся справа. */
+    .page-header__actions {
+        flex: 1 1 100%;
+    }
+
+    .page-header--stuck .page-header__actions {
+        flex: 0 0 auto;
+    }
+
+    .page-header__actions > * {
+        flex: 1 1 auto;
+    }
+
+    .page-header--stuck .page-header__actions > * {
+        flex: 0 0 auto;
+    }
+}

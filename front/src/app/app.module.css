@@ -2,29 +2,34 @@
     max-width: var(--max-width);
     margin: 0 auto;
     padding-top: var(--header-height);
+
+    background: var(--surface-page);
 }
 
+/* Именно min-height, а не height: закреплённая шапка страницы ездит внутри
+   своего родителя, и при фиксированной высоте она отрывалась и уезжала
+   вверх, как только контент оказывался длиннее экрана. */
 .content {
     display: flex;
     flex-direction: column;
     justify-content: start;
     align-items: start;
 
-    gap: var(--main-gap);
+    gap: var(--space-5);
 
-    height: calc(100vh - var(--header-height));
-    padding-bottom: clamp(var(--space-4), 3vw, var(--space-8));
+    min-height: calc(100vh - var(--header-height));
+    padding-bottom: var(--space-10);
 }
 
 .content--gradient {
-    background: var(--main-gradient);
+    background: var(--surface-page);
 }
 
 @media (max-width: 768px) {
     .content {
-        gap: var(--second-gap);
+        gap: var(--space-4);
         height: auto;
         min-height: calc(100vh - var(--header-height));
-        padding-bottom: calc(var(--mobile-nav-height) + var(--space-3));
+        padding-bottom: calc(var(--mobile-nav-height) + var(--space-4));
     }
 }

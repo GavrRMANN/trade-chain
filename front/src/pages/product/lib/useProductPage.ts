@@ -1,7 +1,6 @@
-import { useCallback, useLayoutEffect, useReducer } from 'react';
+import { useCallback, useReducer } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
-import { usePageTitle } from '@app/providers/pageTitle';
 import { useOpenModalRoute } from '@shared/lib';
 
 import { useProductPageData } from './useProductPageData';
@@ -25,7 +24,6 @@ export const useProductPage = () => {
     const { productId } = useParams<{ productId: string }>();
     const navigate = useNavigate();
     const openModalRoute = useOpenModalRoute();
-    const { setTitle } = usePageTitle();
     const [offerState, dispatchOffer] = useReducer(offerReducer, { isOpen: false });
 
     const {
@@ -60,10 +58,6 @@ export const useProductPage = () => {
         isLoading: isActionLoading,
         error: actionError,
     } = useProductActions(product?.product_id);
-
-    useLayoutEffect(() => {
-        setTitle('');
-    }, [setTitle]);
 
     const status: keyof typeof statusLabels = actionStatus ?? product?.status ?? 'active';
     const sellerName = customer?.email || 'Email не указан';

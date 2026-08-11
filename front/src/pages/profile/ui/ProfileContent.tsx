@@ -6,6 +6,7 @@ import {ExchangeRow} from '@widgets/exchangeRow';
 import {ProfileSidebar} from '@widgets/profileSidebar';
 import {ReviewCard} from '@entities/review';
 import {ProfileProductRow} from '@widgets/profile';
+import {PageHeader} from '@shared/ui/pageHeader';
 
 import {EmptyState} from './EmptyState';
 import Styles from './profile-content.module.css';
@@ -159,54 +160,71 @@ export const ProfileContent = ({
     };
 
     return (
-        <div className={Styles.layout}>
-            <ProfileSidebar
-                name={viewModel.maskedName}
-                createdAt={user.created_at}
-                rating={viewModel.rating}
-                reviewsCount={viewModel.reviewsCount}
-                productsCount={viewModel.products.length}
-                exchangesCount={isOwner ? viewModel.exchanges.length : undefined}
-                onReviewsClick={() => viewModel.setActiveTab('reviews')}
-                onLogout={isOwner ? viewModel.onLogout : undefined}
+        <>
+            {/* Имя и разделы профиля закреплены: боковая колонка с карточкой
+                пользователя уезжает вверх, а список товаров длинный. */}
+            <PageHeader
+                title={viewModel.maskedName}
+                tabs={
+                    <nav className={Styles.tabs} aria-label="Разделы профиля">
+                        {tabs.map((tab) => (
+                            <Button
+                                key={tab.id}
+                                variant="text"
+                                active={viewModel.activeTab === tab.id}
+                                className={`${Styles.tab} ${viewModel.activeTab === tab.id ? Styles.tabActive : ''}`}
+                                onClick={() => viewModel.setActiveTab(tab.id)}
+                                ariaLabel={`${tab.label}: ${viewModel.getTabCount(tab.id)}`}
+                            >
+                                {tab.label} <span>{viewModel.getTabCount(tab.id)}</span>
+                            </Button>
+                        ))}
+                    </nav>
+                }
             />
 
-            <section className={Styles.content}>
-                <nav className={Styles.tabs} aria-label="Разделы профиля">
-                    {tabs.map((tab) => (
-                        <Button
-                            key={tab.id}
-                            variant="text"
-                            active={viewModel.activeTab === tab.id}
-                            className={`${Styles.tab} ${viewModel.activeTab === tab.id ? Styles.tabActive : ''}`}
-                            onClick={() => viewModel.setActiveTab(tab.id)}
-                            ariaLabel={`${tab.label}: ${viewModel.getTabCount(tab.id)}`}
-                        >
-                            {tab.label} <span>{viewModel.getTabCount(tab.id)}</span>
-                        </Button>
-                    ))}
-                </nav>
+            <div className={Styles.layout}>
+                <ProfileSidebar
+                    name={viewModel.maskedName}
+                    createdAt={user.created_at}
+                    rating={viewModel.rating}
+                    reviewsCount={viewModel.reviewsCount}
+                    productsCount={viewModel.products.length}
+                    exchangesCount={isOwner ? viewModel.exchanges.length : undefined}
+                    onReviewsClick={() => viewModel.setActiveTab('reviews')}
+                    onLogout={isOwner ? viewModel.onLogout : undefined}
+                />
 
-                <div className={Styles.heading}>
-                    <div>
-                        <h2>
-                            {viewModel.activeTab === 'products' || viewModel.activeTab === 'archive'
-                                ? viewModel.activeTab === 'archive' ? 'Архив товаров' : isOwner ? 'Мои товары' : 'Товары пользователя'
-                                : viewModel.activeTab === 'exchanges'
-                                    ? 'Мои цепочки обменов'
-                                    : 'Отзывы'}
-                        </h2>
-                        {viewModel.activeTab === 'exchanges' && (
-                            <p>Показываем только ваши цепочки: чужая история недоступна через API.</p>
+                <section className={Styles.content}>
+                    <div className={Styles.heading}>
+                        <div>
+                            <h2>
+                                {viewModel.activeTab === 'products' ||
+                                viewModel.activeTab === 'archive'
+                                    ? viewModel.activeTab === 'archive'
+                                        ? 'Архив товаров'
+                                        : isOwner
+                                          ? 'Мои товары'
+                                          : 'Товары пользователя'
+                                    : viewModel.activeTab === 'exchanges'
+                                      ? 'Мои цепочки обменов'
+                                      : 'Отзывы'}
+                            </h2>
+                            {viewModel.activeTab === 'exchanges' && (
+                                <p>
+                                    Показываем только ваши цепочки: чужая история недоступна
+                                    через API.
+                                </p>
+                            )}
+                        </div>
+                        {isOwner && viewModel.activeTab === 'products' && (
+                            <Button onClick={viewModel.openCreate}>Добавить товар</Button>
                         )}
                     </div>
-                    {isOwner && viewModel.activeTab === 'products' && (
-                        <Button onClick={viewModel.openCreate}>Добавить товар</Button>
-                    )}
-                </div>
 
-                {renderContent()}
-            </section>
-        </div>
+                    {renderContent()}
+                </section>
+            </div>
+        </>
     );
 };

@@ -13,6 +13,7 @@ type CustomerRepository interface {
 	Update(ctx context.Context, id string, customer *domain.UpdateCustomerDTO) (*domain.Customer, error)
 	Delete(ctx context.Context, id string) error
 	List(ctx context.Context, offset, limit int) ([]domain.Customer, error)
+	ListOverview(ctx context.Context, offset, limit int) ([]domain.CustomerOverview, error)
 }
 
 type ProductRepository interface {

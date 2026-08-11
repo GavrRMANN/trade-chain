@@ -14,6 +14,7 @@ type CustomerService interface {
 	Update(context.Context, string, *domain.UpdateCustomerDTO) (*domain.Customer, error)
 	Delete(context.Context, string) error
 	List(context.Context, int, int) ([]domain.Customer, error)
+	ListOverview(context.Context, int, int) ([]domain.CustomerOverview, error)
 }
 
 type ProductService interface {

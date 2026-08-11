@@ -1,7 +1,12 @@
 import { createApi } from '@reduxjs/toolkit/query/react';
 
 import { apiBaseQuery } from '@shared/api';
-import type { TCustomer, TCustomerListRequest, TUpdateCustomerRequest } from '../types';
+import type {
+    TCustomer,
+    TCustomerListRequest,
+    TCustomerOverview,
+    TUpdateCustomerRequest,
+} from '../types';
 
 type TUpdateCustomerArgs = {
     customerId: string;
@@ -18,6 +23,12 @@ export const customerApi = createApi({
         getCustomers: builder.query<TCustomer[], TCustomerListRequest | void>({
             query: (params) => ({
                 url: '/customers',
+                ...(params ? { params } : {}),
+            }),
+        }),
+        getCustomersOverview: builder.query<TCustomerOverview[], TCustomerListRequest | void>({
+            query: (params) => ({
+                url: '/customers/overview',
                 ...(params ? { params } : {}),
             }),
         }),
@@ -39,6 +50,7 @@ export const customerApi = createApi({
 
 export const {
     useGetCustomersQuery,
+    useGetCustomersOverviewQuery,
     useGetCustomerQuery,
     useUpdateCustomerMutation,
     useDeleteCustomerMutation,

@@ -1,6 +1,7 @@
 import {MainSection} from '@shared/ui/mainSection';
 import {Preloader} from '@shared/ui/preloader';
 import {PageError} from '@shared/ui/pageError';
+import {PageHeader} from '@shared/ui/pageHeader';
 import {Button} from '@shared/ui/button';
 import {Pagination} from '@shared/ui/pagination';
 
@@ -42,25 +43,32 @@ export const NotificationsPage = () => {
 
     return (
         <MainSection fill>
-            <div className={Styles['notifications-page']}>
-                <header className={Styles['notifications-page__header']}>
-                    {unreadCount > 0 && (
-                        <>
-                            <span className={Styles['notifications-page__counter']}>
-                                Непрочитанных: {unreadCount}
-                            </span>
-                            <Button
-                                variant="text"
-                                className={Styles['notifications-page__read-all']}
-                                loading={isMarkingAllAsRead}
-                                onClick={markAllAsRead}
-                            >
-                                Прочитать все
-                            </Button>
-                        </>
-                    )}
-                </header>
+            {/* Счётчик непрочитанного и «прочитать все» закреплены: список
+                листается, а действие относится ко всему списку сразу. */}
+            <PageHeader
+                title="Уведомления"
+                meta={
+                    unreadCount > 0 ? (
+                        <span className={Styles['notifications-page__counter']}>
+                            Непрочитанных: {unreadCount}
+                        </span>
+                    ) : undefined
+                }
+                actions={
+                    unreadCount > 0 ? (
+                        <Button
+                            variant="text"
+                            className={Styles['notifications-page__read-all']}
+                            loading={isMarkingAllAsRead}
+                            onClick={markAllAsRead}
+                        >
+                            Прочитать все
+                        </Button>
+                    ) : undefined
+                }
+            />
 
+            <div className={Styles['notifications-page']}>
                 {notifications.length === 0 ? (
                     <div className={Styles['notifications-page__empty']}>
                         <h2>Пока пусто</h2>

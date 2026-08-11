@@ -152,12 +152,14 @@ const categories = [
     {
         category_id: 'computer-goods',
         name: 'Товары для компьютера',
+        icon: '🖥️',
         created_at: '2026-08-07T00:00:00Z',
         updated_at: '2026-08-07T00:00:00Z',
     },
     {
         category_id: 'components',
         name: 'Комплектующие',
+        icon: '🔧',
         parent_id: 'computer-goods',
         created_at: '2026-08-07T00:00:00Z',
         updated_at: '2026-08-07T00:00:00Z',
@@ -165,6 +167,7 @@ const categories = [
     {
         category_id: 'video-cards',
         name: 'Видеокарты',
+        icon: '🎮',
         parent_id: 'components',
         created_at: '2026-08-07T00:00:00Z',
         updated_at: '2026-08-07T00:00:00Z',
@@ -172,6 +175,7 @@ const categories = [
     {
         category_id: 'console-games',
         name: 'Игры для приставок',
+        icon: '🕹️',
         created_at: '2026-08-07T00:00:00Z',
         updated_at: '2026-08-07T00:00:00Z',
     },
@@ -183,6 +187,7 @@ const customers = [
     {
         customer_id: 'user-pskov-01',
         email: 'alexey@example.com',
+        full_name: 'Ковалёв Алексей Игоревич',
         password: 'password123',
         is_active: true,
         created_at: '2026-08-07T00:00:00Z',
@@ -191,6 +196,7 @@ const customers = [
     {
         customer_id: 'user-pskov-02',
         email: 'maria@example.com',
+        full_name: 'Соколова Мария Андреевна',
         password: 'password123',
         is_active: true,
         created_at: '2026-08-07T00:00:00Z',
@@ -199,6 +205,7 @@ const customers = [
     {
         customer_id: 'user-pskov-03',
         email: 'ivan@example.com',
+        full_name: 'Морозов Иван Петрович',
         password: 'password123',
         is_active: true,
         created_at: '2026-08-07T00:00:00Z',
@@ -207,6 +214,7 @@ const customers = [
     {
         customer_id: 'user-pskov-04',
         email: 'olga@example.com',
+        full_name: 'Лебедева Ольга Сергеевна',
         password: 'password123',
         is_active: true,
         created_at: '2026-08-07T00:00:00Z',
@@ -215,6 +223,7 @@ const customers = [
     {
         customer_id: 'user-pskov-05',
         email: 'dmitry@example.com',
+        full_name: 'Волков Дмитрий Николаевич',
         password: 'password123',
         is_active: true,
         created_at: '2026-08-07T00:00:00Z',
@@ -223,6 +232,7 @@ const customers = [
     {
         customer_id: 'user-pskov-06',
         email: 'elena@example.com',
+        full_name: 'Зайцева Елена Викторовна',
         password: 'password123',
         is_active: true,
         created_at: '2026-08-07T00:00:00Z',
@@ -231,6 +241,7 @@ const customers = [
     {
         customer_id: 'user-pskov-07',
         email: 'sergey@example.com',
+        full_name: 'Новиков Сергей Дмитриевич',
         password: 'password123',
         is_active: true,
         created_at: '2026-08-07T00:00:00Z',
@@ -239,6 +250,7 @@ const customers = [
     {
         customer_id: 'user-pskov-08',
         email: 'natalia@example.com',
+        full_name: 'Егорова Наталья Олеговна',
         password: 'password123',
         is_active: true,
         created_at: '2026-08-07T00:00:00Z',
@@ -247,6 +259,7 @@ const customers = [
     {
         customer_id: 'user-pskov-09',
         email: 'pavel@example.com',
+        full_name: 'Титов Павел Романович',
         password: 'password123',
         is_active: true,
         created_at: '2026-08-07T00:00:00Z',
@@ -255,6 +268,7 @@ const customers = [
     {
         customer_id: 'user-pskov-10',
         email: 'irina@example.com',
+        full_name: 'Крылова Ирина Максимовна',
         password: 'password123',
         is_active: true,
         created_at: '2026-08-07T00:00:00Z',
@@ -263,6 +277,7 @@ const customers = [
     {
         customer_id: 'user-pskov-11',
         email: 'roman@example.com',
+        full_name: 'Богданов Роман Алексеевич',
         password: 'password123',
         is_active: true,
         created_at: '2026-08-07T00:00:00Z',
@@ -379,6 +394,11 @@ const reviews = [
     },
 ];
 
+// Желания владельцев — то, из чего собирается блок «Вам подойдёт»: карточка
+// попадает в него, когда у смотрящего уже есть вещь из нужной владельцу
+// категории. Поэтому желания расставлены в обе стороны — и у владельцев
+// видеокарт, и у владельцев игр: иначе блок был бы виден только половине
+// демонстрационных участников.
 const wishlists = [
     {
         wishlist_id: 'wishlist-pskov-01',
@@ -387,10 +407,58 @@ const wishlists = [
         created_at: '2026-08-06T18:50:00Z',
         updated_at: '2026-08-06T18:50:00Z',
     },
+    {
+        wishlist_id: 'wishlist-pskov-02',
+        product_id: 'avito-gpu-rx-6600',
+        name: 'Обменяю на консоль или игры',
+        created_at: '2026-08-05T12:30:00Z',
+        updated_at: '2026-08-05T12:30:00Z',
+    },
+    {
+        wishlist_id: 'wishlist-pskov-03',
+        product_id: 'avito-gpu-rtx-3070',
+        name: 'Что хочу получить за 3070',
+        created_at: '2026-08-02T14:30:00Z',
+        updated_at: '2026-08-02T14:30:00Z',
+    },
+    {
+        wishlist_id: 'wishlist-pskov-04',
+        product_id: 'avito-game-xbox-forza',
+        name: 'Меняю на игры для PS5',
+        created_at: '2026-08-03T11:40:00Z',
+        updated_at: '2026-08-03T11:40:00Z',
+    },
+    {
+        wishlist_id: 'wishlist-pskov-05',
+        product_id: 'avito-game-xbox-halo',
+        name: 'Рассмотрю обмен на игры',
+        created_at: '2026-07-28T09:40:00Z',
+        updated_at: '2026-07-28T09:40:00Z',
+    },
+    {
+        wishlist_id: 'wishlist-pskov-06',
+        product_id: 'avito-game-ps4-rdr2',
+        name: 'Хочу видеокарту взамен',
+        created_at: '2026-08-04T16:25:00Z',
+        updated_at: '2026-08-04T16:25:00Z',
+    },
+    {
+        wishlist_id: 'wishlist-pskov-07',
+        product_id: 'avito-game-ps5-hogwarts',
+        name: 'Меняю на комплектующие',
+        created_at: '2026-07-29T11:50:00Z',
+        updated_at: '2026-07-29T11:50:00Z',
+    },
 ];
 
 const wishlistOptions = {
     'wishlist-pskov-01': ['console-games'],
+    'wishlist-pskov-02': ['console-games'],
+    'wishlist-pskov-03': ['console-games'],
+    'wishlist-pskov-04': ['console-games'],
+    'wishlist-pskov-05': ['console-games'],
+    'wishlist-pskov-06': ['video-cards'],
+    'wishlist-pskov-07': ['video-cards'],
 };
 
 export {

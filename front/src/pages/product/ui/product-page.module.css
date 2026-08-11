@@ -5,47 +5,20 @@
     width: 100%;
 }
 
-.product-page__header {
-    position: sticky;
-    z-index: 10;
-    top: var(--header-height);
-
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-3);
-    min-width: 0;
-    padding: var(--space-4) 0;
-    border-bottom: 1px solid var(--bg-shadows);
-    background: var(--bg-secondary);
-}
-
-.product-page__header h1 {
-    max-width: 900px;
-    font-size: var(--h1-font-size);
-    line-height: var(--h1-line-height);
-}
-
-.product-page__meta {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: var(--space-4);
-    color: var(--neutral-secondary);
-    font-size: var(--text-base-font-size);
-    line-height: var(--text-base-line-height);
-}
-
+/* Цена и статус живут в закреплённой шапке страницы (PageHeader),
+   поэтому здесь остаётся только их оформление. */
 .product-page__price {
-    color: var(--neutral-primary);
-    font-family: var(--font-heading);
+    color: var(--text-primary);
     font-size: var(--h2-font-size);
     line-height: var(--h2-line-height);
+    font-weight: var(--font-weight-bold);
+    font-variant-numeric: tabular-nums;
 }
 
 .product-page__status {
-    padding: var(--space-1-5) var(--space-3);
-    border-radius: var(--radius-lg);
-    background: color-mix(in srgb, var(--accent-success) 12%, var(--bg-secondary));
+    padding: var(--space-1) var(--space-3);
+    border-radius: var(--radius-pill);
+    background: color-mix(in srgb, var(--accent-success) 14%, var(--bg-secondary));
     color: var(--accent-success);
     font-size: var(--text-sm-font-size);
     font-weight: 700;
@@ -218,9 +191,9 @@
 }
 
 .product-page__wishlist span {
-    padding: var(--space-1-5) var(--space-3);
-    border: 1px solid var(--bg-shadows);
-    border-radius: var(--radius-lg);
+    padding: var(--space-1) var(--space-3);
+    border: none;
+    border-radius: var(--radius-pill);
     background: var(--bg-primary);
     color: var(--neutral-primary);
     font-size: var(--text-sm-font-size);
@@ -308,11 +281,6 @@
         gap: var(--space-8);
     }
 
-    .product-page__header h1 {
-        font-size: var(--h2-font-size);
-        line-height: var(--h2-line-height);
-    }
-
     .product-page__hero,
     .product-page__overview {
         grid-template-columns: 1fr;
@@ -333,13 +301,9 @@
 }
 
 @media (max-width: 480px) {
-    .product-page__meta {
-        align-items: flex-start;
-        gap: var(--space-2) var(--space-3);
-    }
-
     .product-page__price {
-        width: 100%;
+        font-size: var(--h3-mobile-font-size);
+        line-height: var(--h3-mobile-line-height);
     }
 
     .product-page__facts div,

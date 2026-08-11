@@ -7,13 +7,6 @@
     overflow: hidden;
 }
 
-.notifications-page__header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--space-3);
-}
-
 .notifications-page__counter {
     color: var(--accent-primary);
 

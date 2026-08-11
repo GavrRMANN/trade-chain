@@ -12,7 +12,6 @@
 
 .row:hover {
     border-color: color-mix(in srgb, var(--accent-primary) 40%, var(--bg-shadows));
-    box-shadow: 0 4px 14px color-mix(in srgb, var(--neutral-primary) 6%, transparent);
 }
 
 .media {

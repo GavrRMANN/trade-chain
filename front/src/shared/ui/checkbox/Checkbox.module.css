@@ -1,26 +1,24 @@
 .checkbox {
-    width: 14px;
-    height: 14px;
+    position: relative;
+
+    display: grid;
+    place-content: center;
+
+    width: 18px;
+    height: 18px;
     margin: 0;
 
     appearance: none;
     -webkit-appearance: none;
 
-    border-radius: 2px;
-    border: 1px solid var(--neutral-disable, #9CA3AF);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-xs);
 
     cursor: pointer;
 
-    position: relative;
-
-    display: grid;
-
-    place-content: center;
-
     transition:
-            background-color var(--animation-normal),
-            border-color var(--animation-normal),
-            box-shadow var(--animation-normal);
+        background-color var(--animation-normal),
+        border-color var(--animation-normal);
 }
 
 .checkbox:focus {
@@ -28,36 +26,44 @@
 }
 
 .checkbox:focus-visible {
-    border-radius: 4px;
-    outline: 1px solid var(--accent-primary, #1E40AF);
-    border: 1px solid var(--accent-primary, #1E40AF);
+    border-color: var(--color-brand);
+    outline: 2px solid var(--color-link);
+    outline-offset: 2px;
 }
 
 .checkbox:hover {
-    border: 1px solid var(--accent-secondary, #2563EB);
+    border-color: var(--color-brand);
 }
 
 .checkbox:disabled {
-    border: 1px solid var(--bg-shadows, #E5E7EB);
-    background: var(--bg-disabled, #F3F4F6);
+    border-color: var(--border-subtle);
+
+    background: var(--surface-muted);
 
     cursor: not-allowed;
 }
 
 .checkbox:checked {
-    border: 1px solid var(--accent-primary, #1E40AF);
+    border-color: var(--color-brand);
+
+    background: var(--color-brand);
 }
 
+/* Галочка рисуется псевдоэлементом: так не нужен ни SVG, ни шрифт с
+   иконками, а цвет наследуется от заливки. */
 .checkbox:checked::after {
-    content: "";
-    position: absolute;
+    content: '';
 
-    inset: 2px;
+    width: 5px;
+    height: 9px;
+    margin-top: -2px;
 
-    border-radius: 2px;
-    background-color: var(--accent-primary, #1E40AF);
+    border: solid var(--text-inverse);
+    border-width: 0 2px 2px 0;
+
+    transform: rotate(45deg);
 }
 
 .checkbox--error {
-    border: 1px solid var(--accent-danger, #EF4444);
+    border-color: var(--color-danger);
 }

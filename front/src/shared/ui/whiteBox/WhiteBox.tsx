@@ -4,13 +4,14 @@ import {useWhiteBox} from './useWhiteBox';
 type TWhiteBoxProps = {
     title: string;
     active?: boolean;
+    icon?: string;
     img?: string;
     disabled?: boolean;
     onClick?: () => void;
 }
 
-export const WhiteBox = ({title, active, img, disabled, onClick}: TWhiteBoxProps) => {
-    const {className} = useWhiteBox({active, image: img, disabled});
+export const WhiteBox = ({title, active, icon, img, disabled, onClick}: TWhiteBoxProps) => {
+    const {className} = useWhiteBox({active, image: img ?? icon, disabled});
 
     return (
         <button
@@ -24,7 +25,9 @@ export const WhiteBox = ({title, active, img, disabled, onClick}: TWhiteBoxProps
                 {title}
             </h4>
             {
-                img && <img className={Styles.img} src={img} alt="" aria-hidden="true"/>
+                icon
+                    ? <span className={Styles.icon} aria-hidden="true">{icon}</span>
+                    : img && <img className={Styles.img} src={img} alt="" aria-hidden="true"/>
             }
         </button>
     )

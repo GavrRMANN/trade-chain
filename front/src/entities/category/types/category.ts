@@ -3,6 +3,8 @@ export type TCategory = {
     category_id: string;
     /** Название категории. */
     name: string;
+    /** Иконка категории — текстовый смайлик, присланный backend. */
+    icon?: string;
     /** Изображение категории, если его прислал backend. */
     image?: string;
     /** Идентификатор родительской категории. */

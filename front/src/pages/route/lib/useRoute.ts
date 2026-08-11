@@ -1,7 +1,6 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
-import { usePageTitle } from '@app/providers/pageTitle';
 import { useGetCategoriesQuery } from '@entities/category';
 import { useCreateChainMutation, useGetMyChainsQuery } from '@entities/chain';
 import type { TChain } from '@entities/chain';
@@ -20,7 +19,6 @@ type TRouteHistoryItem = {
 
 /** Управляет персональным маршрутом до цели и предложениями текущего этапа. */
 export const useRoute = () => {
-    const { setTitle } = usePageTitle();
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
 
@@ -53,10 +51,6 @@ export const useRoute = () => {
     const [selectedTargetIds, setSelectedTargetIds] = useState<string[]>([]);
     const [submitError, setSubmitError] = useState<string>();
     const [submitMessage, setSubmitMessage] = useState<string>();
-
-    useLayoutEffect(() => {
-        setTitle('Путь к цели');
-    }, [setTitle]);
 
     const chain = useMemo(() => {
         const products = routeQuery.data?.chain ?? [];

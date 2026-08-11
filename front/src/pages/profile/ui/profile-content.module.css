@@ -37,11 +37,12 @@
     font-size: var(--text-sm-font-size);
 }
 
-.tabActive {
-    color: var(--neutral-primary);
+.tabs .tabActive {
+    color: var(--text-primary);
+    font-weight: var(--font-weight-medium);
 }
 
-.tabActive::after {
+.tabs .tabActive::after {
     position: absolute;
     right: var(--space-4);
     bottom: -1px;

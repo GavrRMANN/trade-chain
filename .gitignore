@@ -66,3 +66,4 @@ go.work.sum
 .idea/
 .vscode/
 /docs/code_review/CODE_CHECK.md
+/docs/style-example/

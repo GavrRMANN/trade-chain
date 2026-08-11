@@ -7,7 +7,6 @@ import './index.css';
 
 import { RealtimeProvider, StoreProvider } from '@app/providers';
 import { AppRouter } from '@app/router';
-import {PageTitleProvider} from "@app/providers/pageTitle";
 import { store } from '@app/redux';
 import { initAuth } from '@entities/user';
 
@@ -22,16 +21,20 @@ createRoot(document.getElementById('root')!).render(
                 <ConfigProvider
                     theme={{
                         token: {
-                            colorPrimary: '#1677ff',
-                            colorBgLayout: '#ffffff'
+                            colorPrimary: '#00aaff',
+                            colorBgLayout: '#ffffff',
+                            colorText: '#000000',
+                            colorTextSecondary: '#8c8c8c',
+                            colorBorder: '#e7e6e4',
+                            borderRadius: 12,
+                            fontFamily:
+                                "Manrope, 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
                         },
                     }}
                 >
-                    <PageTitleProvider>
-                        <BrowserRouter>
-                            <AppRouter />
-                        </BrowserRouter>
-                    </PageTitleProvider>
+                    <BrowserRouter>
+                        <AppRouter />
+                    </BrowserRouter>
                 </ConfigProvider>
             </RealtimeProvider>
         </StoreProvider>
