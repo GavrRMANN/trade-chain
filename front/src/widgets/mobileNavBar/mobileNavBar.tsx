@@ -1,7 +1,6 @@
 import { NavLink } from 'react-router-dom';
 
 import { useNotificationsFeed } from '@entities/notification';
-import LogoSVG from '@shared/assets/logo/logo.svg';
 import PlusSVG from '@shared/assets/icons/Plus.svg?react';
 import UserSVG from '@shared/assets/icons/User.svg?react';
 import { ExchangeDirection } from '@shared/ui/exchangeDirection';
@@ -24,7 +23,9 @@ export const MobileNavBar = () => {
                 to="/"
                 end
             >
-                <img className={Styles['mobile-nav__logo']} src={LogoSVG} alt="" />
+                <svg className={Styles['mobile-nav__home-icon']} viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1V10Z" />
+                </svg>
                 <span>Главная</span>
             </NavLink>
             <button

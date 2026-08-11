@@ -64,9 +64,14 @@
     border-radius: var(--radius-sm);
 }
 
-.mobile-nav__logo {
+.mobile-nav__home-icon {
     width: 24px;
     height: 24px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
 }
 
 .mobile-nav__notification-icon {
