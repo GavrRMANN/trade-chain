@@ -9,6 +9,7 @@ import { reviewApi } from '@/entities/review';
 import { searchApi } from '@/entities/search';
 import { userSlice, userApi } from '@/entities/user';
 import { wishlistApi } from '@/entities/wishlist';
+import {notificationApi} from '@/entities/notification/api';
 import { rtkQueryCacheMiddleware } from './middleware';
 
 export const store = configureStore({
@@ -22,6 +23,7 @@ export const store = configureStore({
         [reviewApi.reducerPath]: reviewApi.reducer,
         [searchApi.reducerPath]: searchApi.reducer,
         [wishlistApi.reducerPath]: wishlistApi.reducer,
+        [notificationApi.reducerPath]: notificationApi.reducer,
     },
     middleware: (getDefaultMiddleware) =>
         getDefaultMiddleware()
@@ -35,6 +37,7 @@ export const store = configureStore({
                 reviewApi.middleware,
                 searchApi.middleware,
                 wishlistApi.middleware,
+                notificationApi.middleware,
             ),
 });
 

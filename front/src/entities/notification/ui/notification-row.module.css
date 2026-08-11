@@ -10,12 +10,12 @@
     transition: border-color var(--animation-fast), box-shadow var(--animation-fast);
 }
 
-.row:hover {
+.row:has(.row__content:hover) {
     border-color: var(--accent-primary);
     box-shadow: 0 2px 8px var(--bg-shadows);
 }
 
-.row:focus-visible {
+.row:has(.row__content:focus-visible) {
     outline: 2px solid var(--accent-primary);
     outline-offset: 2px;
 }
@@ -31,6 +31,20 @@
     min-width: 0;
     flex-direction: column;
     gap: var(--space-1);
+}
+
+.row__content {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: 0;
+    border: 0;
+
+    background: transparent;
+    color: inherit;
+
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
 }
 
 .row__head {

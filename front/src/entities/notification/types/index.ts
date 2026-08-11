@@ -1,1 +1,1 @@
-export type {TNotification, TNotificationKind} from './notification';
+export type {TNotification, TNotificationKind, TNotificationRead} from './notification';

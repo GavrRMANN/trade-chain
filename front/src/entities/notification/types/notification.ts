@@ -34,4 +34,12 @@ export type TNotification = {
     updated_at: string;
     /** Куда вести пользователя при клике. */
     href: string;
+    /** Время прочтения; null означает, что уведомление ещё не прочитано. */
+    read_at: string | null;
+};
+
+export type TNotificationRead = {
+    chain_id: string;
+    kind: TNotificationKind;
+    read_at: string;
 };

@@ -2,10 +2,11 @@ import {MainSection} from '@shared/ui/mainSection';
 import {Preloader} from '@shared/ui/preloader';
 import {PageError} from '@shared/ui/pageError';
 import {Button} from '@shared/ui/button';
+import {Pagination} from '@shared/ui/pagination';
 
 import Styles from './notifications-page.module.css';
 import {NotificationRow} from '@entities/notification';
-import {useNotificationsPage} from '../lib';
+import {useNotificationsPage, useNotificationsPagination} from '../lib';
 
 export const NotificationsPage = () => {
     const {
@@ -15,7 +16,21 @@ export const NotificationsPage = () => {
         isError,
         openExchange,
         openCatalog,
+        markAllAsRead,
+        isMarkingAllAsRead,
     } = useNotificationsPage();
+    const {
+        currentPage,
+        itemsPerPage,
+        listRef,
+        paginationRef,
+        setCurrentPage,
+        totalPages,
+    } = useNotificationsPagination(notifications.length);
+    const paginatedNotifications = notifications.slice(
+        (currentPage - 1) * itemsPerPage,
+        currentPage * itemsPerPage,
+    );
 
     if (isLoading) {
         return <Preloader message={'Загружаем уведомления…'} />;
@@ -26,13 +41,23 @@ export const NotificationsPage = () => {
     }
 
     return (
-        <MainSection>
+        <MainSection fill>
             <div className={Styles['notifications-page']}>
                 <header className={Styles['notifications-page__header']}>
                     {unreadCount > 0 && (
-                        <span className={Styles['notifications-page__counter']}>
-                            {unreadCount} ждёт ответа
-                        </span>
+                        <>
+                            <span className={Styles['notifications-page__counter']}>
+                                Непрочитанных: {unreadCount}
+                            </span>
+                            <Button
+                                variant="text"
+                                className={Styles['notifications-page__read-all']}
+                                loading={isMarkingAllAsRead}
+                                onClick={markAllAsRead}
+                            >
+                                Прочитать все
+                            </Button>
+                        </>
                     )}
                 </header>
 
@@ -47,14 +72,23 @@ export const NotificationsPage = () => {
                         <Button onClick={openCatalog}>Перейти в каталог</Button>
                     </div>
                 ) : (
-                    <div className={Styles['notifications-page__list']}>
-                        {notifications.map((notification) => (
+                    <div ref={listRef} className={Styles['notifications-page__list']}>
+                        {paginatedNotifications.map((notification) => (
                             <NotificationRow
                                 key={notification.id}
                                 notification={notification}
                                 onOpen={openExchange}
                             />
                         ))}
+                    </div>
+                )}
+                {totalPages > 1 && (
+                    <div ref={paginationRef} className={Styles['notifications-page__pagination']}>
+                        <Pagination
+                            currentPage={currentPage}
+                            total={totalPages}
+                            onChange={setCurrentPage}
+                        />
                     </div>
                 )}
             </div>

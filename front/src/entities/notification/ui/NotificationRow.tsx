@@ -14,48 +14,40 @@ const KIND_LABEL: Record<TNotificationKind, string> = {
 
 type TNotificationRowProps = {
     notification: TNotification;
-    onOpen: (chainId: string) => void;
+    onOpen: (notification: TNotification) => Promise<void>;
 };
 
 export const NotificationRow = ({notification, onOpen}: TNotificationRowProps) => {
-    const {chain_id, title, body, status, updated_at} = notification;
-    const requiresAction = notification.kind === 'incoming_offer';
+    const {title, body, status, updated_at} = notification;
+    const isUnread = notification.read_at === null;
 
-    const handleOpen = () => onOpen(chain_id);
-    const handleKeyDown = (event: React.KeyboardEvent) => {
-        if (event.key === 'Enter' || event.key === ' ') {
-            event.preventDefault();
-            onOpen(chain_id);
-        }
+    const handleOpen = () => {
+        void onOpen(notification);
     };
 
     const rowClasses = [
         Styles.row,
-        requiresAction && Styles['row--accent'],
+        isUnread && Styles['row--accent'],
     ]
         .filter(Boolean)
         .join(' ');
 
     return (
-        <div
-            className={rowClasses}
-            role="button"
-            tabIndex={0}
-            onClick={handleOpen}
-            onKeyDown={handleKeyDown}
-        >
-            <div className={Styles.row__body}>
-                <div className={Styles.row__head}>
-                    <span className={Styles.row__kind}>
-                        {KIND_LABEL[notification.kind]}
-                    </span>
-                    {requiresAction && (
-                        <span className={Styles.row__dot} aria-hidden="true" />
-                    )}
+        <div className={rowClasses}>
+            <button className={Styles.row__content} type="button" onClick={handleOpen}>
+                <div className={Styles.row__body}>
+                    <div className={Styles.row__head}>
+                        <span className={Styles.row__kind}>
+                            {KIND_LABEL[notification.kind]}
+                        </span>
+                        {isUnread && notification.kind === 'incoming_offer' && (
+                            <span className={Styles.row__dot} aria-hidden="true" />
+                        )}
+                    </div>
+                    <p className={Styles.row__title}>{title}</p>
+                    <p className={Styles.row__text}>{body}</p>
                 </div>
-                <p className={Styles.row__title}>{title}</p>
-                <p className={Styles.row__text}>{body}</p>
-            </div>
+            </button>
             <div className={Styles.row__meta}>
                 <ChainStatusBadge status={status} />
                 <span className={Styles.row__date}>

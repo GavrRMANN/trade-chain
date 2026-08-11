@@ -1,7 +1,9 @@
 import {useLayoutEffect} from 'react';
 import {useNavigate} from 'react-router-dom';
 
-import {useNotificationsFeed} from '@entities/notification';
+import {useMarkAllNotificationsAsReadMutation, useMarkNotificationAsReadMutation} from '@entities/notification/api';
+import {useNotificationsFeed} from '@entities/notification/lib';
+import type {TNotification} from '@entities/notification/types';
 import {usePageTitle} from '@app/providers/pageTitle';
 
 /**
@@ -18,13 +20,25 @@ export const useNotificationsPage = () => {
         isLoading,
         isError,
     } = useNotificationsFeed();
+    const [markAllNotificationsAsRead, {isLoading: isMarkingAllAsRead}] = useMarkAllNotificationsAsReadMutation();
+    const [markNotificationAsRead] = useMarkNotificationAsReadMutation();
 
     useLayoutEffect(() => {
         setTitle('Уведомления');
     }, [setTitle]);
 
-    const openExchange = (chainId: string) => {
-        navigate(`/exchanges/${chainId}`);
+    const openExchange = async (notification: TNotification) => {
+        if (notification.read_at === null) {
+            await markNotificationAsRead({
+                chainId: notification.chain_id,
+                kind: notification.kind,
+            }).unwrap();
+        }
+        navigate(`/exchanges/${notification.chain_id}`);
+    };
+
+    const markAllAsRead = () => {
+        void markAllNotificationsAsRead();
     };
 
     const openCatalog = () => {
@@ -38,5 +52,7 @@ export const useNotificationsPage = () => {
         isError,
         openExchange,
         openCatalog,
+        markAllAsRead,
+        isMarkingAllAsRead,
     };
 };

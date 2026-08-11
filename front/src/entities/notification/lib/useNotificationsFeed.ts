@@ -1,11 +1,12 @@
 import {useMemo} from 'react';
 
 import {useGetMyChainsQuery} from '@entities/chain';
-import {useGetProductsQuery} from '@entities/product';
+import {useGetProductsQuery, useProductsById} from '@entities/product';
 import {selectIsAuthenticated, useGetCurrentUserQuery} from '@entities/user';
 import {useAppSelector} from '@app/redux';
 
 import {buildNotifications} from './buildNotifications';
+import {useGetNotificationReadsQuery} from '../api';
 import type {TNotification} from '../types';
 
 /**
@@ -30,29 +31,37 @@ export const useNotificationsFeed = () => {
     const {data: products = []} = useGetProductsQuery(undefined, {
         skip: !isAuthenticated,
     });
+    const {data: reads = [], isLoading: isReadsLoading, isFetching: isReadsFetching, isError: isReadsError} = useGetNotificationReadsQuery(undefined, {
+        skip: !isAuthenticated,
+    });
 
     const currentUserId = currentUser?.customer_id ?? '';
 
-    const productsById = useMemo(() => {
-        const map = new Map<string, import('@entities/product').TProduct>();
-        for (const product of products) {
-            map.set(product.product_id, product);
-        }
-        return map;
-    }, [products]);
+    const productIds = useMemo(
+        () => chains.flatMap((chain) => [chain.from_product_id, chain.to_product_id]),
+        [chains],
+    );
+    const productsById = useProductsById(productIds, products);
 
-    const notifications = useMemo<TNotification[]>(
-        () =>
-            currentUserId
-                ? buildNotifications(chains, productsById, currentUserId)
-                : [],
-        [chains, productsById, currentUserId],
+    const readAtByNotificationId = useMemo(
+        () => new Map(reads.map((item) => [`${item.chain_id}:${item.kind}`, item.read_at])),
+        [reads],
     );
 
-    /** Предложения, ожидающие моего ответа — основа бейджа в шапке. */
+    const notifications = useMemo<TNotification[]>(
+        () => (currentUserId
+            ? buildNotifications(chains, productsById, currentUserId)
+            : []
+        ).map((notification) => ({
+            ...notification,
+            read_at: readAtByNotificationId.get(notification.id) ?? null,
+        })),
+        [chains, currentUserId, productsById, readAtByNotificationId],
+    );
+
+    /** Непрочитанные события показываются бейджами в навигации. */
     const unreadCount = useMemo(
-        () =>
-            notifications.filter((item) => item.kind === 'incoming_offer').length,
+        () => notifications.filter((item) => item.read_at === null).length,
         [notifications],
     );
 
@@ -60,8 +69,8 @@ export const useNotificationsFeed = () => {
         isAuthenticated,
         notifications,
         unreadCount,
-        isLoading: isChainsLoading || isCurrentUserLoading,
-        isFetching,
-        isError,
+        isLoading: isChainsLoading || isCurrentUserLoading || isReadsLoading,
+        isFetching: isFetching || isReadsFetching,
+        isError: isError || isReadsError,
     };
 };

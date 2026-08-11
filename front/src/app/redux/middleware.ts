@@ -7,6 +7,7 @@ import {reviewApi} from '@/entities/review';
 import {searchApi} from '@/entities/search';
 import {logout, setCredentials, userApi} from '@/entities/user';
 import {wishlistApi} from '@/entities/wishlist';
+import {notificationApi} from '@/entities/notification/api';
 
 const apiSlices = [
     userApi,
@@ -17,6 +18,7 @@ const apiSlices = [
     reviewApi,
     searchApi,
     wishlistApi,
+    notificationApi,
 ];
 
 /**

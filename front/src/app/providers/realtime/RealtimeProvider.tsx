@@ -2,15 +2,29 @@ import {notification} from 'antd';
 import {useEffect, useRef, type PropsWithChildren} from 'react';
 
 import {useNotificationsFeed} from '@entities/notification';
+import type {TSseEvent} from '@shared/api';
 
 import {useRealtime} from './useRealtime';
 
 export const RealtimeProvider = ({children}: PropsWithChildren) => {
-    useRealtime();
-    const [api, contextHolder] = notification.useNotification();
+    const [api, contextHolder] = notification.useNotification({top: 74});
     const {isAuthenticated, notifications, isLoading, isFetching} = useNotificationsFeed();
     const initializedRef = useRef(false);
     const previousIdsRef = useRef<Set<string>>(new Set());
+
+    useRealtime((event: TSseEvent) => {
+        if (
+            event.type === 'exchange.message.created'
+            && window.location.pathname !== `/exchanges/${event.chain_id}`
+        ) {
+            api.open({
+                key: `message:${event.chain_id}`,
+                message: 'Новое сообщение в чате',
+                description: 'Откройте чат, чтобы прочитать сообщение.',
+                placement: 'topRight',
+            });
+        }
+    });
 
     useEffect(() => {
         if (!isAuthenticated) {
