@@ -30,6 +30,15 @@ type Product struct {
 	Status      ProductStatus `json:"status"`
 	CreatedAt   time.Time     `json:"created_at"`
 	UpdatedAt   time.Time     `json:"updated_at"`
+
+	// Matched отвечает на вопрос «почему мне это показали»: владелец товара
+	// ищет что-то из того, что уже есть у смотрящего ленту, поэтому обмен
+	// возможен напрямую, без цепочки. Заполняется только в ленте каталога и
+	// только для авторизованного пользователя.
+	Matched bool `json:"matched,omitempty"`
+	// MatchedByProductID — товар смотрящего, который закрывает желание
+	// владельца. Нужен, чтобы с карточки можно было сразу предложить обмен.
+	MatchedByProductID *string `json:"matched_by_product_id,omitempty"`
 }
 
 type CreateProductDTO struct {

@@ -38,11 +38,23 @@ INSERT INTO products (product_id, customer_id, category_id, title, description, 
 ON CONFLICT DO NOTHING;
 
 INSERT INTO wishlists (wishlist_id, product_id, name, created_at, updated_at) VALUES
-    ('1ccf4307-7b00-5938-b425-42e30aee6f83', '1bb647e1-a136-5c68-9ad8-f7c3b880816b', 'Что хочу получить за видеокарту', '2026-08-06T18:50:00Z', '2026-08-06T18:50:00Z')
+    ('1ccf4307-7b00-5938-b425-42e30aee6f83', '1bb647e1-a136-5c68-9ad8-f7c3b880816b', 'Что хочу получить за видеокарту', '2026-08-06T18:50:00Z', '2026-08-06T18:50:00Z'),
+    ('cb3309cf-2dfb-5b40-b177-0f3ef5ba1973', '27d2d5c6-d819-51a8-a730-629f37d05784', 'Обменяю на консоль или игры', '2026-08-05T12:30:00Z', '2026-08-05T12:30:00Z'),
+    ('9a73882f-ffc5-5f66-b661-32acc48ba2eb', '5792fb16-10c7-5701-9462-7df5b3cc983d', 'Что хочу получить за 3070', '2026-08-02T14:30:00Z', '2026-08-02T14:30:00Z'),
+    ('38a9c2d4-ea36-5598-8a41-bc49cd4f708f', 'd4f45a72-f924-5fd5-98a1-6ab1ebcab104', 'Меняю на игры для PS5', '2026-08-03T11:40:00Z', '2026-08-03T11:40:00Z'),
+    ('cec61017-f1e8-5212-90e2-7469615200cb', 'cf28bf4e-36ae-5c96-8a61-113f6c9f2a3a', 'Рассмотрю обмен на игры', '2026-07-28T09:40:00Z', '2026-07-28T09:40:00Z'),
+    ('f6e0a11d-6db1-5b73-a008-cafaaa588b73', 'a2adc3ce-b425-5671-912a-d5584c445e40', 'Хочу видеокарту взамен', '2026-08-04T16:25:00Z', '2026-08-04T16:25:00Z'),
+    ('b08d3402-803d-5715-addc-8668e65de1b3', '2cefe1a1-d372-5e2b-bf84-ac4dd877c793', 'Меняю на комплектующие', '2026-07-29T11:50:00Z', '2026-07-29T11:50:00Z')
 ON CONFLICT DO NOTHING;
 
 INSERT INTO wishlist_options (wishlist_id, category_id) VALUES
-    ('1ccf4307-7b00-5938-b425-42e30aee6f83', '85ca78e5-1b8f-5de2-a0af-41d06874d1d1')
+    ('1ccf4307-7b00-5938-b425-42e30aee6f83', '85ca78e5-1b8f-5de2-a0af-41d06874d1d1'),
+    ('cb3309cf-2dfb-5b40-b177-0f3ef5ba1973', '85ca78e5-1b8f-5de2-a0af-41d06874d1d1'),
+    ('9a73882f-ffc5-5f66-b661-32acc48ba2eb', '85ca78e5-1b8f-5de2-a0af-41d06874d1d1'),
+    ('38a9c2d4-ea36-5598-8a41-bc49cd4f708f', '85ca78e5-1b8f-5de2-a0af-41d06874d1d1'),
+    ('cec61017-f1e8-5212-90e2-7469615200cb', '85ca78e5-1b8f-5de2-a0af-41d06874d1d1'),
+    ('f6e0a11d-6db1-5b73-a008-cafaaa588b73', '4a82b1a2-c73c-505e-91ba-e1cbc3b4ad25'),
+    ('b08d3402-803d-5715-addc-8668e65de1b3', '4a82b1a2-c73c-505e-91ba-e1cbc3b4ad25')
 ON CONFLICT DO NOTHING;
 
 INSERT INTO chains (chain_id, from_product_id, to_product_id, initiator_id, recipient_id, status, message, expires_at, surcharge_amount, surcharge_currency, surcharge_payer, created_at, updated_at) VALUES

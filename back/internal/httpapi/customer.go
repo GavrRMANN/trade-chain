@@ -15,6 +15,10 @@ func mountCustomerRoutes(r chi.Router, s service.CustomerService) {
 	h := customerHandler{s}
 	r.Route("/customers", func(r chi.Router) {
 		r.Get("/", h.list)
+		// overview объявляется до /{id}: chi отдаёт статическому сегменту
+		// приоритет над параметром, но порядок здесь ещё и читается как
+		// «сначала списки, потом одна запись».
+		r.Get("/overview", h.overview)
 		r.Get("/{id}", h.get)
 		r.Patch("/{id}", h.update)
 		r.Delete("/{id}", h.delete)
@@ -140,6 +144,32 @@ func (h customerHandler) list(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	v, e := h.s.List(r.Context(), o, l)
+	if e != nil {
+		writeError(w, e)
+		return
+	}
+	writeJSON(w, http.StatusOK, v)
+}
+
+// overview godoc
+// @Summary List customers with activity stats
+// @Description List customers together with rating, review count, total and active products, and exchange chains
+// @Tags customers
+// @Accept json
+// @Produce json
+// @Param offset query int false "Offset" default(0)
+// @Param limit query int false "Limit" default(20) maximum(100)
+// @Success 200 {array} domain.CustomerOverview
+// @Failure 400 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /customers/overview [get]
+func (h customerHandler) overview(w http.ResponseWriter, r *http.Request) {
+	o, l, e := pagination(r)
+	if e != nil {
+		writeError(w, e)
+		return
+	}
+	v, e := h.s.ListOverview(r.Context(), o, l)
 	if e != nil {
 		writeError(w, e)
 		return

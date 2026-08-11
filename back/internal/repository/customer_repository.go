@@ -19,21 +19,30 @@ func NewCustomerRepository(db *pgxpool.Pool) CustomerRepository {
 	return &customerRepository{db: db}
 }
 
+// customerColumns держит список в одном месте: колонка full_name появилась
+// после всех запросов, и добавлять её пришлось бы в пять мест сразу.
+const customerColumns = `customer_id, email, full_name, password_hash, created_at, updated_at`
+
+func scanCustomer(row rowScanner) (domain.Customer, error) {
+	var customer domain.Customer
+	err := row.Scan(
+		&customer.CustomerID,
+		&customer.Email,
+		&customer.FullName,
+		&customer.PasswordHash,
+		&customer.CreatedAt,
+		&customer.UpdatedAt,
+	)
+	return customer, err
+}
+
 func (r *customerRepository) Create(ctx context.Context, customer *domain.CreateCustomerDTO) (*domain.Customer, error) {
 	query := `
-		INSERT INTO customers (email, password_hash)
-		VALUES ($1, $2)
-		RETURNING customer_id, email, password_hash, created_at, updated_at
-	`
+		INSERT INTO customers (email, password_hash, full_name)
+		VALUES ($1, $2, $3)
+		RETURNING ` + customerColumns
 
-	var created domain.Customer
-	err := r.db.QueryRow(ctx, query, customer.Email, customer.Password).Scan(
-		&created.CustomerID,
-		&created.Email,
-		&created.PasswordHash,
-		&created.CreatedAt,
-		&created.UpdatedAt,
-	)
+	created, err := scanCustomer(r.db.QueryRow(ctx, query, customer.Email, customer.Password, customer.FullName))
 	if err != nil {
 		return nil, err
 	}
@@ -43,19 +52,12 @@ func (r *customerRepository) Create(ctx context.Context, customer *domain.Create
 
 func (r *customerRepository) GetByID(ctx context.Context, id string) (*domain.Customer, error) {
 	query := `
-		SELECT customer_id, email, password_hash, created_at, updated_at
+		SELECT ` + customerColumns + `
 		FROM customers
 		WHERE customer_id = $1 AND is_active = TRUE
 	`
 
-	var customer domain.Customer
-	err := r.db.QueryRow(ctx, query, id).Scan(
-		&customer.CustomerID,
-		&customer.Email,
-		&customer.PasswordHash,
-		&customer.CreatedAt,
-		&customer.UpdatedAt,
-	)
+	customer, err := scanCustomer(r.db.QueryRow(ctx, query, id))
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, sql.ErrNoRows
@@ -68,19 +70,12 @@ func (r *customerRepository) GetByID(ctx context.Context, id string) (*domain.Cu
 
 func (r *customerRepository) GetByEmail(ctx context.Context, email string) (*domain.Customer, error) {
 	query := `
-		SELECT customer_id, email, password_hash, created_at, updated_at
+		SELECT ` + customerColumns + `
 		FROM customers
 		WHERE email = $1 AND is_active = TRUE
 	`
 
-	var customer domain.Customer
-	err := r.db.QueryRow(ctx, query, email).Scan(
-		&customer.CustomerID,
-		&customer.Email,
-		&customer.PasswordHash,
-		&customer.CreatedAt,
-		&customer.UpdatedAt,
-	)
+	customer, err := scanCustomer(r.db.QueryRow(ctx, query, email))
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, sql.ErrNoRows
@@ -95,19 +90,12 @@ func (r *customerRepository) Update(ctx context.Context, id string, customer *do
 	query := `
 		UPDATE customers
 		SET email = COALESCE($1, email),
-		    password_hash = COALESCE($2, password_hash)
-		WHERE customer_id = $3
-		RETURNING customer_id, email, password_hash, created_at, updated_at
-	`
+		    password_hash = COALESCE($2, password_hash),
+		    full_name = COALESCE($3, full_name)
+		WHERE customer_id = $4
+		RETURNING ` + customerColumns
 
-	var updated domain.Customer
-	err := r.db.QueryRow(ctx, query, customer.Email, customer.Password, id).Scan(
-		&updated.CustomerID,
-		&updated.Email,
-		&updated.PasswordHash,
-		&updated.CreatedAt,
-		&updated.UpdatedAt,
-	)
+	updated, err := scanCustomer(r.db.QueryRow(ctx, query, customer.Email, customer.Password, customer.FullName, id))
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, sql.ErrNoRows
@@ -132,7 +120,7 @@ func (r *customerRepository) Delete(ctx context.Context, id string) error {
 
 func (r *customerRepository) List(ctx context.Context, offset, limit int) ([]domain.Customer, error) {
 	query := `
-		SELECT customer_id, email, password_hash, created_at, updated_at
+		SELECT ` + customerColumns + `
 		FROM customers
 		WHERE is_active = TRUE
 		ORDER BY created_at DESC
@@ -147,19 +135,67 @@ func (r *customerRepository) List(ctx context.Context, offset, limit int) ([]dom
 
 	var customers []domain.Customer
 	for rows.Next() {
-		var customer domain.Customer
-		err := rows.Scan(
-			&customer.CustomerID,
-			&customer.Email,
-			&customer.PasswordHash,
-			&customer.CreatedAt,
-			&customer.UpdatedAt,
-		)
+		customer, err := scanCustomer(rows)
 		if err != nil {
 			return nil, err
 		}
 		customers = append(customers, customer)
 	}
 
-	return customers, nil
+	return customers, rows.Err()
+}
+
+// ListOverview собирает профиль вместе с производными показателями.
+//
+// Показатели считаются скалярными подзапросами, а не набором JOIN с
+// GROUP BY: агрегаты идут по трём независимым таблицам, и объединение их в
+// одном соединении перемножило бы строки — товары размножились бы на число
+// отзывов. Отдельные подзапросы дают каждому агрегату свой индекс.
+func (r *customerRepository) ListOverview(ctx context.Context, offset, limit int) ([]domain.CustomerOverview, error) {
+	query := `
+		SELECT
+			c.customer_id,
+			c.email,
+			c.full_name,
+			c.created_at,
+			COALESCE((SELECT AVG(rating)::float8 FROM reviews WHERE to_customer_id = c.customer_id), 0),
+			(SELECT COUNT(*) FROM reviews   WHERE to_customer_id = c.customer_id),
+			(SELECT COUNT(*) FROM products  WHERE customer_id = c.customer_id),
+			(SELECT COUNT(*) FROM products  WHERE customer_id = c.customer_id AND status = 'active'),
+			(SELECT COUNT(*) FROM chains    WHERE initiator_id = c.customer_id OR recipient_id = c.customer_id)
+		FROM customers c
+		WHERE c.is_active = TRUE
+		ORDER BY c.created_at DESC, c.customer_id
+		LIMIT $1 OFFSET $2
+	`
+
+	rows, err := r.db.Query(ctx, query, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	// Пустой срез, а не nil: список участников уходит в JSON, и `[]`
+	// клиенту понятнее, чем `null`.
+	overviews := make([]domain.CustomerOverview, 0)
+	for rows.Next() {
+		var overview domain.CustomerOverview
+		err := rows.Scan(
+			&overview.CustomerID,
+			&overview.Email,
+			&overview.FullName,
+			&overview.CreatedAt,
+			&overview.Rating,
+			&overview.ReviewCount,
+			&overview.ProductCount,
+			&overview.ActiveProductCount,
+			&overview.ChainCount,
+		)
+		if err != nil {
+			return nil, err
+		}
+		overviews = append(overviews, overview)
+	}
+
+	return overviews, rows.Err()
 }

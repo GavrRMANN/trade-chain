@@ -310,33 +310,67 @@ func (r *productRepository) List(
 	offset int,
 	limit int,
 ) ([]domain.Product, error) {
-	query := `
-		SELECT
-			product_id,
-			customer_id,
-			COALESCE(category_id::text, ''),
-			title,
-			COALESCE(description, ''),
-			COALESCE(image, ''),
-			price,
-			COALESCE(location, ''),
-			status,
-			created_at,
-			updated_at
-		FROM products
-		WHERE status NOT IN ('archived', 'exchanged')
-	`
-
 	args := []interface{}{}
 	argIndex := 1
 
-	if customerID != nil {
-		query += fmt.Sprintf(`
-			AND customer_id != $%d
-		`, argIndex)
+	// Товар зрителя, который закрывает желание владельца карточки. Считается
+	// в самом запросе, а не отдельным проходом по ленте: иначе на каждую
+	// страницу выдачи пришлось бы делать ещё один поход в базу. LATERAL, а не
+	// подзапрос в SELECT: результат нужен ещё и в ORDER BY, а на выражение из
+	// списка выборки там ссылаться нельзя.
+	matchColumn := `NULL::text`
+	matchJoin := ``
+	matchOrder := ``
 
+	var viewerArgIndex int
+
+	if customerID != nil {
+		viewerArgIndex = argIndex
 		args = append(args, *customerID)
 		argIndex++
+
+		matchColumn = `matched.product_id::text`
+		matchJoin = fmt.Sprintf(`
+			LEFT JOIN LATERAL (
+				SELECT mine.product_id
+				FROM wishlists w
+				JOIN wishlist_options wo
+					ON wo.wishlist_id = w.wishlist_id
+				JOIN products mine
+					ON mine.category_id = wo.category_id
+				WHERE w.product_id = p.product_id
+				  AND mine.customer_id = $%d
+				  AND mine.status = 'active'
+				ORDER BY mine.created_at DESC
+				LIMIT 1
+			) matched ON TRUE
+		`, viewerArgIndex)
+		matchOrder = `(matched.product_id IS NOT NULL) DESC,`
+	}
+
+	query := fmt.Sprintf(`
+		SELECT
+			p.product_id,
+			p.customer_id,
+			COALESCE(p.category_id::text, ''),
+			p.title,
+			COALESCE(p.description, ''),
+			COALESCE(p.image, ''),
+			p.price,
+			COALESCE(p.location, ''),
+			p.status,
+			p.created_at,
+			p.updated_at,
+			%s AS matched_by_product_id
+		FROM products p
+		%s
+		WHERE p.status NOT IN ('archived', 'exchanged')
+	`, matchColumn, matchJoin)
+
+	if customerID != nil {
+		query += fmt.Sprintf(`
+			AND p.customer_id != $%d
+		`, viewerArgIndex)
 	}
 
 	var searchArgIndex int
@@ -346,10 +380,10 @@ func (r *productRepository) List(
 
 		query += fmt.Sprintf(`
 			AND (
-				COALESCE(search_vector, ''::tsvector)
+				COALESCE(p.search_vector, ''::tsvector)
 					@@ websearch_to_tsquery('simple', $%d)
-				OR title %% $%d
-				OR COALESCE(description, '') %% $%d
+				OR p.title %% $%d
+				OR COALESCE(p.description, '') %% $%d
 			)
 		`, searchArgIndex, searchArgIndex, searchArgIndex)
 
@@ -359,33 +393,39 @@ func (r *productRepository) List(
 
 	if categoryID != nil {
 		query += fmt.Sprintf(`
-			AND category_id = $%d
+			AND p.category_id = $%d
 		`, argIndex)
 
 		args = append(args, *categoryID)
 		argIndex++
 	}
 
+	// Подходящие карточки идут первыми во всей выдаче, а не только на текущей
+	// странице: иначе при бесконечной прокрутке блок «Вам подойдёт» пополнялся
+	// бы новыми карточками уже после того, как пользователь его пролистал.
 	if q != "" {
 		query += fmt.Sprintf(`
 			ORDER BY
+				%s
 				(
 					0.60 * ts_rank_cd(
-						COALESCE(search_vector, ''::tsvector),
+						COALESCE(p.search_vector, ''::tsvector),
 						websearch_to_tsquery('simple', $%d)
 					) +
-					0.25 * similarity(title, $%d) +
+					0.25 * similarity(p.title, $%d) +
 					0.15 * similarity(
-						COALESCE(description, ''),
+						COALESCE(p.description, ''),
 						$%d
 					)
 				) DESC,
-				created_at DESC
-		`, searchArgIndex, searchArgIndex, searchArgIndex)
+				p.created_at DESC
+		`, matchOrder, searchArgIndex, searchArgIndex, searchArgIndex)
 	} else {
-		query += `
-			ORDER BY created_at DESC
-		`
+		query += fmt.Sprintf(`
+			ORDER BY
+				%s
+				p.created_at DESC
+		`, matchOrder)
 	}
 
 	limitArgIndex := argIndex
@@ -408,6 +448,7 @@ func (r *productRepository) List(
 
 	for rows.Next() {
 		var p domain.Product
+		var matchedBy *string
 
 		if err := rows.Scan(
 			&p.ProductID,
@@ -421,10 +462,14 @@ func (r *productRepository) List(
 			&p.Status,
 			&p.CreatedAt,
 			&p.UpdatedAt,
+			&matchedBy,
 		); err != nil {
 			log.Printf("PRODUCT LIST SCAN ERROR: %v", err)
 			return nil, err
 		}
+
+		p.MatchedByProductID = matchedBy
+		p.Matched = matchedBy != nil
 
 		products = append(products, p)
 	}
