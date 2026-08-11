@@ -34,11 +34,11 @@ func mountProductRoutes(r chi.Router, s service.ProductService, w service.Wishli
 		//r.Get("/", h.list)
 		r.Get("/search", h.searchProducts)
 		r.Get("/by-customer/{customerID}", h.byCustomer)
-		r.Get("/{productID}", h.get)
 
 		// Защищенные маршруты
 		r.Group(func(r chi.Router) {
 			r.Use(auth.AuthMiddleware)
+			r.Get("/mine", h.mine)
 
 			// Создать объявление
 			r.Post("/", h.create)
@@ -57,6 +57,8 @@ func mountProductRoutes(r chi.Router, s service.ProductService, w service.Wishli
 			// Подходящие прямые товары
 			r.Get("/{productID}/recommendations", h.recommendations)
 		})
+
+		r.Get("/{productID}", h.get)
 	})
 }
 
@@ -140,6 +142,21 @@ func (h productHandler) get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, v)
+}
+
+func (h productHandler) mine(w http.ResponseWriter, r *http.Request) {
+	customerID, ok := auth.UserIDFromContext(r.Context())
+	if !ok {
+		writeError(w, service.ErrForbidden)
+		return
+	}
+
+	products, err := h.s.GetOwnByCustomerID(r.Context(), customerID)
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, products)
 }
 
 // update godoc
