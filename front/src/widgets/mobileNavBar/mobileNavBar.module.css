@@ -69,6 +69,35 @@
     height: 24px;
 }
 
+.mobile-nav__notification-icon {
+    position: relative;
+
+    display: inline-flex;
+    width: 24px;
+    height: 24px;
+}
+
+.mobile-nav__notification-badge {
+    position: absolute;
+    top: -7px;
+    right: -9px;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 4px;
+    border-radius: var(--radius-sm);
+
+    background: var(--accent-danger);
+    color: var(--neutral-white);
+
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 1;
+}
+
 .mobile-nav .mobile-nav__exchange-icon {
     width: 24px;
     height: 24px;

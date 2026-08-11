@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom';
 
+import { useNotificationsFeed } from '@entities/notification';
 import LogoSVG from '@shared/assets/logo/logo.svg';
 import PlusSVG from '@shared/assets/icons/Plus.svg?react';
 import UserSVG from '@shared/assets/icons/User.svg?react';
@@ -11,6 +12,7 @@ import { useMobileNavBarActions } from './useMobileNavBarActions';
 
 export const MobileNavBar = () => {
     const { isExchangesPage, isProfilePage, onExchanges, onCreate, onProfile } = useMobileNavBarActions();
+    const { isAuthenticated, unreadCount } = useNotificationsFeed();
 
     return (
         <nav className={Styles['mobile-nav']} aria-label="Основная навигация">
@@ -52,7 +54,14 @@ export const MobileNavBar = () => {
                 ].filter(Boolean).join(' ')}
                 to="/notifications"
             >
-                <BellIcon />
+                <span className={Styles['mobile-nav__notification-icon']}>
+                    <BellIcon />
+                    {isAuthenticated && unreadCount > 0 && (
+                        <span className={Styles['mobile-nav__notification-badge']} aria-hidden="true">
+                            {unreadCount > 99 ? '99+' : unreadCount}
+                        </span>
+                    )}
+                </span>
                 <span>Уведомления</span>
             </NavLink>
             <button
