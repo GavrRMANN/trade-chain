@@ -30,8 +30,8 @@ type ProductService interface {
 
 type ChainService interface {
 	Create(context.Context, *domain.Chain) (*domain.Chain, error)
-	GetByID(context.Context, string) (*domain.Chain, error)
-	GetByProductID(context.Context, string) ([]domain.Chain, error)
+	GetByID(context.Context, string, string) (*domain.Chain, error)
+	GetByProductID(context.Context, string, string) ([]domain.Chain, error)
 	GetByCustomerID(context.Context, string) ([]domain.Chain, error)
 	GetFullChain(context.Context, string) ([]domain.Chain, error)
 	UpdateStatus(context.Context, string, domain.ChainStatus, string) error // добавили userID

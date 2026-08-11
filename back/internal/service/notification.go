@@ -29,7 +29,7 @@ func (s *notificationService) MarkRead(ctx context.Context, customerID, chainID 
 		return ErrInvalidInput
 	}
 
-	chain, err := s.chains.GetByID(ctx, chainID)
+	chain, err := s.chains.GetByID(ctx, chainID, customerID)
 	if err != nil {
 		return normalizeError(err)
 	}
