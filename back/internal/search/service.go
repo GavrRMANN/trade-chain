@@ -2,7 +2,6 @@ package search
 
 import (
 	"context"
-	"fmt"
 
 	"trade-chain/internal/domain"
 	"trade-chain/internal/service"
@@ -82,7 +81,10 @@ func (s *SearchService) FindChainToTarget(
 		return nil, err
 	}
 	if len(myProducts) == 0 {
-		return nil, fmt.Errorf("%w: у пользователя нет товаров для обмена", service.ErrInvalidInput)
+		return &ProductSearchResult{
+			Products: []domain.Product{},
+			Length:   0,
+		}, nil
 	}
 	return findLegacyChainBFS(ctx, s.productService, *target, myProducts, maxDepth)
 }

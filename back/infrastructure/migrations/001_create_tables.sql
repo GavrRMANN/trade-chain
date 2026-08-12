@@ -39,14 +39,20 @@ CREATE TABLE IF NOT EXISTS products (
 -- Таблица вишлистов (желаний пользователя)
 CREATE TABLE IF NOT EXISTS wishlists (
     wishlist_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-
-    customer_id UUID NOT NULL REFERENCES customers(customer_id) ON DELETE CASCADE,
-    product_id UUID REFERENCES products(product_id) ON DELETE CASCADE,
+    product_id UUID NOT NULL REFERENCES products(product_id) ON DELETE CASCADE,
    
     name VARCHAR(255) NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Таблица личных предпочтений пользователя для добавления в профиль
+CREATE TABLE IF NOT EXISTS customer_wishlist_options (
+    customer_id UUID NOT NULL REFERENCES customers(customer_id) ON DELETE CASCADE,
+    category_id UUID NOT NULL REFERENCES categories(category_id) ON DELETE CASCADE,
+
+    PRIMARY KEY (customer_id, category_id)
+)
 
 -- Таблица связей категорий с вишлистами (многие ко многим)
 CREATE TABLE IF NOT EXISTS wishlist_options (
