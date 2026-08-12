@@ -2,6 +2,7 @@ import { useCallback, useMemo, useReducer } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import {
+    getRequiredAction,
     useConfirmChainMutation,
     useGetChainDetailsQuery,
     useGetChainMessagesQuery,
@@ -177,10 +178,21 @@ export const useExchangeRoom = () => {
 
     const isActionLoading = isStatusUpdating || isConfirming;
 
+    /* В комнате известны подтверждения, поэтому требование точнее, чем в
+       списке обменов: видно, чьего именно подтверждения ещё ждут. */
+    const requiredAction = chain
+        ? getRequiredAction({
+              chain,
+              currentUserId,
+              confirmations: chainDetailsQuery.data?.confirmations,
+          })
+        : undefined;
+
     return {
         chain,
         currentUserId,
         isInitiator,
+        requiredAction,
         fromProduct,
         toProduct,
         messages: messagesQuery.data ?? [],

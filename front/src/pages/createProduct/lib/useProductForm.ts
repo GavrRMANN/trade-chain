@@ -1,5 +1,5 @@
 import {FormEvent, useEffect, useMemo, useReducer} from 'react';
-import {useNavigate} from 'react-router-dom';
+import {useNavigate, useSearchParams} from 'react-router-dom';
 
 import {
     useCreateProductMutation,
@@ -110,7 +110,13 @@ const statusOptions: {value: TProductStatus; label: string}[] = [
 /** Управляет состоянием, валидацией и отправкой формы создания/редактирования товара. */
 export const useProductForm = (productId?: string) => {
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
     const isEdit = Boolean(productId);
+    /* Цель, с которой пользователь пришёл из карточки товара или ленты:
+       после создания вещи он должен продолжить обмен именно с ней, а не
+       выбирать цель заново. */
+    const presetTargetProductId = searchParams.get('target')?.trim() ?? '';
+    const presetTargetCategoryId = searchParams.get('targetCategory')?.trim() ?? '';
 
     const {data: user, isLoading: isUserLoading} = useGetCurrentUserQuery();
     const productQuery = useGetProductQuery(productId ?? '', {skip: !productId});
@@ -145,6 +151,23 @@ export const useProductForm = (productId?: string) => {
     const setTargetGoal = (value: TTargetGoal) => update('targetGoal', value);
 
     const editableProduct = productQuery.data;
+
+    // Цель из адреса подставляется один раз: дальше пользователь волен её сменить.
+    useEffect(() => {
+        if (isEdit || isInitialized || (!presetTargetProductId && !presetTargetCategoryId)) {
+            return;
+        }
+
+        dispatch({
+            type: 'update',
+            payload: {
+                targetGoal: presetTargetProductId
+                    ? {productId: presetTargetProductId}
+                    : {categoryId: presetTargetCategoryId},
+                isInitialized: true,
+            },
+        });
+    }, [isEdit, isInitialized, presetTargetCategoryId, presetTargetProductId]);
 
     // Заполняем форму данными товара в режиме редактирования (один раз).
     useEffect(() => {

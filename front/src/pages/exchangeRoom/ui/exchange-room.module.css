@@ -165,3 +165,7 @@
         transform: rotate(90deg);
     }
 }
+
+.required-action {
+    margin-bottom: var(--space-3);
+}

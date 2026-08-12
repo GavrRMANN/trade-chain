@@ -33,6 +33,7 @@ export const RoutePage = () => {
         submitMessage,
         isSubmitting,
         directTarget,
+        routeContext,
         toggleRecommendation,
         submitSelectedOffers,
         openProduct,
@@ -327,6 +328,7 @@ export const RoutePage = () => {
                 onSuccess={handleOfferSuccess}
                 targetProductId={directTarget ?? ''}
                 currentCustomerId={currentCustomerId}
+                routeContext={routeContext}
             />
         </MainSection>
     );

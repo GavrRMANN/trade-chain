@@ -1,6 +1,6 @@
 import type { TChain } from '@entities/chain';
 import type { TProduct } from '@entities/product';
-import { ChainStatusBadge } from '@entities/chain';
+import { ChainStatusBadge, RequiredAction } from '@entities/chain';
 import { formatDate } from '@shared/lib';
 
 import Styles from './ExchangeRow.module.css';
@@ -31,6 +31,7 @@ export const ExchangeRow = ({ row, onOpen, className }: TExchangeRowProps) => {
         toProduct,
         goalProduct,
         sellerEmail,
+        requiredAction,
         interactive,
         open,
         handleKeyDown,
@@ -70,6 +71,7 @@ export const ExchangeRow = ({ row, onOpen, className }: TExchangeRowProps) => {
                 }}
                 second={{product: fromProduct, label: 'Отдаю', tone: 'source'}}
             />
+            <RequiredAction action={requiredAction} />
             {chain.message && <p className={Styles['exchange-row__message']}>{chain.message}</p>}
         </div>
     );

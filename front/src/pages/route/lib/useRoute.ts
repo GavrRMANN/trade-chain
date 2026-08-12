@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import { useGetCategoriesQuery } from '@entities/category';
-import { useCreateChainMutation, useGetMyChainsQuery } from '@entities/chain';
+import { buildChainPayload, useCreateChainMutation, useGetMyChainsQuery } from '@entities/chain';
 import type { TChain } from '@entities/chain';
 import { useGetProductsByCustomerQuery, useGetProductsQuery, useProductsById } from '@entities/product';
 import type { TProduct } from '@entities/product';
@@ -271,16 +271,20 @@ export const useRoute = () => {
 
         const results = await Promise.allSettled(
             selectedTargetIds.map((productId) =>
-                createChain({
-                    from_product_id: currentProduct.product_id,
-                    to_product_id: productId,
-                    ...(targetCategoryId ? {to_category_id: targetCategoryId} : {}),
-                    previous_chain_id: lastCompletedRouteStep?.chain_id,
-                    ...(!targetCategoryId ? {exchange_goal_id: goalId} : {}),
-                    route_step_id: currentProduct.product_id,
-                    status: 'pending',
-                    message: `Предложение в рамках цели «${goalProduct?.title ?? 'Обмен до цели'}»`,
-                }).unwrap(),
+                createChain(
+                    buildChainPayload({
+                        fromProductId: currentProduct.product_id,
+                        toProductId: productId,
+                        message: `Предложение в рамках цели «${goalProduct?.title ?? 'Обмен до цели'}»`,
+                        routeContext: {
+                            ...(targetCategoryId
+                                ? {goalCategoryId: targetCategoryId}
+                                : {exchangeGoalId: goalId}),
+                            routeStepId: currentProduct.product_id,
+                            previousChainId: lastCompletedRouteStep?.chain_id,
+                        },
+                    }),
+                ).unwrap(),
             ),
         );
 
@@ -343,6 +347,25 @@ export const useRoute = () => {
     );
     const goHome = useCallback(() => navigate('/'), [navigate]);
 
+    /* Предложение к цели прямо со страницы маршрута должно остаться внутри
+       этого же маршрута, а не уйти отдельной цепочкой. */
+    const routeContext = useMemo(
+        () => ({
+            ...(targetCategoryId ? {goalCategoryId: targetCategoryId} : {exchangeGoalId: goalId}),
+            routeStepId: currentProduct?.product_id,
+            previousChainId: lastCompletedRouteStep?.chain_id,
+            goalTitle: goalProduct?.title ?? targetCategoryName,
+        }),
+        [
+            currentProduct?.product_id,
+            goalId,
+            goalProduct?.title,
+            lastCompletedRouteStep?.chain_id,
+            targetCategoryId,
+            targetCategoryName,
+        ],
+    );
+
     const isLoading =
         routeQuery.isLoading ||
         productsQuery.isLoading ||
@@ -376,6 +399,7 @@ export const useRoute = () => {
         submitMessage,
         isSubmitting,
         directTarget,
+        routeContext,
         toggleRecommendation,
         submitSelectedOffers,
         openProduct,

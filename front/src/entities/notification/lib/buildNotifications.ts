@@ -1,12 +1,7 @@
 import type {TChain, TChainStatus} from '@entities/chain';
 import type {TProduct} from '@entities/product';
+import {assertNever} from '@shared/lib';
 import type {TNotification, TNotificationKind} from '../types';
-
-function assertNever(x: never, hint?: string): never {
-    throw new Error(
-        `Unhandled variant${hint ? ` in ${hint}` : ''}: ${JSON.stringify(x)}`,
-    );
-}
 
 /** Терминальные статусы сделки — обмен больше не активен. */
 const FINAL_STATUSES: ReadonlySet<TChainStatus> = new Set<TChainStatus>([

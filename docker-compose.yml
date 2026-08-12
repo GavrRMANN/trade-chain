@@ -27,6 +27,12 @@ services:
       - ./back/infrastructure/migrations/008_unavailable_chain_status.sql:/docker-entrypoint-initdb.d/008_unavailable_chain_status.sql:ro
       - ./back/infrastructure/migrations/010_notification_reads.sql:/docker-entrypoint-initdb.d/010_notification_reads.sql:ro
       - ./back/infrastructure/migrations/011_customer_full_name.sql:/docker-entrypoint-initdb.d/011_customer_full_name.sql:ro
+      - ./back/infrastructure/migrations/014_bulk_test_data.sql:/docker-entrypoint-initdb.d/014_bulk_test_data.sql:ro
+      - ./back/infrastructure/migrations/015_backfill_missing_product_images.sql:/docker-entrypoint-initdb.d/015_backfill_missing_product_images.sql:ro
+      - ./back/infrastructure/migrations/016_customer_names_and_reviews.sql:/docker-entrypoint-initdb.d/016_customer_names_and_reviews.sql:ro
+      - ./back/infrastructure/migrations/017_product_wishlists.sql:/docker-entrypoint-initdb.d/017_product_wishlists.sql:ro
+      - ./back/infrastructure/migrations/012_category_icon.sql:/docker-entrypoint-initdb.d/012_category_icon.sql:ro
+      - ./back/infrastructure/migrations/013_demo_accounts.sql:/docker-entrypoint-initdb.d/013_demo_accounts.sql:ro
 
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
@@ -57,6 +63,9 @@ services:
       # не показывает ничего. Пароль при таком входе не спрашивается, поэтому
       # флаг явный и в боевом окружении просто не выставляется.
       DEMO_LOGIN_ENABLED: ${DEMO_LOGIN_ENABLED:-true}
+      # Сброс демо-стенда стирает все обмены разом, поэтому маршрут
+      # /demo/reset поднимается только с явно заданным секретом.
+      DEMO_RESET_SECRET: ${DEMO_RESET_SECRET:-}
 
     ports:
       - "8080:8080"

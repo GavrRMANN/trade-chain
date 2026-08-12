@@ -8,7 +8,7 @@ import { PageError } from '@shared/ui/pageError';
 import { PageHeader } from '@shared/ui/pageHeader';
 import { Preloader } from '@shared/ui/preloader';
 import { ProductCard } from '@entities/product';
-import { ChainStatusBadge } from '@entities/chain';
+import { ChainStatusBadge, RequiredAction } from '@entities/chain';
 import { Textarea } from '@shared/ui/textarea';
 import { formatDate } from '@shared/lib';
 
@@ -28,6 +28,7 @@ export const ExchangeRoomPage = () => {
         messages,
         isLoading,
         isError,
+        requiredAction,
         isPendingLike,
         isActive,
         isCompleted,
@@ -110,6 +111,16 @@ export const ExchangeRoomPage = () => {
 
                 <section className={Styles.section} aria-label="Действия по сделке">
                     <h2 className={Styles['section__title']}>Действия</h2>
+
+                    {/* Статус переводится в требование прямо над кнопками:
+                        иначе пользователю приходится догадываться, какое из
+                        действий сейчас его. */}
+                    {requiredAction && (
+                        <RequiredAction
+                            action={requiredAction}
+                            className={Styles['required-action']}
+                        />
+                    )}
 
                     {isPendingLike && (
                         <div className={Styles.actions}>

@@ -1,0 +1,128 @@
+.product-feed {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+
+    width: 100%;
+    min-height: 0;
+}
+
+.product-feed__goal {
+    display: flex;
+    gap: var(--space-2);
+    align-items: baseline;
+
+    margin: 0;
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-md);
+
+    background: var(--bg-neutral);
+}
+
+.product-feed__goal-label {
+    color: var(--neutral-secondary);
+    font-size: var(--text-xs-font-size);
+    line-height: var(--text-xs-line-height);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.product-feed__goal-title {
+    color: var(--neutral-primary);
+    font-size: var(--text-sm-font-size);
+    line-height: var(--text-sm-line-height);
+}
+
+/* Прокрутка живёт внутри ленты, а не на странице: снап должен считаться
+   от собственного вьюпорта, иначе карточки цепляются за общий скролл. */
+.product-feed__viewport {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+
+    /* Точную высоту проставляет хук, измеряя положение ленты на странице.
+       Это значение — запасное, до первого измерения. */
+    height: calc(100dvh - var(--header-height) - var(--space-16));
+    min-height: 0;
+
+    overflow-y: auto;
+    overflow-x: hidden;
+    scroll-snap-type: y mandatory;
+    overscroll-behavior: contain;
+
+    /* Полоса прокрутки в полноэкранной ленте лишняя: карточки листаются по
+       одной, и позицию показывает сама смена карточки, а не бегунок.
+       Тот же приём уже используют ряд категорий и вкладки шапки. */
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+
+    /* scroll-behavior здесь намеренно не задан: он подменял бы анимацией
+       любой программный скролл. Плавность включает клавиатурный переход,
+       который сам учитывает prefers-reduced-motion. */
+}
+
+.product-feed__viewport::-webkit-scrollbar {
+    display: none;
+}
+
+.product-feed__viewport:focus {
+    outline: none;
+}
+
+.product-feed__viewport:focus-visible {
+    outline: 1px solid var(--accent-primary);
+}
+
+.product-feed__sentinel {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    min-height: 64px;
+}
+
+.product-feed__empty {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    align-items: center;
+    justify-content: center;
+
+    min-height: 320px;
+    padding: var(--space-6);
+    border-radius: var(--radius-lg);
+
+    background: var(--bg-primary);
+    color: var(--neutral-secondary);
+    text-align: center;
+}
+
+@media (max-width: 768px) {
+    /* Лента выходит за поля контейнера приложения: карточка должна касаться
+       краёв экрана, иначе полноэкранный формат превращается в узкую колонку
+       с серыми полосами по бокам. */
+    .product-feed {
+        /* Лента выходит за поля контейнера по бокам и подтягивается вплотную
+           к шапке: зазор контейнера между заголовком и карточкой оставлял
+           белую полосу поперёк экрана. */
+        width: calc(100% + var(--space-4) * 2);
+        margin: calc(var(--space-4) * -1) calc(var(--space-4) * -1) 0;
+    }
+
+    .product-feed__viewport {
+        /* На мобильном под лентой стоит панель навигации — её высоту хук
+           вычитает из измеренной высоты. */
+        height: calc(100dvh - var(--header-height) - var(--mobile-nav-height));
+        gap: 0;
+    }
+
+    .product-feed__goal {
+        border-radius: 0;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .product-feed__viewport {
+        scroll-snap-type: none;
+    }
+}

@@ -14,6 +14,14 @@ type TPageHeaderProps = {
     actions?: ReactNode;
     /** Переключатель разделов страницы. */
     tabs?: ReactNode;
+    /**
+     * Держать действия в строке заголовка и на телефоне.
+     *
+     * По умолчанию действие уезжает под заголовок во всю ширину — так удобнее
+     * крупной кнопке вроде «Предложить обмен». Компактному управлению (например,
+     * переключателю режима каталога) целая строка не нужна.
+     */
+    compactActions?: boolean;
 };
 
 /**
@@ -23,7 +31,14 @@ type TPageHeaderProps = {
  * с чем именно работает и какое действие здесь главное. Прилипает под
  * верхнюю панель приложения, поэтому смещение считается от --header-height.
  */
-export const PageHeader = ({ title, subTitle, meta, actions, tabs }: TPageHeaderProps) => {
+export const PageHeader = ({
+    title,
+    subTitle,
+    meta,
+    actions,
+    tabs,
+    compactActions = false,
+}: TPageHeaderProps) => {
     const headerRef = useRef<HTMLElement>(null);
     const isStuck = useStuckHeader(headerRef);
 
@@ -44,7 +59,18 @@ export const PageHeader = ({ title, subTitle, meta, actions, tabs }: TPageHeader
                     {subTitle && <p className={Styles['page-header__subtitle']}>{subTitle}</p>}
                 </div>
 
-                {actions && <div className={Styles['page-header__actions']}>{actions}</div>}
+                {actions && (
+                    <div
+                        className={[
+                            Styles['page-header__actions'],
+                            compactActions && Styles['page-header__actions--compact'],
+                        ]
+                            .filter(Boolean)
+                            .join(' ')}
+                    >
+                        {actions}
+                    </div>
+                )}
             </div>
 
             {tabs && <div className={Styles['page-header__tabs']}>{tabs}</div>}

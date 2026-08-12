@@ -173,6 +173,32 @@ export const useCatalog = () => {
         navigate('/create');
     };
 
+    const openOwner = (customerId: string) => {
+        navigate(`/profile/${customerId}`);
+    };
+
+    /* Из ленты доступен тот же вход в подбор маршрута, что и с карточки
+       товара: лента не заводит собственного сценария. */
+    const openRouteTo = (productId: string) => {
+        navigate(`/route?target=${encodeURIComponent(productId)}`);
+    };
+
+    const openExchangeRoom = (chainId: string) => {
+        navigate(`/exchanges/${chainId}`);
+    };
+
+    /* Полная форма из ленты запоминает цель: без неё пользователь вернётся
+       с новой вещью, но без товара, ради которого начал сценарий. */
+    const openCreateForTarget = (productId: string) => {
+        navigate(`/create?target=${encodeURIComponent(productId)}`);
+    };
+
+    // Названия категорий нужны ленте: там подпись видна прямо на карточке.
+    const categoryNames = useMemo(
+        () => new Map(categories.map(({ category_id, name }) => [category_id, name])),
+        [categories],
+    );
+
     return {
         title,
         categoryTitle,
@@ -190,8 +216,13 @@ export const useCatalog = () => {
         loadMoreRef,
         isCategoriesLoading,
         isCategoriesError,
+        categoryNames,
         selectCategory,
         openProduct,
         openCreateProduct,
+        openOwner,
+        openRouteTo,
+        openExchangeRoom,
+        openCreateForTarget,
     };
 };

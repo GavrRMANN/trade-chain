@@ -1,21 +1,11 @@
 import {useCallback, useEffect, useMemo, useReducer} from 'react';
 import {useNavigate, useSearchParams} from 'react-router-dom';
 
-import {useGetMyChainsQuery} from '@entities/chain';
-import type {TChain, TChainStatus} from '@entities/chain';
+import {FINAL_CHAIN_STATUSES, groupChainsByGoal, useGetMyChainsQuery} from '@entities/chain';
+import type {TChain} from '@entities/chain';
 import {useGetProductsQuery, useProductsById} from '@entities/product';
 import type {TProduct} from '@entities/product';
 import {useGetCurrentUserQuery} from '@entities/user';
-
-/** Статусы, считающиеся терминальными — обмен завершён и больше не активен. */
-const FINAL_STATUSES: ReadonlySet<TChainStatus> = new Set<TChainStatus>([
-    'completed',
-    'cancelled',
-    'rejected',
-    'failed',
-    'expired',
-    'unavailable',
-]);
 
 export type TExchangeRow = {
     chain: TChain;
@@ -169,57 +159,18 @@ export const useExchanges = () => {
         });
     }, [productsById]);
 
-    const routeGroups = useMemo<TExchangeRouteGroup[]>(() => {
-        const groups = new Map<string, TExchangeRouteGroup>();
-
-        for (const chain of chains) {
-            if (chain.initiator_id !== currentUserId) {
-                continue;
-            }
-
-            const goalId = chain.exchange_goal_id ?? chain.to_product_id ?? chain.to_category_id;
-            if (!goalId) {
-                continue;
-            }
-            const goalCategoryId = chain.to_category_id && !chain.to_product_id
-                ? chain.to_category_id
-                : undefined;
-            const current = groups.get(goalId);
-            const isOpen = !FINAL_STATUSES.has(chain.status);
-            const isCompleted = chain.status === 'completed';
-
-            if (!current) {
-                groups.set(goalId, {
-                    goalId,
-                    goalCategoryId,
-                    goalProduct: productsById.get(goalId),
-                    sourceProductId: chain.route_step_id ?? chain.from_product_id,
-                    sourceProduct: productsById.get(chain.route_step_id ?? chain.from_product_id),
-                    offersCount: 1,
-                    openOffersCount: isOpen ? 1 : 0,
-                    completedOffersCount: isCompleted ? 1 : 0,
-                    updatedAt: chain.updated_at,
-                });
-                continue;
-            }
-
-            current.offersCount += 1;
-            current.openOffersCount += isOpen ? 1 : 0;
-            current.completedOffersCount += isCompleted ? 1 : 0;
-
-            if (chain.updated_at > current.updatedAt) {
-                current.updatedAt = chain.updated_at;
-                current.sourceProductId = chain.route_step_id ?? chain.from_product_id;
-                current.sourceProduct = productsById.get(
-                    chain.route_step_id ?? chain.from_product_id,
-                );
-            }
-        }
-
-        return [...groups.values()].sort((left, right) =>
-            right.updatedAt.localeCompare(left.updatedAt),
-        );
-    }, [chains, currentUserId, productsById]);
+    /* Группировка по целям общая с формой предложения: там она решает,
+       к какому маршруту привязать новую цепочку, — расхождение двух копий
+       развело бы список маршрутов и фактическую привязку. */
+    const routeGroups = useMemo<TExchangeRouteGroup[]>(
+        () =>
+            groupChainsByGoal(chains, currentUserId).map((group) => ({
+                ...group,
+                goalProduct: productsById.get(group.goalId),
+                sourceProduct: productsById.get(group.sourceProductId),
+            })),
+        [chains, currentUserId, productsById],
+    );
 
     const {active, incoming, outgoing, completed} = useMemo(() => {
         const active: TExchangeRow[] = [];
@@ -228,7 +179,7 @@ export const useExchanges = () => {
         const done: TExchangeRow[] = [];
 
         for (const chain of chains) {
-            if (FINAL_STATUSES.has(chain.status)) {
+            if (FINAL_CHAIN_STATUSES.has(chain.status)) {
                 done.push(buildRow(chain));
                 continue;
             }

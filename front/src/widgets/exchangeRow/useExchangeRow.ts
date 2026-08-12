@@ -3,7 +3,9 @@ import type {KeyboardEvent} from 'react';
 import {useGetProductQuery} from '@entities/product';
 import type {TProduct} from '@entities/product';
 
+import {getRequiredAction} from '@entities/chain';
 import type {TChain} from '@entities/chain';
+import {useGetCurrentUserQuery} from '@entities/user';
 
 import {useExchangeSeller} from './useExchangeSeller';
 
@@ -37,6 +39,14 @@ export const useExchangeRow = ({
     const toProduct = listedToProduct ?? toProductQuery.data;
     const goalProduct = listedGoalProduct ?? goalProductQuery.data;
     const {sellerEmail} = useExchangeSeller(toProduct?.customer_id);
+    const {data: currentUser} = useGetCurrentUserQuery();
+
+    /* Подтверждения в списке не загружаются: строка обмена показывает
+       требование по статусу, а точную стадию подтверждения — комната. */
+    const requiredAction = getRequiredAction({
+        chain,
+        currentUserId: currentUser?.customer_id,
+    });
 
     const open = () => onOpen?.(chain.chain_id);
     const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
@@ -53,6 +63,7 @@ export const useExchangeRow = ({
         toProduct,
         goalProduct,
         sellerEmail,
+        requiredAction,
         interactive: Boolean(onOpen),
         open,
         handleKeyDown,

@@ -19,6 +19,10 @@ const AuthModalLazy = lazy(() =>
     import('@pages/auth').then((module) => ({ default: module.AuthModal })),
 );
 
+const DemoAccountsPageLazy = lazy(() =>
+    import('@pages/demoAccounts').then((module) => ({ default: module.DemoAccountsPage })),
+);
+
 const NotFoundPageLazy = lazy(() =>
     import('@pages/notFound').then((module) => ({ default: module.NotFoundPage })),
 );
@@ -43,6 +47,7 @@ export const AppRouter = () => {
                     <Route index element={<CatalogPage />} />
                     <Route path="product/:productId" element={<ProductPage />} />
                     <Route path="auth" element={withSuspense(<AuthModalLazy />, <ModalPreload />)} />
+                    <Route path="demo" element={withSuspense(<DemoAccountsPageLazy />)} />
                     <Route element={<ProtectedRoute />}>
                         <Route path="create" element={<CreateProductPage />} />
                         <Route path="product/:productId/edit" element={<CreateProductPage />} />

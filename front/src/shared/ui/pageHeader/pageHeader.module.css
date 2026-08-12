@@ -166,6 +166,16 @@
         flex: 1 1 auto;
     }
 
+    /* Компактное управление остаётся справа от заголовка: целая строка во всю
+       ширину нужна только крупному основному действию. */
+    .page-header__actions--compact {
+        flex: 0 0 auto;
+    }
+
+    .page-header__actions--compact > * {
+        flex: 0 0 auto;
+    }
+
     .page-header--stuck .page-header__actions > * {
         flex: 0 0 auto;
     }

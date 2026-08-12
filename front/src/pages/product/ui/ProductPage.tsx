@@ -56,7 +56,7 @@ export const ProductPage = () => {
         openProduct,
         openEditProduct,
         openExchanges,
-        openCreate,
+        openCreateForTarget,
         openRoute,
         openExchangeRoom,
     } = useProductPage();
@@ -92,9 +92,9 @@ export const ProductPage = () => {
                         >
                             Редактировать
                         </Button>
-                    ) : needsOwnProductToOffer ? (
-                        <Button onClick={openCreate}>Добавить объявление</Button>
                     ) : (
+                        /* Пустой профиль ведёт в то же предложение: описать вещь
+                           можно прямо там, не теряя выбранный товар. */
                         <Button onClick={openOffer} disabled={isAuthenticated && !canOffer}>
                             {isAuthenticated ? 'Предложить обмен' : 'Войти, чтобы предложить'}
                         </Button>
@@ -234,18 +234,14 @@ export const ProductPage = () => {
                                 </div>
                             ) : (
                                 <div className={Styles['product-page__actions']}>
-                                    {needsOwnProductToOffer ? (
-                                        <Button onClick={openCreate}>Добавить объявление</Button>
-                                    ) : (
-                                        <Button
-                                            onClick={openOffer}
-                                            disabled={isAuthenticated && !canOffer}
-                                        >
-                                            {isAuthenticated
-                                                ? 'Предложить обмен'
-                                                : 'Войти, чтобы предложить обмен'}
-                                        </Button>
-                                    )}
+                                    <Button
+                                        onClick={openOffer}
+                                        disabled={isAuthenticated && !canOffer}
+                                    >
+                                        {isAuthenticated
+                                            ? 'Предложить обмен'
+                                            : 'Войти, чтобы предложить обмен'}
+                                    </Button>
                                     {isAuthenticated && targetChain ? (
                                         <Button
                                             variant="secondary"
@@ -270,8 +266,8 @@ export const ProductPage = () => {
                                     )}
                                     {needsOwnProductToOffer && (
                                         <p className={Styles['product-page__muted']}>
-                                            У вас пока нет активных объявлений — добавьте хотя бы
-                                            одно, чтобы предложить обмен.
+                                            Активных объявлений пока нет — вещь можно описать прямо
+                                            в форме предложения.
                                         </p>
                                     )}
                                     {status !== 'active' && (
@@ -386,6 +382,7 @@ export const ProductPage = () => {
                 onSuccess={onOfferSuccess}
                 targetProductId={product.product_id}
                 currentCustomerId={currentUserId}
+                onCreateFullProduct={openCreateForTarget}
             />
 
             <Modal title="Подтвердите действие" isOpen={confirmAction} onClose={cancelConfirm}>

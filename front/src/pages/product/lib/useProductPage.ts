@@ -101,6 +101,20 @@ export const useProductPage = () => {
 
     const openCreate = useCallback(() => navigate('/create'), [navigate]);
 
+    /**
+     * Полная форма из контекста чужого товара: цель передаётся в адрес,
+     * иначе пользователь вернётся с новой вещью, но без товара, ради
+     * которого начал сценарий.
+     */
+    const openCreateForTarget = useCallback(() => {
+        if (!product) {
+            navigate('/create');
+            return;
+        }
+
+        navigate(`/create?target=${encodeURIComponent(product.product_id)}`);
+    }, [navigate, product]);
+
     const openRoute = useCallback(
         (productId: string, sourceProductId?: string) => {
             const params = new URLSearchParams({ target: productId });
@@ -164,6 +178,7 @@ export const useProductPage = () => {
         openEditProduct,
         openExchanges,
         openCreate,
+        openCreateForTarget,
         openRoute,
         openExchangeRoom,
     };
