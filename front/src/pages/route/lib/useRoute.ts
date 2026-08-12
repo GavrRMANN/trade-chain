@@ -41,9 +41,11 @@ export const useRoute = () => {
         { limit: 100 },
         { skip: !targetId && !targetCategoryId, refetchOnMountOrArgChange: true },
     );
+    /* Цепочки маршрута обновляет SSE и собственные мутации страницы:
+       принудительный перезапрос на каждом монтировании перезагружал их при
+       любом возврате на экран, ничего при этом не меняя. */
     const myChainsQuery = useGetMyChainsQuery(undefined, {
         skip: !targetId && !targetCategoryId,
-        refetchOnMountOrArgChange: true,
     });
     const [createChain, { isLoading: isSubmitting }] = useCreateChainMutation();
 
@@ -93,6 +95,14 @@ export const useRoute = () => {
 
     const routeSource = chain[0];
     const requestedSource = sourceId ? productsById.get(sourceId) : undefined;
+    /* Сюда приходят сразу после создания вещи, и её карточка в этот момент
+       ещё догружается. Пока запрос в пути, экран должен ждать, а не заявлять,
+       что исходный товар определить не удалось: до перезагрузки страницы
+       пользователь видел бы пустой маршрут вместо своего нового объявления. */
+    const isSourceResolving =
+        Boolean(sourceId) &&
+        !requestedSource &&
+        (myProductsQuery.isFetching || productsQuery.isFetching);
     const selectedSource =
         requestedSource &&
         requestedSource.customer_id === currentCustomerId &&
@@ -192,7 +202,13 @@ export const useRoute = () => {
         }
 
         const candidates = new Map<string, TProduct>();
-        candidates.set(firstHop.product_id, firstHop);
+
+        /* Первый шаг маршрута попадает в список, только если по нему вообще
+           можно предложить обмен: ушедшую или свою вещь выбрать нельзя, и
+           сервер отклонит такое предложение уже после отправки. */
+        if (firstHop.status === 'active' && firstHop.customer_id !== currentCustomerId) {
+            candidates.set(firstHop.product_id, firstHop);
+        }
 
         for (const offer of stageOffers) {
             const product = offer.to_product_id ? productsById.get(offer.to_product_id) : undefined;
@@ -370,7 +386,8 @@ export const useRoute = () => {
         routeQuery.isLoading ||
         productsQuery.isLoading ||
         myProductsQuery.isLoading ||
-        myChainsQuery.isLoading;
+        myChainsQuery.isLoading ||
+        isSourceResolving;
     const isError =
         routeQuery.isError ||
         productsQuery.isError ||
