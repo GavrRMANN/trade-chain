@@ -67,3 +67,6 @@ go.work.sum
 .vscode/
 /docs/code_review/CODE_CHECK.md
 /docs/style-example/
+
+# Скрипт для подтягивания файлов в личный репозиторий
+script.ps1
