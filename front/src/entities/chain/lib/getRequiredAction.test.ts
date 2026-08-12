@@ -88,6 +88,20 @@ describe('getRequiredAction', () => {
         expect(action.text).toContain('Перестроить маршрут');
     });
 
+    /* Встречное предложение закрывает исходное звено на сервере: любое
+       действие по нему возвращает «обмен уже завершён». Требование не должно
+       звать пользователя отвечать там, где ответа уже не принимают. */
+    it('не предлагает отвечать на закрытое встречным предложение', () => {
+        for (const currentUserId of [ME, 'other-user']) {
+            const action = getRequiredAction({
+                chain: makeChain({ status: 'countered' }),
+                currentUserId,
+            });
+
+            expect(action.text).not.toMatch(/примите|откажитесь|Ждём ответа/i);
+        }
+    });
+
     it('покрывает все статусы цепочки непустым требованием', () => {
         const statuses: TChain['status'][] = [
             'pending',

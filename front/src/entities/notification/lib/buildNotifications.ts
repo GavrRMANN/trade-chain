@@ -1,36 +1,28 @@
-import type {TChain, TChainStatus} from '@entities/chain';
+import {FINAL_CHAIN_STATUSES} from '@entities/chain';
+import type {TChain} from '@entities/chain';
 import type {TProduct} from '@entities/product';
 import {assertNever} from '@shared/lib';
 import type {TNotification, TNotificationKind} from '../types';
 
-/** Терминальные статусы сделки — обмен больше не активен. */
-const FINAL_STATUSES: ReadonlySet<TChainStatus> = new Set<TChainStatus>([
-    'completed',
-    'cancelled',
-    'rejected',
-    'failed',
-    'expired',
-    'unavailable',
-]);
-
 /**
  * По сделке и роли текущего пользователя определяет тип события.
  * Роль восстанавливается по initiator_id (поля recipient_id во фронтовом типе нет).
+ *
+ * Список терминальных статусов берётся из сущности обмена, а не повторяется
+ * здесь: своя копия успела разойтись с оригиналом и пропустила `countered`,
+ * из-за чего закрытое встречным предложение звало ответить на себя.
  */
 const resolveKind = (chain: TChain, currentUserId: string): TNotificationKind | null => {
     const isIncoming = chain.initiator_id !== currentUserId;
 
-    if ((chain.status === 'pending' || chain.status === 'countered') && isIncoming) {
-        return 'incoming_offer';
+    if (FINAL_CHAIN_STATUSES.has(chain.status)) {
+        return 'finished';
     }
-    if ((chain.status === 'pending' || chain.status === 'countered') && !isIncoming) {
-        return 'outgoing_pending';
+    if (chain.status === 'pending') {
+        return isIncoming ? 'incoming_offer' : 'outgoing_pending';
     }
     if (chain.status === 'active') {
         return 'in_progress';
-    }
-    if (FINAL_STATUSES.has(chain.status)) {
-        return 'finished';
     }
     return null;
 };

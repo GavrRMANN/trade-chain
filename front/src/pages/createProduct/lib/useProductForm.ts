@@ -237,6 +237,16 @@ export const useProductForm = (productId?: string) => {
         const trimmedPrice = price.trim().replace(/\s/g, '');
         const numericPrice = trimmedPrice ? Number(trimmedPrice) : 0;
 
+        /* Цель-товар превращается в категорию: желание описывается категориями,
+           и «хочу именно эту вещь» для подбора означает «хочу такое же». */
+        const wishlistCategoryId =
+            targetGoal.categoryId ||
+            (targetGoal.productId
+                ? (targetProductsQuery.data ?? []).find(
+                      (item) => item.product_id === targetGoal.productId,
+                  )?.category_id
+                : undefined);
+
         try {
             if (isEdit && productId) {
                 await updateProduct({
@@ -271,6 +281,19 @@ export const useProductForm = (productId?: string) => {
                     image: image.trim(),
                     price: numericPrice,
                     location: location.trim(),
+                    /* Выбранная цель — это и есть «что хочу взамен», поэтому
+                       вместе с объявлением заводится список желаний. Без него
+                       вещь не попадает ни в подбор совпадений, ни в обход
+                       цепочек: и то и другое ищет по категориям вишлиста, и
+                       новое объявление оставалось бы тупиком маршрута. */
+                    ...(wishlistCategoryId
+                        ? {
+                              wishlist: {
+                                  name: `Хочу взамен за ${title.trim()}`,
+                                  category_ids: [wishlistCategoryId],
+                              },
+                          }
+                        : {}),
                 }).unwrap();
                 sourceProductId = created.product_id;
                 update('createdProductId', sourceProductId);

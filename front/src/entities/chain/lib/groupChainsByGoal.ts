@@ -54,13 +54,17 @@ export const groupChainsByGoal = (chains: TChain[], currentUserId: string): TCha
             continue;
         }
 
-        const goalId = chain.exchange_goal_id ?? chain.to_product_id ?? chain.to_category_id;
+        /* Категория опережает товар: у предложения внутри маршрута к категории
+           заполнены оба поля — конкретный товар нужен, чтобы обмен вообще мог
+           состояться, а категория говорит, куда идёт путь. Приняв товар за
+           цель, каждое предложение одного маршрута превращалось в отдельную
+           цель, и путь к категории рассыпался на одиночные обмены. */
+        const goalId = chain.exchange_goal_id ?? chain.to_category_id ?? chain.to_product_id;
         if (!goalId) {
             continue;
         }
 
-        const goalCategoryId =
-            chain.to_category_id && !chain.to_product_id ? chain.to_category_id : undefined;
+        const goalCategoryId = goalId === chain.to_category_id ? chain.to_category_id : undefined;
         const isOpen = !FINAL_CHAIN_STATUSES.has(chain.status);
         const isCompleted = chain.status === 'completed';
         const sourceProductId = chain.route_step_id ?? chain.from_product_id;
