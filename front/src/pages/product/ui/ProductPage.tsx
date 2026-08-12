@@ -14,6 +14,7 @@ import { formatAmount, formatDate } from '@shared/lib';
 
 import { useProductPage } from '../lib';
 
+import { ArchivedProductView } from './ArchivedProductView';
 import Styles from './product-page.module.css';
 
 export const ProductPage = () => {
@@ -63,6 +64,20 @@ export const ProductPage = () => {
 
     if (isLoading) return <Preloader />;
     if (isError || !product) return <PageError message="Не удалось загрузить товар" />;
+
+    if (status === 'archived') {
+        return (
+            <ArchivedProductView
+                product={product}
+                category={category}
+                wishlistOptions={wishlistOptions}
+                sellerName={sellerName}
+                averageRating={averageRating}
+                hasRating={hasRating}
+                ratingText={ratingText}
+            />
+        );
+    }
 
     return (
         <MainSection>
@@ -255,7 +270,7 @@ export const ProductPage = () => {
                                             К цепочке
                                         </Button>
                                     ) : (
-                                        isAuthenticated && (
+                                        canOffer && (
                                             <Button
                                                 variant="secondary"
                                                 onClick={() => openRoute(product.product_id)}

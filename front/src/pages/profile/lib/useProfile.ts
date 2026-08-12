@@ -84,10 +84,11 @@ export const useProfile = (user?: TUser, isOwner = false) => {
             .sort((a, b) => b.chain.updated_at.localeCompare(a.chain.updated_at));
     }, [chainsQuery.data, productsById]);
 
-    const maskedName = useMemo(
-        () => (isOwner && user?.email ? user.email : user?.email ? maskEmail(user.email) : ''),
-        [isOwner, user?.email],
-    );
+    const maskedName = useMemo(() => {
+        const fullName = user?.full_name?.trim();
+        if (fullName) return fullName;
+        return user?.email ? maskEmail(user.email) : '';
+    }, [user?.email, user?.full_name]);
 
     const openProduct = useCallback(
         (productId: string) => navigate(`/product/${productId}`),

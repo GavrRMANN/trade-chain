@@ -5,6 +5,8 @@
     "type": "module",
     "scripts": {
         "dev": "vite",
+        "dev:docker-api": "vite --mode docker-api",
+        "dev:docker": "bash ../scripts/dev-front-with-docker-backend.sh",
         "mock-api": "node mock-api/server.js",
         "build": "tsc -b && vite build",
         "storybook": "storybook dev -p 6006",
