@@ -33,6 +33,7 @@ export const ExchangeRoomPage = () => {
         isActive,
         isCompleted,
         isUnavailable,
+        isClosed,
         isWaitingForOtherConfirmation,
         openProduct,
         messageDraft,
@@ -199,13 +200,19 @@ export const ExchangeRoomPage = () => {
                             <MessageList messages={messages} currentCustomerId={currentUserId} />
                         </div>
                         {messageError && <p className={Styles['message-error']}>{messageError}</p>}
-                        <MessageInput
-                            value={messageDraft}
-                            onChange={setMessageDraft}
-                            onSend={handleSendMessage}
-                            loading={isMessageSending}
-                            placeholder="Напишите сообщение участнику сделки…"
-                        />
+                        {isClosed ? (
+                            <p className={Styles['actions__note']}>
+                                Сделка закрыта — переписка доступна только для чтения.
+                            </p>
+                        ) : (
+                            <MessageInput
+                                value={messageDraft}
+                                onChange={setMessageDraft}
+                                onSend={handleSendMessage}
+                                loading={isMessageSending}
+                                placeholder="Напишите сообщение участнику сделки…"
+                            />
+                        )}
                     </div>
                 </section>
 
