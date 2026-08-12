@@ -33,6 +33,10 @@ services:
       - ./back/infrastructure/migrations/017_product_wishlists.sql:/docker-entrypoint-initdb.d/017_product_wishlists.sql:ro
       - ./back/infrastructure/migrations/012_category_icon.sql:/docker-entrypoint-initdb.d/012_category_icon.sql:ro
       - ./back/infrastructure/migrations/013_demo_accounts.sql:/docker-entrypoint-initdb.d/013_demo_accounts.sql:ro
+      - ./back/infrastructure/migrations/014_bulk_test_data.sql:/docker-entrypoint-initdb.d/014_bulk_test_data.sql:ro
+      - ./back/infrastructure/migrations/015_backfill_missing_product_images.sql:/docker-entrypoint-initdb.d/015_backfill_missing_product_images.sql:ro
+      - ./back/infrastructure/migrations/016_customer_names_and_reviews.sql:/docker-entrypoint-initdb.d/016_customer_names_and_reviews.sql:ro
+      - ./back/infrastructure/migrations/017_product_wishlists.sql:/docker-entrypoint-initdb.d/017_product_wishlists.sql:ro
 
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
