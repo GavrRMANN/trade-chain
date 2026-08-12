@@ -8,6 +8,7 @@ import {
     useGetProductRecommendationsQuery,
     useGetProductsByCustomerQuery,
     useGetProductsQuery,
+    useProductsById,
 } from '@entities/product';
 import { useGetCustomerRatingQuery, useGetReviewsByCustomerQuery } from '@entities/review';
 import { selectIsAuthenticated, useGetCurrentUserQuery } from '@entities/user';
@@ -73,10 +74,23 @@ export const useProductPageData = (productId?: string) => {
         return [...products].reverse();
     }, [recommendationsQuery.data?.Products]);
 
+    // Каталог отдаёт только активные товары — обмененные/архивные подгружаем
+    // по ID, иначе завершённые сделки теряют карточки товаров.
+    const offerProductIds = useMemo(
+        () => [
+            ...(chainsQuery.data ?? []).map((chain) => chain.from_product_id),
+            ...(myChainsQuery.data ?? []).flatMap((chain) => [
+                chain.from_product_id,
+                chain.to_product_id,
+                chain.exchange_goal_id,
+            ]),
+        ],
+        [chainsQuery.data, myChainsQuery.data],
+    );
+    const offerProductsById = useProductsById(offerProductIds, catalogQuery.data ?? []);
+
     const productOffers = useMemo(() => {
-        const productsById = new Map(
-            (catalogQuery.data ?? []).map((item) => [item.product_id, item]),
-        );
+        const productsById = new Map(offerProductsById);
         if (product) productsById.set(product.product_id, product);
 
         return (chainsQuery.data ?? [])
@@ -90,7 +104,7 @@ export const useProductPageData = (productId?: string) => {
                 fromProduct: productsById.get(chain.from_product_id),
                 toProduct: product,
             }));
-    }, [catalogQuery.data, chainsQuery.data, currentUserId, product, productId]);
+    }, [offerProductsById, chainsQuery.data, currentUserId, product, productId]);
 
     const incomingOffers = productOffers.filter((row) =>
         OPEN_CHAIN_STATUSES.has(row.chain.status),
@@ -111,9 +125,7 @@ export const useProductPageData = (productId?: string) => {
     );
 
     const myProductOffers = useMemo(() => {
-        const productsById = new Map(
-            (catalogQuery.data ?? []).map((item) => [item.product_id, item]),
-        );
+        const productsById = new Map(offerProductsById);
         if (product) productsById.set(product.product_id, product);
 
         return (myChainsQuery.data ?? [])
@@ -134,7 +146,7 @@ export const useProductPageData = (productId?: string) => {
                       ? productsById.get(chain.to_product_id)
                       : undefined,
             }));
-    }, [catalogQuery.data, currentUserId, myChainsQuery.data, product, productId]);
+    }, [offerProductsById, currentUserId, myChainsQuery.data, product, productId]);
 
     return {
         product,

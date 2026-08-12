@@ -41,7 +41,7 @@ export const useOfferExchangeForm = ({
     });
 
     const {
-        data: myProducts = [],
+        data: myProductsData,
         isLoading,
         isFetching,
         refetch: refetchProducts,
@@ -50,7 +50,7 @@ export const useOfferExchangeForm = ({
         {skip: !currentCustomerId},
     );
     const [createChain, {isLoading: isCreating}] = useCreateChainMutation();
-    const availableProducts = myProducts.filter((product) => product.status === 'active');
+    const availableProducts = (myProductsData ?? []).filter((product) => product.status === 'active');
     const isProductsLoading = isLoading || isFetching;
 
     useEffect(() => {
