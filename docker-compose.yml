@@ -25,12 +25,9 @@ services:
       - ./back/infrastructure/migrations/006_seed_mock_data.sql:/docker-entrypoint-initdb.d/006_seed_mock_data.sql:ro
       - ./back/infrastructure/migrations/007_category_goal.sql:/docker-entrypoint-initdb.d/007_category_goal.sql:ro
       - ./back/infrastructure/migrations/008_unavailable_chain_status.sql:/docker-entrypoint-initdb.d/008_unavailable_chain_status.sql:ro
+      - ./back/infrastructure/migrations/009_prevent_archived_product_reactivation.sql:/docker-entrypoint-initdb.d/009_prevent_archived_product_reactivation.sql:ro
       - ./back/infrastructure/migrations/010_notification_reads.sql:/docker-entrypoint-initdb.d/010_notification_reads.sql:ro
       - ./back/infrastructure/migrations/011_customer_full_name.sql:/docker-entrypoint-initdb.d/011_customer_full_name.sql:ro
-      - ./back/infrastructure/migrations/014_bulk_test_data.sql:/docker-entrypoint-initdb.d/014_bulk_test_data.sql:ro
-      - ./back/infrastructure/migrations/015_backfill_missing_product_images.sql:/docker-entrypoint-initdb.d/015_backfill_missing_product_images.sql:ro
-      - ./back/infrastructure/migrations/016_customer_names_and_reviews.sql:/docker-entrypoint-initdb.d/016_customer_names_and_reviews.sql:ro
-      - ./back/infrastructure/migrations/017_product_wishlists.sql:/docker-entrypoint-initdb.d/017_product_wishlists.sql:ro
       - ./back/infrastructure/migrations/012_category_icon.sql:/docker-entrypoint-initdb.d/012_category_icon.sql:ro
       - ./back/infrastructure/migrations/013_demo_accounts.sql:/docker-entrypoint-initdb.d/013_demo_accounts.sql:ro
       - ./back/infrastructure/migrations/014_bulk_test_data.sql:/docker-entrypoint-initdb.d/014_bulk_test_data.sql:ro
