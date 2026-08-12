@@ -15,9 +15,15 @@ export const chainApi = createApi({
     reducerPath: 'chainApi',
     baseQuery: apiBaseQuery,
     tagTypes: ['Chain', 'ChainDetails', 'ChainMessages'],
-    refetchOnFocus: true,
+    /* Обмены обновляются по событию, а не по расписанию: SSE сбрасывает
+       затронутые теги, а мутации — свои. Перезапрос на каждое монтирование
+       перезагружал список при любом переходе между вкладками и возврате в
+       комнату, из-за чего цепочки мигали обновлением без единого изменения.
+       Перезапрос при восстановлении сети остаётся: пока связи не было,
+       события до вкладки не дошли. */
+    refetchOnFocus: false,
     refetchOnReconnect: true,
-    refetchOnMountOrArgChange: true,
+    refetchOnMountOrArgChange: false,
     endpoints: (builder) => ({
         createChain: builder.mutation<TChain, TCreateChainRequest>({
             query: (body) => ({ url: '/chains', method: 'POST', body }),
