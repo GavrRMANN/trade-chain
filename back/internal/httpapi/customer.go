@@ -21,11 +21,17 @@ func mountCustomerRoutes(r chi.Router, s service.CustomerService) {
 		r.Get("/", h.list)
 		r.Get("/overview", h.overview)
 
-		// Рекомендации текущего пользователя.
-		r.Post("/me/recommendations", h.createRecommendation)
-		r.Get("/me/recommendations", h.getMyRecommendations)
-		r.Patch("/me/recommendations", h.updateRecommendations)
-		r.Delete("/me/recommendations/{categoryID}", h.deleteRecommendation)
+		// Рекомендации текущего пользователя. Кто этот пользователь, знает
+		// только аутентификация: без неё в контексте нет идентификатора, и
+		// ручки отвечали бы ошибкой запроса даже на верный токен.
+		r.Group(func(r chi.Router) {
+			r.Use(auth.AuthMiddleware)
+
+			r.Post("/me/recommendations", h.createRecommendation)
+			r.Get("/me/recommendations", h.getMyRecommendations)
+			r.Patch("/me/recommendations", h.updateRecommendations)
+			r.Delete("/me/recommendations/{categoryID}", h.deleteRecommendation)
+		})
 
 		// Рекомендации конкретного пользователя.
 		r.Get("/{customerID}/recommendations", h.getRecommendations)
@@ -212,9 +218,9 @@ func (h customerHandler) getRecommendations(w http.ResponseWriter, r *http.Reque
 // @Failure 500 {object} ErrorResponse
 // @Router /customers/me/recommendations [get]
 func (h customerHandler) getMyRecommendations(w http.ResponseWriter, r *http.Request) {
-	customerID, ok := r.Context().Value(auth.UserIDKey).(string)
+	customerID, ok := auth.UserIDFromContext(r.Context())
 	if !ok {
-		writeError(w, service.ErrInvalidInput)
+		writeError(w, service.ErrForbidden)
 		return
 	}
 
@@ -244,9 +250,9 @@ func (h customerHandler) getMyRecommendations(w http.ResponseWriter, r *http.Req
 // @Failure 500 {object} ErrorResponse
 // @Router /customers/me/recommendations [post]
 func (h customerHandler) createRecommendation(w http.ResponseWriter, r *http.Request) {
-	customerID, ok := r.Context().Value(auth.UserIDKey).(string)
+	customerID, ok := auth.UserIDFromContext(r.Context())
 	if !ok {
-		writeError(w, service.ErrInvalidInput)
+		writeError(w, service.ErrForbidden)
 		return
 	}
 
@@ -294,9 +300,9 @@ func (h customerHandler) createRecommendation(w http.ResponseWriter, r *http.Req
 // @Failure 500 {object} ErrorResponse
 // @Router /customers/me/recommendations [patch]
 func (h customerHandler) updateRecommendations(w http.ResponseWriter, r *http.Request) {
-	customerID, ok := r.Context().Value(auth.UserIDKey).(string)
+	customerID, ok := auth.UserIDFromContext(r.Context())
 	if !ok {
-		writeError(w, service.ErrInvalidInput)
+		writeError(w, service.ErrForbidden)
 		return
 	}
 
@@ -342,9 +348,9 @@ func (h customerHandler) updateRecommendations(w http.ResponseWriter, r *http.Re
 // @Failure 500 {object} ErrorResponse
 // @Router /customers/me/recommendations/{categoryID} [delete]
 func (h customerHandler) deleteRecommendation(w http.ResponseWriter, r *http.Request) {
-	customerID, ok := r.Context().Value(auth.UserIDKey).(string)
+	customerID, ok := auth.UserIDFromContext(r.Context())
 	if !ok {
-		writeError(w, service.ErrInvalidInput)
+		writeError(w, service.ErrForbidden)
 		return
 	}
 
