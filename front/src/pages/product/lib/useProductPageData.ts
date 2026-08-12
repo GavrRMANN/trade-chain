@@ -55,6 +55,12 @@ export const useProductPageData = (productId?: string) => {
         skip: !currentUserId || isOwner,
     });
 
+    const hasOwnActiveProducts = useMemo(
+        () => (myProductsQuery.data ?? []).some((item) => item.status === 'active'),
+        [myProductsQuery.data],
+    );
+    const isOwnProductsKnown = !myProductsQuery.isLoading && !myProductsQuery.isUninitialized;
+
     const matchingProducts = useMemo(() => {
         const categoryIds = new Set((optionsQuery.data ?? []).map((item) => item.category_id));
         return (myProductsQuery.data ?? []).filter(
@@ -137,6 +143,8 @@ export const useProductPageData = (productId?: string) => {
         wishlist: wishlistQuery.data,
         wishlistOptions: optionsQuery.data ?? [],
         matchingProducts,
+        hasOwnActiveProducts,
+        isOwnProductsKnown,
         routeChain,
         reviews: reviewsQuery.data ?? [],
         averageRating: ratingQuery.data?.average_rating,

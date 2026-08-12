@@ -5,6 +5,7 @@ import { MainSection } from '@shared/ui/mainSection';
 import { MessageInput } from '@shared/ui/messageInput';
 import { MessageList } from '@entities/chain';
 import { PageError } from '@shared/ui/pageError';
+import { PageHeader } from '@shared/ui/pageHeader';
 import { Preloader } from '@shared/ui/preloader';
 import { ProductCard } from '@entities/product';
 import { ChainStatusBadge } from '@entities/chain';
@@ -62,16 +63,19 @@ export const ExchangeRoomPage = () => {
 
     return (
         <MainSection>
-            <div className={Styles.page}>
-                <header className={Styles.header}>
-                    <div className={Styles['header__meta']}>
+            {/* Статус сделки закреплён: страница длинная (товары, чат, отзыв),
+                а от статуса зависит, что вообще можно здесь сделать. */}
+            <PageHeader
+                title="Сделка обмена"
+                meta={
+                    <>
                         <ChainStatusBadge status={chain.status} />
-                    </div>
-                    <span className={Styles['header__created']}>
-                        Создано: {formatDate(chain.created_at)}
-                    </span>
-                </header>
+                        <span>Создано: {formatDate(chain.created_at)}</span>
+                    </>
+                }
+            />
 
+            <div className={Styles.page}>
                 <section className={Styles.products} aria-label="Товары обмена">
                     <div className={Styles.product}>
                         {fromProduct ? (
