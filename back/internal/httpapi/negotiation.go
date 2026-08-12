@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"trade-chain/internal/auth"
+	"trade-chain/internal/domain"
 	"trade-chain/internal/service"
 
 	"github.com/go-chi/chi/v5"
@@ -17,6 +18,20 @@ type ConfirmRequest struct {
 // MessageRequest — реплика в переписке по сделке.
 type MessageRequest struct {
 	Body string `json:"body"`
+}
+
+func orientChainForCustomer(chain *domain.Chain, customerID string) {
+	if chain.RecipientID == nil || *chain.RecipientID != customerID {
+		return
+	}
+
+	if chain.ToProductID == nil {
+		return
+	}
+
+	fromProductID := chain.FromProductID
+	chain.FromProductID = *chain.ToProductID
+	chain.ToProductID = &fromProductID
 }
 
 // mine godoc
@@ -39,6 +54,9 @@ func (h chainHandler) mine(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		writeError(w, err)
 		return
+	}
+	for i := range v {
+		orientChainForCustomer(&v[i], userID)
 	}
 	writeJSON(w, http.StatusOK, v)
 }

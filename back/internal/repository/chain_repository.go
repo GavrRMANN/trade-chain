@@ -145,7 +145,11 @@ func isUniqueViolation(err error) bool {
 	return errors.As(err, &pgErr) && pgErr.Code == uniqueViolationCode
 }
 
-func (r *chainRepository) GetByID(ctx context.Context, id string) (*domain.Chain, error) {
+func (r *chainRepository) GetByID(
+	ctx context.Context,
+	id string,
+	customerID string,
+) (*domain.Chain, error) {
 	query := `SELECT ` + chainColumns + ` FROM chains WHERE chain_id = $1`
 
 	chain, err := scanChain(r.db.QueryRow(ctx, query, id))
@@ -155,16 +159,22 @@ func (r *chainRepository) GetByID(ctx context.Context, id string) (*domain.Chain
 		}
 		return nil, err
 	}
+
 	return &chain, nil
 }
 
-func (r *chainRepository) GetByProductID(ctx context.Context, productID string) ([]domain.Chain, error) {
+func (r *chainRepository) GetByProductID(
+	ctx context.Context,
+	productID string,
+	customerID string,
+) ([]domain.Chain, error) {
 	query := `
 		SELECT ` + chainColumns + `
 		FROM chains
 		WHERE from_product_id = $1 OR to_product_id = $1
 		ORDER BY created_at DESC
 	`
+
 	return r.queryChains(ctx, query, productID)
 }
 
@@ -198,7 +208,19 @@ func (r *chainRepository) List(ctx context.Context, filter ChainFilter) ([]domai
 		  AND (cardinality($4::text[]) = 0 OR status = ANY($4::text[]))
 		ORDER BY created_at DESC
 	`
-	return r.queryChains(ctx, query, filter.CustomerID, asInitiator, asRecipient, statuses)
+	chains, err := r.queryChains(
+		ctx,
+		query,
+		filter.CustomerID,
+		asInitiator,
+		asRecipient,
+		statuses,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return chains, nil
 }
 
 func (r *chainRepository) GetFullChain(ctx context.Context, chainID string) ([]domain.Chain, error) {
@@ -231,7 +253,7 @@ func (r *chainRepository) UpdateStatus(ctx context.Context, id string, status do
 	return nil
 }
 
-func (r *chainRepository) UpdateStatusIfCurrent(ctx context.Context, id string, current, next domain.ChainStatus) error {
+func (r *chainRepository) UpdateStatusIfCurrent(ctx context.Context, id string, customerID string, current, next domain.ChainStatus) error {
 	result, err := r.db.Exec(ctx, `
 		UPDATE chains
 		SET status = $1, updated_at = CURRENT_TIMESTAMP

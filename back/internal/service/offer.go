@@ -118,7 +118,7 @@ func (s *offerService) Details(ctx context.Context, offerID, actorID string) (*O
 		return nil, ErrInvalidInput
 	}
 
-	chain, err := s.chains.GetByID(ctx, offerID)
+	chain, err := s.chains.GetByID(ctx, offerID, actorID)
 	if err != nil {
 		return nil, err
 	}

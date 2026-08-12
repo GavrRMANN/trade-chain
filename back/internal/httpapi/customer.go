@@ -25,38 +25,6 @@ func mountCustomerRoutes(r chi.Router, s service.CustomerService) {
 	})
 }
 
-// mountCustomerRegistrationRoute регистрирует пользователя без JWT.
-func mountCustomerRegistrationRoute(r chi.Router, s service.CustomerService) {
-	h := customerHandler{s}
-	r.Post("/customers/", h.create)
-}
-
-// create godoc
-// @Summary Create customer
-// @Description Register a new customer
-// @Tags customers
-// @Accept json
-// @Produce json
-// @Param request body domain.CreateCustomerDTO true "Customer data"
-// @Success 201 {object} domain.Customer
-// @Failure 400 {object} ErrorResponse
-// @Failure 409 {object} ErrorResponse
-// @Failure 500 {object} ErrorResponse
-// @Router /customers [post]
-func (h customerHandler) create(w http.ResponseWriter, r *http.Request) {
-	var v domain.CreateCustomerDTO
-	if decodeJSON(r, &v) != nil {
-		writeError(w, service.ErrInvalidInput)
-		return
-	}
-	out, e := h.s.Create(r.Context(), &v)
-	if e != nil {
-		writeError(w, e)
-		return
-	}
-	writeJSON(w, http.StatusCreated, out)
-}
-
 // get godoc
 // @Summary Get customer by ID
 // @Description Get customer details

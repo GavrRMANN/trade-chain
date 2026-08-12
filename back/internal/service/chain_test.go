@@ -88,7 +88,7 @@ func (f *fakeChainRepo) Create(_ context.Context, c *domain.Chain) (*domain.Chai
 	return &stored, nil
 }
 
-func (f *fakeChainRepo) GetByID(_ context.Context, id string) (*domain.Chain, error) {
+func (f *fakeChainRepo) GetByID(_ context.Context, id string, customerID string) (*domain.Chain, error) {
 	c, ok := f.chains[id]
 	if !ok {
 		return nil, errNoRows
@@ -106,8 +106,8 @@ func (f *fakeChainRepo) UpdateStatus(_ context.Context, id string, status domain
 	return nil
 }
 
-func (f *fakeChainRepo) UpdateStatusIfCurrent(ctx context.Context, id string, current, next domain.ChainStatus) error {
-	chain, err := f.GetByID(ctx, id)
+func (f *fakeChainRepo) UpdateStatusIfCurrent(ctx context.Context, id string, customerID string, current, next domain.ChainStatus) error {
+	chain, err := f.GetByID(ctx, id, customerID)
 	if err != nil {
 		return err
 	}
@@ -187,7 +187,7 @@ func isOutgoingCompetingOffer(other, completed domain.Chain) bool {
 		other.FromProductID == *completed.ToProductID
 }
 
-func (f *fakeChainRepo) GetByProductID(context.Context, string) ([]domain.Chain, error) {
+func (f *fakeChainRepo) GetByProductID(context.Context, string, string) ([]domain.Chain, error) {
 	return nil, nil
 }
 func (f *fakeChainRepo) GetByCustomerID(ctx context.Context, customerID string) ([]domain.Chain, error) {
@@ -505,7 +505,7 @@ func TestCompletionCancelsCompetingActiveOffers(t *testing.T) {
 	}
 }
 
-func TestSingleNegativeConfirmationFailsExchange(t *testing.T) {
+func TestSingleNegativeConfirmationFailsExchange(t *testing.T, customerID string) {
 	f := newFixture(domain.ChainActive)
 	ctx := context.Background()
 
@@ -513,7 +513,7 @@ func TestSingleNegativeConfirmationFailsExchange(t *testing.T) {
 		t.Fatalf("неожиданная ошибка: %v", err)
 	}
 
-	chain, _ := f.service.GetByID(ctx, chainID)
+	chain, _ := f.service.GetByID(ctx, chainID, customerID)
 	if chain.Status != string(domain.ChainFailed) {
 		t.Errorf("статус %q, ожидался %q — не состоявшийся обмен решает одна сторона", chain.Status, domain.ChainFailed)
 	}

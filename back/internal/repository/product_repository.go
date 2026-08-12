@@ -98,7 +98,7 @@ func (r *productRepository) GetByID(ctx context.Context, id string) (*domain.Pro
 			created_at,
 			updated_at
 		FROM products
-		WHERE product_id = $1 AND status != 'archived'
+		WHERE product_id = $1
 	`
 
 	var product domain.Product

@@ -1,6 +1,7 @@
 package httpapi
 
 import (
+	"errors"
 	"io"
 	"net/http"
 	"os"
@@ -399,6 +400,9 @@ func (h productHandler) updateWishlist(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		writeError(w, err)
 		return
+	} else if product.Status == "archived" {
+		writeError(w, errors.New("Product is archived"))
+		return
 	}
 
 	if product.CustomerID != customerID {
@@ -455,6 +459,8 @@ func (h productHandler) uploadImage(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			writeError(w, service.ErrInvalidInput)
 			return
+		} else if product.Status == "archived" {
+			writeError(w, errors.New("Product is archived"))
 		}
 		file, header, err := r.FormFile("image") // имя поля должно быть "image"
 		if err != nil {

@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"log"
 	"strings"
 	"time"
 
@@ -130,19 +131,19 @@ func (s *chainService) Create(ctx context.Context, c *domain.Chain) (*domain.Cha
 	return v, nil
 }
 
-func (s *chainService) GetByID(ctx context.Context, id string) (*domain.Chain, error) {
+func (s *chainService) GetByID(ctx context.Context, id string, customerID string) (*domain.Chain, error) {
 	if blank(id) {
 		return nil, ErrInvalidInput
 	}
-	v, err := s.repo.GetByID(ctx, id)
+	v, err := s.repo.GetByID(ctx, id, customerID)
 	return v, normalizeError(err)
 }
 
-func (s *chainService) GetByProductID(ctx context.Context, id string) ([]domain.Chain, error) {
+func (s *chainService) GetByProductID(ctx context.Context, id string, customerID string) ([]domain.Chain, error) {
 	if blank(id) {
 		return nil, ErrInvalidInput
 	}
-	v, err := s.repo.GetByProductID(ctx, id)
+	v, err := s.repo.GetByProductID(ctx, id, customerID)
 	return v, normalizeError(err)
 }
 
@@ -190,7 +191,7 @@ func (s *chainService) Decide(ctx context.Context, id string, action exchange.Ac
 		return nil, ErrInvalidInput
 	}
 
-	chain, err := s.repo.GetByID(ctx, id)
+	chain, err := s.repo.GetByID(ctx, id, actorID)
 	if err != nil {
 		return nil, normalizeError(err)
 	}
@@ -205,11 +206,11 @@ func (s *chainService) Decide(ctx context.Context, id string, action exchange.Ac
 	if err != nil {
 		return nil, mapExchangeError(err)
 	}
-	if err := s.repo.UpdateStatusIfCurrent(ctx, id, domain.ChainStatus(chain.Status), next); err != nil {
+	if err := s.repo.UpdateStatusIfCurrent(ctx, id, actorID, domain.ChainStatus(chain.Status), next); err != nil {
 		return nil, normalizeError(err)
 	}
 
-	updated, err := s.repo.GetByID(ctx, id)
+	updated, err := s.repo.GetByID(ctx, id, actorID)
 	if err != nil {
 		return nil, normalizeError(err)
 	}
@@ -220,25 +221,51 @@ func (s *chainService) Decide(ctx context.Context, id string, action exchange.Ac
 // validateAcceptableProducts не даёт принять предложение после того, как
 // товар уже ушёл в другой завершённый обмен. Такое предложение сохраняется
 // в истории и получает отдельный статус unavailable при завершении сделки.
-func (s *chainService) validateAcceptableProducts(ctx context.Context, chain *domain.Chain, deal exchange.Deal) error {
+func (s *chainService) validateAcceptableProducts(
+	ctx context.Context,
+	chain *domain.Chain,
+	deal exchange.Deal,
+) error {
 	offered, err := s.products.GetByID(ctx, chain.FromProductID)
 	if err != nil {
 		return normalizeError(err)
 	}
-	if offered.Status != domain.ProductActive || offered.CustomerID != deal.InitiatorID {
+
+	log.Printf(
+		"ACCEPT CHECK offered: product=%s status=%s owner=%s expectedOwner=%s",
+		offered.ProductID,
+		offered.Status,
+		offered.CustomerID,
+		deal.InitiatorID,
+	)
+
+	if offered.Status != domain.ProductActive ||
+		offered.CustomerID != deal.InitiatorID {
 		return domain.ErrProductUnavailable
 	}
 
 	if chain.ToProductID == nil {
 		return nil
 	}
+
 	requested, err := s.products.GetByID(ctx, *chain.ToProductID)
 	if err != nil {
 		return normalizeError(err)
 	}
-	if requested.Status != domain.ProductActive || requested.CustomerID != deal.RecipientID {
+
+	log.Printf(
+		"ACCEPT CHECK requested: product=%s status=%s owner=%s expectedOwner=%s",
+		requested.ProductID,
+		requested.Status,
+		requested.CustomerID,
+		deal.RecipientID,
+	)
+
+	if requested.Status != domain.ProductActive ||
+		requested.CustomerID != deal.RecipientID {
 		return domain.ErrProductUnavailable
 	}
+
 	return nil
 }
 
@@ -253,7 +280,7 @@ func (s *chainService) Confirm(ctx context.Context, id, actorID string, success 
 		return nil, ErrInvalidInput
 	}
 
-	chain, err := s.repo.GetByID(ctx, id)
+	chain, err := s.repo.GetByID(ctx, id, actorID)
 	if err != nil {
 		return nil, normalizeError(err)
 	}
@@ -269,11 +296,11 @@ func (s *chainService) Confirm(ctx context.Context, id, actorID string, success 
 		// финализацию, а не оставлять обмен навсегда активным.
 		if errors.Is(err, domain.ErrAlreadyConfirmed) {
 			if status, settled := exchange.Resolve(deal, existing); settled {
-				related, settleErr := s.settle(ctx, id, status)
+				related, settleErr := s.settle(ctx, id, actorID, status)
 				if settleErr != nil {
 					return nil, settleErr
 				}
-				updated, getErr := s.repo.GetByID(ctx, id)
+				updated, getErr := s.repo.GetByID(ctx, id, actorID)
 				if getErr != nil {
 					return nil, normalizeError(getErr)
 				}
@@ -312,13 +339,13 @@ func (s *chainService) Confirm(ctx context.Context, id, actorID string, success 
 	var related []domain.Chain
 	if status, settled := exchange.Resolve(deal, all); settled {
 		var settleErr error
-		related, settleErr = s.settle(ctx, id, status)
+		related, settleErr = s.settle(ctx, id, actorID, status)
 		if settleErr != nil {
 			return nil, settleErr
 		}
 	}
 
-	updated, err := s.repo.GetByID(ctx, id)
+	updated, err := s.repo.GetByID(ctx, id, actorID)
 	if err != nil {
 		return nil, normalizeError(err)
 	}
@@ -342,15 +369,15 @@ func (s *chainService) publishRelatedUpdates(currentChainID string, chains []dom
 //
 // Успешный обмен идёт через CompleteExchange: он в одной транзакции меняет
 // владельцев товаров, поэтому вещи не могут разъехаться со статусом сделки.
-func (s *chainService) settle(ctx context.Context, id string, status domain.ChainStatus) ([]domain.Chain, error) {
+func (s *chainService) settle(ctx context.Context, id string, actorID string, status domain.ChainStatus) ([]domain.Chain, error) {
 	if status != domain.ChainCompleted {
 		return nil, normalizeError(s.repo.UpdateStatus(ctx, id, status))
 	}
-	chain, err := s.repo.GetByID(ctx, id)
+	chain, err := s.repo.GetByID(ctx, id, actorID)
 	if err != nil {
 		return nil, normalizeError(err)
 	}
-	related, err := s.relatedChains(ctx, chain)
+	related, err := s.relatedChains(ctx, chain, actorID)
 	if err != nil {
 		return nil, err
 	}
@@ -358,7 +385,7 @@ func (s *chainService) settle(ctx context.Context, id string, status domain.Chai
 	if err := s.repo.CompleteExchange(ctx, id); err != nil {
 		// Обе стороны могли подтвердить одновременно: тот, кто пришёл вторым,
 		// увидит звено уже завершённым, и это не ошибка.
-		chain, getErr := s.repo.GetByID(ctx, id)
+		chain, getErr := s.repo.GetByID(ctx, id, actorID)
 		if getErr == nil && chain.Status == string(domain.ChainCompleted) {
 			return nil, nil
 		}
@@ -367,7 +394,7 @@ func (s *chainService) settle(ctx context.Context, id string, status domain.Chai
 
 	updated := make([]domain.Chain, 0)
 	for chainID, previousStatus := range related {
-		chain, err := s.repo.GetByID(ctx, chainID)
+		chain, err := s.repo.GetByID(ctx, chainID, actorID)
 		if err != nil {
 			return nil, normalizeError(err)
 		}
@@ -378,7 +405,7 @@ func (s *chainService) settle(ctx context.Context, id string, status domain.Chai
 	return updated, nil
 }
 
-func (s *chainService) relatedChains(ctx context.Context, chain *domain.Chain) (map[string]string, error) {
+func (s *chainService) relatedChains(ctx context.Context, chain *domain.Chain, customerID string) (map[string]string, error) {
 	productIDs := []string{chain.FromProductID}
 	if chain.ToProductID != nil {
 		productIDs = append(productIDs, *chain.ToProductID)
@@ -386,7 +413,7 @@ func (s *chainService) relatedChains(ctx context.Context, chain *domain.Chain) (
 
 	chains := make(map[string]string)
 	for _, productID := range productIDs {
-		found, err := s.repo.GetByProductID(ctx, productID)
+		found, err := s.repo.GetByProductID(ctx, productID, customerID)
 		if err != nil {
 			return nil, normalizeError(err)
 		}
@@ -404,7 +431,7 @@ func (s *chainService) Messages(ctx context.Context, id, actorID string) ([]doma
 		return nil, ErrInvalidInput
 	}
 
-	chain, err := s.repo.GetByID(ctx, id)
+	chain, err := s.repo.GetByID(ctx, id, actorID)
 	if err != nil {
 		return nil, normalizeError(err)
 	}
@@ -423,7 +450,7 @@ func (s *chainService) SendMessage(ctx context.Context, id, actorID, body string
 		return nil, ErrInvalidInput
 	}
 
-	chain, err := s.repo.GetByID(ctx, id)
+	chain, err := s.repo.GetByID(ctx, id, actorID)
 	if err != nil {
 		return nil, normalizeError(err)
 	}
@@ -457,7 +484,7 @@ func (s *chainService) CanReview(ctx context.Context, id, actorID string) (strin
 		return "", ErrInvalidInput
 	}
 
-	chain, err := s.repo.GetByID(ctx, id)
+	chain, err := s.repo.GetByID(ctx, id, actorID)
 	if err != nil {
 		return "", normalizeError(err)
 	}
@@ -483,7 +510,7 @@ func (s *chainService) Delete(ctx context.Context, id, actorID string) error {
 	if blank(id) || blank(actorID) {
 		return ErrInvalidInput
 	}
-	chain, err := s.repo.GetByID(ctx, id)
+	chain, err := s.repo.GetByID(ctx, id, actorID)
 	if err != nil {
 		return normalizeError(err)
 	}

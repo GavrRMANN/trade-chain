@@ -64,14 +64,18 @@ func (r *wishlistRepository) GetByID(ctx context.Context, id string) (*domain.Wi
 	return &wishlist, nil
 }
 
-func (r *wishlistRepository) GetByProductID(ctx context.Context, productID string) (*domain.Wishlist, error) {
+func (r *wishlistRepository) GetByProductID(
+	ctx context.Context,
+	productID string,
+) (*domain.Wishlist, error) {
 	query := `
-		SELECT wishlist_id, product_id, name, created_at, updated_at
-		FROM wishlists
-		WHERE product_id = $1
-	`
+        SELECT wishlist_id, product_id, name, created_at, updated_at
+        FROM wishlists
+        WHERE product_id = $1
+    `
 
 	var wishlist domain.Wishlist
+
 	err := r.db.QueryRow(ctx, query, productID).Scan(
 		&wishlist.WishlistID,
 		&wishlist.ProductID,
@@ -81,10 +85,11 @@ func (r *wishlistRepository) GetByProductID(ctx context.Context, productID strin
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, sql.ErrNoRows
+			return nil, nil
 		}
 		return nil, err
 	}
+
 	return &wishlist, nil
 }
 
