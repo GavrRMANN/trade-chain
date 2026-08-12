@@ -20,10 +20,11 @@
 }
 
 .categories > * {
-    flex: 0 0 112px;
-    width: 112px;
-    min-height: 68px;
-    aspect-ratio: auto;
+
+    flex: 0 0 112px !important;
+    width: 112px !important;
+    min-height: 68px !important;
+    aspect-ratio: auto !important;
 }
 
 /* Лента разбита на смысловые блоки («Вам подойдёт», «Остальное в обороте»),
@@ -116,9 +117,9 @@
     }
 
     .categories > * {
-        flex: 0 0 88px;
-        width: 88px;
-        min-height: 56px;
+        flex: 0 0 88px !important;
+        width: 88px !important;
+        min-height: 56px !important;
     }
 
     .catalog-page {

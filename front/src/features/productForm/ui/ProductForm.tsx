@@ -81,6 +81,16 @@ export const ProductForm = ({
 
     return (
         <form className={Styles.form} onSubmit={handleSubmit} noValidate>
+            {!isEdit && (
+                <div className={Styles['form__heading']}>
+                    <span>1</span>
+                    <div>
+                        <h3>Что отдаём</h3>
+                        <p>Заполните информацию о товаре, которым готовы обменяться</p>
+                    </div>
+                </div>
+            )}
+
             <div className={Styles['form__main']}>
                 <Input
                     label="Название"

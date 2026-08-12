@@ -135,6 +135,13 @@
         gap: var(--space-2) var(--space-3);
     }
 
+    /* Прилипшая полоса собирается в одну строку: три ряда (название,
+       факты, кнопка) забирали бы пятую часть экрана телефона всю прокрутку. */
+    .page-header--stuck .page-header__bar {
+        align-items: center;
+        flex-wrap: nowrap;
+    }
+
     .page-header--stuck .page-header__title {
         font-size: var(--h3-mobile-font-size);
         line-height: var(--h3-mobile-line-height);

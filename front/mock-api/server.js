@@ -1176,6 +1176,10 @@ function productRecommendations(request, response, productId) {
     const user = requireUser(request);
     if (!user) return sendError(response, 403, 'operation forbidden');
 
+    const myProducts = products.filter((item) => item.customer_id === user.id);
+    if (myProducts.length === 0)
+        return sendError(response, 400, 'invalid input: у пользователя нет товаров для обмена');
+
     const result = chains.find(
         (item) => item.to_product_id === productId && item.status !== 'cancelled',
     );

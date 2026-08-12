@@ -80,7 +80,10 @@ export const Selector = forwardRef<HTMLDivElement, TSelectorProps>(({
                                     key={opt.value}
                                     className={`${Styles['wrapper__item']} ${opt.value === value && Styles['wrapper__item--active']}`}
                                     data-value={opt.value}
-                                    onClick={() => selectOption(opt)}
+                                    onClick={(event) => {
+                                        event.stopPropagation();
+                                        selectOption(opt);
+                                    }}
                                     role="option"
                                     aria-selected={opt.value === value}
                                 >

@@ -33,6 +33,8 @@ export const useProductPage = () => {
         wishlist,
         wishlistOptions,
         matchingProducts,
+        hasOwnActiveProducts,
+        isOwnProductsKnown,
         routeChain,
         reviews,
         averageRating,
@@ -68,6 +70,10 @@ export const useProductPage = () => {
           ? `Отзывов: ${reviews.length}`
           : 'Пока без отзывов';
     const canOffer = status === 'active' && !isOwner && isAuthenticated;
+    // Пока список своих товаров не загружен, считаем, что они есть —
+    // чтобы не мигать кнопкой «Добавить объявление» до ответа сервера.
+    const needsOwnProductToOffer =
+        canOffer && isOwnProductsKnown && !hasOwnActiveProducts;
 
     const openOffer = useCallback(() => {
         if (!isAuthenticated) {
@@ -138,6 +144,7 @@ export const useProductPage = () => {
         hasRating,
         ratingText,
         canOffer,
+        needsOwnProductToOffer,
         // offer-модалка
         isOfferOpen: offerState.isOpen,
         openOffer,

@@ -33,7 +33,10 @@ export const useCatalog = () => {
         isError: isCategoriesError,
     } = useGetCategoriesQuery();
 
-    const categoryFilters = useMemo<TCatalogCategory[]>(
+    // Все категории, включая подкатегории, — нужны для проверки category_id
+    // из URL (туда можно попасть не только через ленту, например из поиска)
+    // и для заголовка выбранной категории.
+    const allCategoryFilters = useMemo<TCatalogCategory[]>(
         () => [
             { id: 'all', title: 'Все' },
             ...categories.map(({ category_id, name, icon, image }) => ({
@@ -44,6 +47,24 @@ export const useCatalog = () => {
             })),
         ],
         [categories],
+    );
+
+    // Лента быстрых фильтров показывает только категории верхнего уровня —
+    // подкатегории (например, «Видеокарты» внутри «Комплектующих») в неё
+    // не попадают, чтобы не дублировать вложенность плоским списком.
+    const categoryFilters = useMemo<TCatalogCategory[]>(
+        () => [
+            allCategoryFilters[0],
+            ...categories
+                .filter(({ parent_id }) => !parent_id)
+                .map(({ category_id, name, icon, image }) => ({
+                    id: category_id,
+                    title: name,
+                    icon,
+                    image,
+                })),
+        ],
+        [allCategoryFilters, categories],
     );
 
     const { currentData, isLoading, isFetching, isError } = useGetProductsQuery({
@@ -99,7 +120,7 @@ export const useCatalog = () => {
     }, [hasMore, isError, isFetching]);
 
     useEffect(() => {
-        if (categoryQuery && !categoryFilters.some(({ id }) => id === categoryQuery)) {
+        if (categoryQuery && !allCategoryFilters.some(({ id }) => id === categoryQuery)) {
             setSearchParams(
                 (currentParams) => {
                     currentParams.delete('category_id');
@@ -108,7 +129,7 @@ export const useCatalog = () => {
                 { replace: true },
             );
         }
-    }, [categoryFilters, categoryQuery, setSearchParams]);
+    }, [allCategoryFilters, categoryQuery, setSearchParams]);
 
     const selectedCategory = categoryQuery || 'all';
 
@@ -120,7 +141,7 @@ export const useCatalog = () => {
 
     /* Название выбранной категории и число найденного — то, что должно
        оставаться на виду при прокрутке длинной ленты. */
-    const categoryTitle = categoryFilters.find(({ id }) => id === selectedCategory)?.title;
+    const categoryTitle = allCategoryFilters.find(({ id }) => id === selectedCategory)?.title;
 
     // Лента отвечает на вопрос «почему мне это показали»: сверху идут вещи,
     // владельцам которых подходит что-то из профиля пользователя. Разделение
