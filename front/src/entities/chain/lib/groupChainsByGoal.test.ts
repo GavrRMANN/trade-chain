@@ -105,6 +105,34 @@ describe('groupChainsByGoal', () => {
         expect(groups[0].goalCategoryId).toBe('category-tech');
     });
 
+    /* Предложение внутри маршрута к категории всегда несёт и конкретный товар:
+       без него обмен не завершить. Цель при этом остаётся категорией, иначе
+       каждое предложение образует свою цель и маршрут рассыпается. */
+    it('держит цель-категорию, когда в предложении указан и конкретный товар', () => {
+        const groups = groupChainsByGoal(
+            [
+                makeChain({
+                    chain_id: 'a',
+                    to_category_id: 'category-tech',
+                    to_product_id: 'x',
+                    updated_at: '2026-08-01T00:00:00Z',
+                }),
+                makeChain({
+                    chain_id: 'b',
+                    to_category_id: 'category-tech',
+                    to_product_id: 'y',
+                    updated_at: '2026-08-02T00:00:00Z',
+                }),
+            ],
+            ME,
+        );
+
+        expect(groups).toHaveLength(1);
+        expect(groups[0].goalId).toBe('category-tech');
+        expect(groups[0].goalCategoryId).toBe('category-tech');
+        expect(groups[0].offersCount).toBe(2);
+    });
+
     it('сортирует цели по свежести', () => {
         const groups = groupChainsByGoal(
             [
