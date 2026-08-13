@@ -1,11 +1,11 @@
 .profileAvatar__img {
     box-sizing: border-box;
 
-    color: var(--color-neutral-gray-800);
-    background: transparent;
+    color: var(--text-secondary);
+    background: var(--surface-muted);
     border: 1px solid transparent;
 
-    transition: border-color var(--animation-normal);
+    transition: border-color var(--animation-normal), color var(--animation-normal);
 }
 
 .profileAvatar__img svg {
@@ -20,16 +20,16 @@
 }
 
 .profileAvatar__img:hover {
-    border-color: var(--color-accent-blue-600);
+    border-color: var(--color-brand);
 }
 
 .profileAvatar__img--active {
-    border-color: var(--color-accent-blue-600);
+    border-color: var(--color-brand);
 }
 
 .profileAvatar__img:hover svg path,
 .profileAvatar__img--active svg path {
-    stroke: var(--color-accent-blue-600);
+    stroke: var(--color-brand);
 }
 
 @media (max-width: 768px) {

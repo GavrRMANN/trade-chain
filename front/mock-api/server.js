@@ -1,5 +1,3 @@
-/* global URL, console, process */
-
 // Mock-API, воспроизводящий контракты бэкенда trade-chain 1-в-1:
 // пути, методы, тела запросов/ответов, статусы и бизнес-логику FSM обмена
 // (back/internal/httpapi, back/internal/exchange, back/internal/service).
@@ -20,6 +18,7 @@ import {
     reviews,
     wishlists,
     wishlistOptions,
+    customerRecommendations,
 } from './data.js';
 
 const port = Number(process.env.PORT || 3001);
@@ -46,8 +45,14 @@ const server = createServer(async (request, response) => {
             return login(request, response);
         if (url.pathname === '/api/v1/auth/register' && request.method === 'POST')
             return register(request, response);
+        if (url.pathname === '/api/v1/auth/demo-login' && request.method === 'POST')
+            return demoLogin(request, response);
         if (url.pathname === '/api/v1/auth/me' && request.method === 'GET')
             return currentUser(request, response);
+        if (url.pathname === '/api/v1/events' && request.method === 'GET')
+            return streamEvents(request, response);
+        if (url.pathname.startsWith('/api/v1/notifications'))
+            return handleNotifications(request, response, url);
 
         // exchange-offers/exchanges объявляются раньше общих префиксов, чтобы
         // специфичные пути не ушли в обработчики chains/products.
@@ -69,6 +74,8 @@ const server = createServer(async (request, response) => {
             return handleWishlists(request, response, url);
         if (url.pathname === '/api/v1/search/chain' && request.method === 'GET')
             return findChain(request, response, url.searchParams);
+        if (url.pathname === '/api/v1/search/candidates' && request.method === 'GET')
+            return findCandidates(request, response, url.searchParams);
         return sendError(response, 404, 'Ресурс не найден');
     } catch (error) {
         console.error(error);
@@ -96,9 +103,31 @@ async function register(request, response) {
         return sendError(response, 400, 'Некорректное тело запроса');
     if (customers.some((item) => item.email === body.email))
         return sendError(response, 409, 'Пользователь уже существует');
-    const customer = makeCustomer(body.email, body.password);
+    const customer = makeCustomer(body.email, body.password, body.full_name);
     customers.push(customer);
     return sendJson(response, 201, {
+        token: `mock-token:${customer.customer_id}`,
+        user: publicCustomer(customer),
+    });
+}
+
+// demoLogin повторяет httpapi.authHandler.demoLogin: вход по выбору участника
+// без пароля. В mock флаг DEMO_LOGIN_ENABLED всегда считается включённым —
+// сам mock-API и существует ради демонстрации.
+async function demoLogin(request, response) {
+    const body = await readJson(request);
+    /* Витрина `/demo` присылает идентификатор профиля из 013_demo_accounts.sql,
+       а mock хранит участников под своими читаемыми ключами — вход принимает
+       оба, иначе демонстрационные кнопки упирались бы в «Пользователь не
+       найден». */
+    const customer = customers.find(
+        (item) =>
+            (item.customer_id === body?.customer_id ||
+                item.demo_customer_id === body?.customer_id) &&
+            item.is_active,
+    );
+    if (!customer) return sendError(response, 404, 'Пользователь не найден');
+    return sendJson(response, 200, {
         token: `mock-token:${customer.customer_id}`,
         user: publicCustomer(customer),
     });
@@ -123,6 +152,53 @@ function requireUser(request) {
 
 async function handleCustomers(request, response, url) {
     const parts = getResourceParts(url.pathname, '/api/v1/customers');
+    // overview проверяется раньше разбора {id}: иначе слово уедет в поиск
+    // пользователя по идентификатору и вернёт 404.
+    if (request.method === 'GET' && parts.length === 1 && parts[0] === 'overview') {
+        return sendJson(
+            response,
+            200,
+            activeCustomers()
+                .slice(...sliceBounds(url.searchParams))
+                .map(customerOverview),
+        );
+    }
+    // Рекомендации текущего пользователя проверяются раньше {id}: иначе 'me'
+    // уедет в поиск клиента по идентификатору и вернёт 404.
+    if (parts.length >= 2 && parts[0] === 'me' && parts[1] === 'recommendations') {
+        const user = requireUser(request);
+        if (!user) return sendError(response, 403, 'operation forbidden');
+
+        if (request.method === 'GET' && parts.length === 2)
+            return sendJson(response, 200, customerRecommendationList(user.id));
+
+        if (request.method === 'POST' && parts.length === 2) {
+            const body = await readJson(request);
+            for (const categoryId of body?.category_ids || []) addCustomerRecommendation(user.id, categoryId);
+            return sendJson(response, 201, customerRecommendationList(user.id));
+        }
+
+        if (request.method === 'PATCH' && parts.length === 2) {
+            const body = await readJson(request);
+            customerRecommendations[user.id] = [...new Set(body?.category_ids || [])];
+            return sendJson(response, 200, customerRecommendationList(user.id));
+        }
+
+        if (request.method === 'DELETE' && parts.length === 3) {
+            customerRecommendations[user.id] = (customerRecommendations[user.id] || []).filter(
+                (categoryId) => categoryId !== parts[2],
+            );
+            response.writeHead(204);
+            return response.end();
+        }
+
+        return sendError(response, 405, 'Метод не поддерживается');
+    }
+
+    if (request.method === 'GET' && parts.length === 2 && parts[1] === 'recommendations') {
+        return sendJson(response, 200, customerRecommendationList(parts[0]));
+    }
+
     // POST /customers на бэкенде не смонтирован — регистрация идёт через /auth/register.
     if (request.method === 'GET' && parts.length === 0) {
         return sendJson(
@@ -144,6 +220,7 @@ async function handleCustomers(request, response, url) {
             return sendError(response, 400, 'Некорректное тело запроса');
         if (body.email !== undefined) customers[index].email = body.email;
         if (body.password !== undefined) customers[index].password = body.password;
+        if (body.full_name !== undefined) customers[index].full_name = body.full_name;
         customers[index].updated_at = new Date().toISOString();
         return sendJson(response, 200, publicCustomer(customers[index]));
     }
@@ -168,18 +245,40 @@ async function handleProducts(request, response, url) {
         const list = hasSearch
             ? findProducts(query, categoryId)
             : activeProducts().sort(sortByDateDesc);
-        return sendJson(response, 200, list.slice(...sliceBounds(url.searchParams)));
+        const feed = withDirectMatch(list, requireUser(request)?.id);
+        return sendJson(response, 200, feed.slice(...sliceBounds(url.searchParams)));
     }
 
     if (request.method === 'GET' && parts.length === 2 && parts[1] === 'recommendations') {
         return productRecommendations(request, response, parts[0]);
     }
 
+    /* mine и by-customer различаются архивом — так же, как на бэкенде:
+       GetOwnByCustomerID отдаёт владельцу весь его список вместе с архивом,
+       а GetByCustomerID (WHERE status != 'archived') — только то, что ещё
+       участвует в обменах. */
+    if (request.method === 'GET' && parts.length === 1 && parts[0] === 'mine') {
+        const user = requireUser(request);
+        if (!user) return sendError(response, 403, 'operation forbidden');
+        return sendJson(
+            response,
+            200,
+            products.filter((product) => product.customer_id === user.id),
+        );
+    }
+
     if (request.method === 'GET' && parts.length === 2 && parts[0] === 'by-customer') {
         const customerId = parts[1];
         const user = requireUser(request);
         if (!user || user.id !== customerId) return sendError(response, 403, 'operation forbidden');
-        return sendJson(response, 200, products.filter((product) => product.customer_id === customerId));
+        return sendJson(
+            response,
+            200,
+            products.filter(
+                (product) =>
+                    product.customer_id === customerId && product.status !== 'archived',
+            ),
+        );
     }
 
     if (parts.length === 2 && parts[1] === 'image') {
@@ -199,6 +298,23 @@ async function handleProducts(request, response, url) {
         return sendJson(response, 200, products[index]);
     }
 
+    // archive повторяет productHandler.delete: мягкое удаление владельцем,
+    // после которого товар выпадает из каталога и новых обменов.
+    if (parts.length === 2 && parts[1] === 'archive') {
+        if (request.method !== 'POST') return sendError(response, 405, 'Метод не поддерживается');
+        const index = products.findIndex(({ product_id: id }) => id === parts[0]);
+        if (index < 0 || products[index].status === 'archived')
+            return sendError(response, 404, 'Товар не найден');
+        const user = requireUser(request);
+        if (!user) return sendError(response, 403, 'operation forbidden');
+        if (products[index].customer_id !== user.id)
+            return sendError(response, 403, 'operation forbidden');
+        products[index].status = 'archived';
+        products[index].updated_at = new Date().toISOString();
+        response.writeHead(204);
+        return response.end();
+    }
+
     if (request.method === 'POST' && parts.length === 0) {
         const user = requireUser(request);
         if (!user) return sendError(response, 403, 'operation forbidden');
@@ -212,9 +328,13 @@ async function handleProducts(request, response, url) {
 
     if (parts.length !== 1) return sendError(response, 404, 'Товар не найден');
     const index = products.findIndex(({ product_id: id }) => id === parts[0]);
-    if (index < 0 || products[index].status === 'archived')
-        return sendError(response, 404, 'Товар не найден');
+    if (index < 0) return sendError(response, 404, 'Товар не найден');
+    /* Карточку архивного товара бэкенд отдаёт (productRepository.GetByID не
+       фильтрует по статусу) — на неё ведут ссылки из истории обменов, и фронт
+       показывает её отдельным архивным видом. Скрыт архив только из списков. */
     if (request.method === 'GET') return sendJson(response, 200, products[index]);
+    if (products[index].status === 'archived')
+        return sendError(response, 404, 'Товар не найден');
     if (request.method === 'PATCH') {
         const user = requireUser(request);
         if (!user) return sendError(response, 403, 'operation forbidden');
@@ -324,6 +444,37 @@ function normalizeSearchText(value) {
         .trim();
 }
 
+/**
+ * Помечает карточки, владельцам которых подходит что-то из вещей зрителя,
+ * и поднимает их наверх выдачи. Повторяет выражение matched_by_product_id
+ * из productRepository.List (back/internal/repository/product_repository.go).
+ */
+function withDirectMatch(list, viewerId) {
+    if (!viewerId) return list;
+
+    const mine = products
+        .filter((item) => item.customer_id === viewerId && item.status === 'active')
+        .sort(sortByDateDesc);
+
+    if (mine.length === 0) return list;
+
+    const matched = list.map((product) => {
+        if (product.customer_id === viewerId) return product;
+
+        const wishlist = wishlists.find((item) => item.product_id === product.product_id);
+        const wanted = wishlist ? wishlistOptions[wishlist.wishlist_id] || [] : [];
+        const source = mine.find((item) => wanted.includes(item.category_id));
+
+        return source
+            ? { ...product, matched: true, matched_by_product_id: source.product_id }
+            : product;
+    });
+
+    // Сортировка стабильна, поэтому внутри групп сохраняется исходный порядок
+    // (релевантность поиска или дата публикации).
+    return matched.sort((left, right) => Number(!!right.matched) - Number(!!left.matched));
+}
+
 function sortByDateDesc(left, right) {
     return (
         new Date(right.updated_at || right.created_at).getTime() -
@@ -406,6 +557,7 @@ async function handleChains(request, response, url) {
         try {
             const chain = createChain(user.id, body);
             chains.push(chain);
+            publishChainEvent('exchange.offer.created', chain);
             return sendJson(response, 201, chain);
         } catch (error) {
             return sendChainError(response, error);
@@ -432,6 +584,12 @@ async function handleChains(request, response, url) {
         const error = applyAction(chains[index], action, user.id);
         if (error) return sendChainError(response, error);
         chains[index].updated_at = new Date().toISOString();
+        publishChainEvent(
+            chains[index].status === 'completed'
+                ? 'exchange.completed'
+                : 'exchange.chain.updated',
+            chains[index],
+        );
         response.writeHead(204);
         return response.end();
     }
@@ -444,6 +602,10 @@ async function handleChains(request, response, url) {
             return sendError(response, 400, 'Некорректное тело запроса');
         const error = confirmChain(chains[index], user.id, body.success, body.reason || '');
         if (error) return sendChainError(response, error);
+        publishChainEvent('exchange.confirmation.created', chains[index]);
+        if (chains[index].status === 'completed') {
+            publishChainEvent('exchange.completed', chains[index]);
+        }
         return sendJson(response, 200, chains[index]);
     }
 
@@ -471,11 +633,13 @@ async function handleChains(request, response, url) {
             created_at: new Date().toISOString(),
         };
         (chainMessages[chains[index].chain_id] ||= []).push(message);
+        publishChainEvent('exchange.message.created', chains[index]);
         return sendJson(response, 201, message);
     }
 
     if (request.method === 'DELETE' && parts.length === 1) {
-        chains.splice(index, 1);
+        const [removed] = chains.splice(index, 1);
+        publishChainEvent('exchange.chain.deleted', removed);
         response.writeHead(204);
         return response.end();
     }
@@ -533,6 +697,7 @@ async function handleExchangeOffers(request, response, url) {
         try {
             const chain = createOffer(user.id, body);
             chains.push(chain);
+            publishChainEvent('exchange.offer.created', chain);
             return sendJson(response, 201, {
                 id: chain.chain_id,
                 status: offerStatusOf(chain),
@@ -590,6 +755,10 @@ async function handleExchangeOffers(request, response, url) {
         const error = applyAction(chain, action, user.id);
         if (error) return sendChainError(response, error);
         chain.updated_at = new Date().toISOString();
+        publishChainEvent(
+            chain.status === 'completed' ? 'exchange.completed' : 'exchange.chain.updated',
+            chain,
+        );
         return sendJson(response, 200, offerResponse(chain, user.id));
     }
     return sendError(response, 404, 'Цепочка не найдена');
@@ -609,6 +778,10 @@ async function handleExchanges(request, response, url) {
         if (!chain) return sendError(response, 404, 'Цепочка не найдена');
         const error = confirmChain(chain, user.id, body.result === 'success', body.reason || '');
         if (error) return sendChainError(response, error);
+        publishChainEvent('exchange.confirmation.created', chain);
+        if (chain.status === 'completed') {
+            publishChainEvent('exchange.completed', chain);
+        }
         return sendJson(response, 200, {
             id: chain.chain_id,
             status: exchangeStatusOf(chain),
@@ -1085,6 +1258,123 @@ async function handleWishlists(request, response, url) {
     return sendError(response, 405, 'Метод не поддерживается');
 }
 
+// ===== Notifications =======================================================
+
+// Отметки прочтения: { [customer_id]: { `${chain_id}:${kind}`: NotificationRead } }.
+// Уведомления как таковые не хранятся — фронт собирает их из цепочек
+// (см. buildNotifications), с бэкенда приходят только отметки прочтения.
+const notificationReads = {};
+
+const NOTIFICATION_KINDS = new Set([
+    'incoming_offer',
+    'outgoing_pending',
+    'in_progress',
+    'finished',
+]);
+
+async function handleNotifications(request, response, url) {
+    const parts = getResourceParts(url.pathname, '/api/v1/notifications');
+    const user = requireUser(request);
+    if (!user) return sendError(response, 403, 'operation forbidden');
+
+    if (request.method === 'GET' && parts.length === 1 && parts[0] === 'read-statuses') {
+        return sendJson(response, 200, Object.values(notificationReads[user.id] || {}));
+    }
+
+    // read-all помечает прочитанными все события пользователя разом: фронт
+    // считает уведомление прочитанным по паре chain_id + kind, поэтому здесь
+    // перебираются те же виды, что вычисляет buildNotifications.
+    if (request.method === 'PUT' && parts.length === 1 && parts[0] === 'read-all') {
+        const readAt = new Date().toISOString();
+        const reads = (notificationReads[user.id] ||= {});
+        for (const chain of chains) {
+            if (!involves(chain, user.id)) continue;
+            for (const kind of NOTIFICATION_KINDS) {
+                reads[`${chain.chain_id}:${kind}`] = {
+                    chain_id: chain.chain_id,
+                    kind,
+                    read_at: readAt,
+                };
+            }
+        }
+        response.writeHead(204);
+        return response.end();
+    }
+
+    if (request.method === 'PUT' && parts.length === 2 && parts[1] === 'read') {
+        const body = await readJson(request);
+        const kind = body?.kind;
+        if (!NOTIFICATION_KINDS.has(kind))
+            return sendError(response, 400, 'Некорректное тело запроса');
+        const chain = chains.find(({ chain_id: id }) => id === parts[0]);
+        if (!chain) return sendError(response, 404, 'Цепочка не найдена');
+        if (!involves(chain, user.id))
+            return sendError(response, 403, 'пользователь не участвует в этом обмене');
+        (notificationReads[user.id] ||= {})[`${chain.chain_id}:${kind}`] = {
+            chain_id: chain.chain_id,
+            kind,
+            read_at: new Date().toISOString(),
+        };
+        response.writeHead(204);
+        return response.end();
+    }
+
+    return sendError(response, 404, 'Ресурс не найден');
+}
+
+// ===== Events (SSE) ========================================================
+
+// Подписчики потока событий: { [customer_id]: Set<ServerResponse> }.
+const eventSubscribers = new Map();
+const EVENT_HEARTBEAT_MS = 25_000;
+
+/** Держит SSE-поток открытым — повторяет eventsHandler.stream. */
+function streamEvents(request, response) {
+    const user = requireUser(request);
+    if (!user) return sendError(response, 401, 'missing authorization header');
+
+    response.writeHead(200, {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        Connection: 'keep-alive',
+        'X-Accel-Buffering': 'no',
+    });
+    response.write(': keepalive\n\n');
+
+    if (!eventSubscribers.has(user.id)) eventSubscribers.set(user.id, new Set());
+    eventSubscribers.get(user.id).add(response);
+
+    const heartbeat = setInterval(() => response.write(': keepalive\n\n'), EVENT_HEARTBEAT_MS);
+
+    request.on('close', () => {
+        clearInterval(heartbeat);
+        const subscribers = eventSubscribers.get(user.id);
+        subscribers?.delete(response);
+        if (subscribers && subscribers.size === 0) eventSubscribers.delete(user.id);
+    });
+}
+
+/**
+ * Рассылает событие обеим сторонам звена — как chainService.publish.
+ * @param type Тип события из events.Broker (`exchange.*`).
+ * @param chain Звено, которого касается событие.
+ */
+function publishChainEvent(type, chain) {
+    if (!chain) return;
+
+    const payload = `event: ${type}\ndata: ${JSON.stringify({
+        type,
+        chain_id: chain.chain_id,
+    })}\n\n`;
+    const recipients = new Set([chain.initiator_id, chain.recipient_id].filter(Boolean));
+
+    for (const customerId of recipients) {
+        for (const subscriber of eventSubscribers.get(customerId) || []) {
+            subscriber.write(payload);
+        }
+    }
+}
+
 // ===== Search ==============================================================
 
 function findChain(request, response, params) {
@@ -1111,9 +1401,73 @@ function findChain(request, response, params) {
     return sendJson(response, 200, { chain, length: chain.length });
 }
 
+/**
+ * Соседи по вишлисту: активные чужие товары, чьи владельцы хотят категорию
+ * source. Повторяет productRepository.GetExchangeCandidates.
+ */
+function exchangeCandidates(source) {
+    if (!source.category_id) return [];
+    return products.filter((item) => {
+        if (item.product_id === source.product_id) return false;
+        if (item.customer_id === source.customer_id) return false;
+        if (item.status !== 'active') return false;
+        const wishlist = wishlists.find((entry) => entry.product_id === item.product_id);
+        const wanted = wishlist ? wishlistOptions[wishlist.wishlist_id] || [] : [];
+        return wanted.includes(source.category_id);
+    });
+}
+
+function findCandidates(request, response, params) {
+    const user = requireUser(request);
+    if (!user) return sendError(response, 403, 'operation forbidden');
+
+    const productId = params.get('product_id');
+    if (!productId) return sendError(response, 400, 'Некорректный поисковый запрос');
+
+    let limit = 8;
+    const limitRaw = params.get('limit');
+    if (limitRaw !== null) {
+        const parsed = Number.parseInt(limitRaw, 10);
+        if (!Number.isFinite(parsed) || parsed <= 0)
+            return sendError(response, 400, 'Некорректный поисковый запрос');
+        limit = parsed;
+    }
+
+    const source = products.find((item) => item.product_id === productId);
+    if (!source) return sendError(response, 404, 'Товар не найден');
+
+    const seen = new Set([source.product_id]);
+    const result = [];
+
+    for (const candidate of exchangeCandidates(source)) {
+        if (seen.has(candidate.product_id)) continue;
+        seen.add(candidate.product_id);
+        result.push(candidate);
+        if (result.length >= limit) return sendJson(response, 200, { products: result });
+    }
+
+    // Кандидатов по вишлисту не хватило — дозаполняем остальными активными
+    // товарами каталога, кроме собственных вещей владельца source.
+    const rest = products
+        .filter((item) => item.status === 'active' && item.customer_id !== source.customer_id)
+        .sort(sortByDateDesc);
+    for (const product of rest) {
+        if (seen.has(product.product_id)) continue;
+        seen.add(product.product_id);
+        result.push(product);
+        if (result.length >= limit) break;
+    }
+
+    return sendJson(response, 200, { products: result });
+}
+
 function productRecommendations(request, response, productId) {
     const user = requireUser(request);
     if (!user) return sendError(response, 403, 'operation forbidden');
+
+    const myProducts = products.filter((item) => item.customer_id === user.id);
+    if (myProducts.length === 0)
+        return sendError(response, 400, 'invalid input: у пользователя нет товаров для обмена');
 
     const result = chains.find(
         (item) => item.to_product_id === productId && item.status !== 'cancelled',
@@ -1142,11 +1496,12 @@ function fullChain(chain) {
     );
 }
 
-function makeCustomer(email, password) {
+function makeCustomer(email, password, fullName = '') {
     const now = new Date().toISOString();
     return {
         customer_id: randomUUID(),
         email,
+        full_name: fullName,
         password,
         is_active: true,
         created_at: now,
@@ -1186,11 +1541,49 @@ function mockError(status, message) {
     return { status, message };
 }
 
+// customerRecommendationList повторяет domain.CustomerWishlistOption[]: пары
+// customer_id/category_id, а не полные карточки категорий.
+function customerRecommendationList(customerId) {
+    return (customerRecommendations[customerId] || []).map((categoryId) => ({
+        customer_id: customerId,
+        category_id: categoryId,
+    }));
+}
+
+function addCustomerRecommendation(customerId, categoryId) {
+    const list = customerRecommendations[customerId] || (customerRecommendations[customerId] = []);
+    if (!list.includes(categoryId)) list.push(categoryId);
+}
+
 function publicCustomer(customer) {
     const result = { ...customer };
     delete result.password;
     delete result.is_active;
+    // Алиас демо-профиля — деталь стенда: в модели бэкенда его нет.
+    delete result.demo_customer_id;
     return result;
+}
+
+// customerOverview повторяет domain.CustomerOverview: профиль вместе с
+// показателями, которые бэкенд считает подзапросами по отзывам, товарам и
+// цепочкам, а не хранит полями.
+function customerOverview(customer) {
+    const id = customer.customer_id;
+    const received = reviews.filter((review) => review.to_customer_id === id);
+    const owned = products.filter((product) => product.customer_id === id);
+    return {
+        customer_id: id,
+        email: customer.email,
+        full_name: customer.full_name || '',
+        rating: average(received.map((review) => review.rating)),
+        review_count: received.length,
+        product_count: owned.length,
+        active_product_count: owned.filter((product) => product.status === 'active').length,
+        chain_count: chains.filter(
+            (chain) => chain.initiator_id === id || chain.recipient_id === id,
+        ).length,
+        created_at: customer.created_at,
+    };
 }
 
 function activeCustomers() {

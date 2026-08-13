@@ -1,4 +1,5 @@
 import { configureStore } from '@reduxjs/toolkit';
+import { setupListeners } from '@reduxjs/toolkit/query';
 import { useDispatch, useSelector, type TypedUseSelectorHook } from 'react-redux';
 import { categoryApi } from '@/entities/category';
 import { chainApi } from '@/entities/chain';
@@ -8,7 +9,8 @@ import { reviewApi } from '@/entities/review';
 import { searchApi } from '@/entities/search';
 import { userSlice, userApi } from '@/entities/user';
 import { wishlistApi } from '@/entities/wishlist';
-import { rtkQueryAuthMiddleware } from './middleware';
+import {notificationApi} from '@/entities/notification/api';
+import { rtkQueryCacheMiddleware } from './middleware';
 
 export const store = configureStore({
     reducer: {
@@ -21,11 +23,12 @@ export const store = configureStore({
         [reviewApi.reducerPath]: reviewApi.reducer,
         [searchApi.reducerPath]: searchApi.reducer,
         [wishlistApi.reducerPath]: wishlistApi.reducer,
+        [notificationApi.reducerPath]: notificationApi.reducer,
     },
     middleware: (getDefaultMiddleware) =>
         getDefaultMiddleware()
             .concat(
-                rtkQueryAuthMiddleware,
+                rtkQueryCacheMiddleware,
                 userApi.middleware,
                 productApi.middleware,
                 categoryApi.middleware,
@@ -34,8 +37,11 @@ export const store = configureStore({
                 reviewApi.middleware,
                 searchApi.middleware,
                 wishlistApi.middleware,
+                notificationApi.middleware,
             ),
 });
+
+setupListeners(store.dispatch);
 
 export type TRootState = ReturnType<typeof store.getState>;
 export type TAppDispatch = typeof store.dispatch;

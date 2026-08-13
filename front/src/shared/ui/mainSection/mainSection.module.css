@@ -8,6 +8,11 @@
     grid-column: 1 / -1;
 }
 
+.mainSection--fill {
+    flex: 1 1 auto;
+    height: auto;
+}
+
 @media (max-width: 768px) {
     .mainSection {
         gap: 16px;

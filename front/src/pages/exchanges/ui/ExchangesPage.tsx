@@ -1,14 +1,13 @@
 import {Button} from '@shared/ui/button';
 import {MainSection} from '@shared/ui/mainSection';
 import {PageError} from '@shared/ui/pageError';
+import {PageHeader} from '@shared/ui/pageHeader';
 import {Preloader} from '@shared/ui/preloader';
 import {ExchangeRow} from '@widgets/exchangeRow';
-import {ProductImage} from '@entities/product';
-import {Modal} from '@shared/ui/modal';
 import {formatDate} from '@shared/lib';
-import {RouteBuilder} from '@features/routeBuilder';
 
 import Styles from './exchanges-page.module.css';
+import {RouteGroupCard} from './RouteGroupCard';
 import {useExchanges} from '../lib';
 import type {TExchangeRouteTab, TExchangeTab} from '../lib/useExchanges';
 
@@ -47,8 +46,12 @@ export const ExchangesPage = () => {
         setActiveRouteTab,
         activeView,
         setActiveView,
-        isBuilderOpen,
-        setIsBuilderOpen,
+        openRouteBuilder,
+        openProductFilter,
+        productFilter,
+        resetProductFilter,
+        filterableProducts,
+        selectedFilterProduct,
         visibleRows,
         routeGroups,
         visibleRouteGroups,
@@ -60,6 +63,8 @@ export const ExchangesPage = () => {
         formatActiveOffers,
     } = useExchanges();
 
+    const isFilterableTab = activeTab === 'incoming' || activeTab === 'outgoing';
+
     if (isLoading || isFetching) {
         return <Preloader message={'Загрузка обменов…'} />;
     }
@@ -70,32 +75,47 @@ export const ExchangesPage = () => {
 
     return (
         <MainSection>
-            <div className={Styles['exchanges-page']}>
-                <div className={Styles['exchanges-page__view-tabs']} role="tablist">
-                    <Button
-                        variant="text"
-                        active={activeView === 'routes'}
-                        className={formatClasses(
-                            Styles['exchanges-page__view-tab'],
-                            activeView === 'routes' && Styles['exchanges-page__view-tab--active'],
-                        )}
-                        onClick={() => setActiveView('routes')}
-                    >
-                        Цепочки обменов
-                    </Button>
-                    <Button
-                        variant="text"
-                        active={activeView === 'exchanges'}
-                        className={formatClasses(
-                            Styles['exchanges-page__view-tab'],
-                            activeView === 'exchanges' && Styles['exchanges-page__view-tab--active'],
-                        )}
-                        onClick={() => setActiveView('exchanges')}
-                    >
-                        Все обмены
-                    </Button>
-                </div>
+            {/* Переключатель разделов и создание цепочки закреплены: списки
+                длинные, и после прокрутки должно быть понятно, что именно
+                открыто и как добавить новое. */}
+            <PageHeader
+                title="Мои обмены"
+                tabs={
+                    <div className={Styles['exchanges-page__view-tabs']} role="tablist">
+                        <Button
+                            variant="text"
+                            active={activeView === 'routes'}
+                            className={formatClasses(
+                                Styles['exchanges-page__view-tab'],
+                                activeView === 'routes' &&
+                                    Styles['exchanges-page__view-tab--active'],
+                            )}
+                            onClick={() => setActiveView('routes')}
+                        >
+                            Цепочки обменов
+                        </Button>
+                        <Button
+                            variant="text"
+                            active={activeView === 'exchanges'}
+                            className={formatClasses(
+                                Styles['exchanges-page__view-tab'],
+                                activeView === 'exchanges' &&
+                                    Styles['exchanges-page__view-tab--active'],
+                            )}
+                            onClick={() => setActiveView('exchanges')}
+                        >
+                            Все обмены
+                        </Button>
+                    </div>
+                }
+                actions={
+                    activeView === 'routes' ? (
+                        <Button onClick={openRouteBuilder}>Создать цепочку</Button>
+                    ) : undefined
+                }
+            />
 
+            <div className={Styles['exchanges-page']}>
                 {activeView === 'routes' ? (
                     <>
                         <div className={Styles['exchanges-page__routes-heading']}>
@@ -103,9 +123,6 @@ export const ExchangesPage = () => {
                                 <h2>Ваши цепочки</h2>
                                 <p>Каждая карточка объединяет предложения, ведущие к одной цели.</p>
                             </div>
-                            <Button onClick={() => setIsBuilderOpen(true)}>
-                                Создать цепочку
-                            </Button>
                         </div>
 
                         <div className={Styles['exchanges-page__tabs']} role="tablist">
@@ -136,8 +153,8 @@ export const ExchangesPage = () => {
                                         следующего обмена.
                                     </p>
                                 </div>
-                                {activeRouteTab === 'active' && !isBuilderOpen && (
-                                    <Button variant="secondary" onClick={() => setIsBuilderOpen(true)}>
+                                {activeRouteTab === 'active' && (
+                                    <Button variant="secondary" onClick={openRouteBuilder}>
                                         Построить первую
                                     </Button>
                                 )}
@@ -149,75 +166,21 @@ export const ExchangesPage = () => {
                         ) : (
                             <div className={Styles['exchanges-page__routes-list']}>
                                 {visibleRouteGroups.map((group) => (
-                                    <article
+                                    <RouteGroupCard
                                         key={group.goalId}
-                                        className={Styles['exchanges-page__route-card']}
-                                    >
-                                        <div className={Styles['exchanges-page__route-path']}>
-                                            <div className={Styles['exchanges-page__route-product']}>
-                                                <span>Сейчас</span>
-                                                <div className={Styles['exchanges-page__route-media']}>
-                                                    <ProductImage
-                                                        src={group.sourceProduct?.image}
-                                                        alt={group.sourceProduct?.title ?? ''}
-                                                        title={
-                                                            group.sourceProduct?.title ??
-                                                            'Текущий товар'
-                                                        }
-                                                    />
-                                                </div>
-                                                <strong>
-                                                    {group.sourceProduct?.title ?? 'Текущий товар'}
-                                                </strong>
-                                            </div>
-                                            <div className={Styles['exchanges-page__route-line']} aria-hidden="true">
-                                                <span>{group.completedOffersCount}</span>
-                                                <i>→</i>
-                                            </div>
-                                            <div className={Styles['exchanges-page__route-product']}>
-                                                <span>Цель</span>
-                                                <div className={Styles['exchanges-page__route-media']}>
-                                                    <ProductImage
-                                                        src={group.goalProduct?.image}
-                                                        alt={group.goalProduct?.title ?? ''}
-                                                        title={
-                                                            group.goalProduct?.title ??
-                                                            'Цель недоступна'
-                                                        }
-                                                    />
-                                                </div>
-                                                <strong>
-                                                    {group.goalProduct?.title ?? 'Цель недоступна'}
-                                                </strong>
-                                            </div>
-                                        </div>
-
-                                        <div className={Styles['exchanges-page__route-info']}>
-                                            <div>
-                                                <span>
-                                                    {group.openOffersCount > 0
-                                                        ? formatActiveOffers(group.openOffersCount)
-                                                        : 'Нет активных предложений'}
-                                                </span>
-                                                <small>
-                                                    Всего обменов: {group.offersCount} · Обновлено{' '}
-                                                    {formatDate(group.updatedAt)}
-                                                </small>
-                                            </div>
-                                            <Button
-                                                variant="secondary"
-                                                onClick={() =>
-                                                    openRoute(
-                                                        group.goalId,
-                                                        group.sourceProductId,
-                                                        group.goalCategoryId,
-                                                    )
-                                                }
-                                            >
-                                                Открыть цепочку
-                                            </Button>
-                                        </div>
-                                    </article>
+                                        sourceProduct={group.sourceProduct}
+                                        goalProduct={group.goalProduct}
+                                        openOffersCount={group.openOffersCount}
+                                        offersCount={group.offersCount}
+                                        updatedAt={group.updatedAt}
+                                        formatActiveOffers={formatActiveOffers}
+                                        formatDate={formatDate}
+                                        onOpen={() => openRoute(
+                                            group.goalId,
+                                            group.sourceProductId,
+                                            group.goalCategoryId,
+                                        )}
+                                    />
                                 ))}
                             </div>
                         )}
@@ -242,9 +205,26 @@ export const ExchangesPage = () => {
                             ))}
                         </div>
 
+                        {isFilterableTab && (filterableProducts.length > 0 || productFilter) && (
+                            <div className={Styles['exchanges-page__filter']}>
+                                <Button variant="secondary" onClick={openProductFilter}>
+                                    {selectedFilterProduct
+                                        ? `Товар: ${selectedFilterProduct.title}`
+                                        : 'Фильтр по товару'}
+                                </Button>
+                                {productFilter && (
+                                    <Button variant="text" onClick={resetProductFilter}>
+                                        Сбросить
+                                    </Button>
+                                )}
+                            </div>
+                        )}
+
                         {visibleRows.length === 0 ? (
                             <div className={Styles['exchanges-page__empty']}>
-                                {EMPTY_TEXT[activeTab]}
+                                {productFilter
+                                    ? 'Нет предложений по выбранному товару'
+                                    : EMPTY_TEXT[activeTab]}
                             </div>
                         ) : (
                             <div className={Styles['exchanges-page__list']}>
@@ -259,18 +239,6 @@ export const ExchangesPage = () => {
                         )}
                     </>
                 )}
-
-                <Modal
-                    title="Создание цепочки"
-                    isOpen={isBuilderOpen}
-                    size="large"
-                    onClose={() => setIsBuilderOpen(false)}
-                >
-                    <RouteBuilder
-                        variant="modal"
-                        onCancel={() => setIsBuilderOpen(false)}
-                    />
-                </Modal>
             </div>
         </MainSection>
     );

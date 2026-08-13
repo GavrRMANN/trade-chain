@@ -44,6 +44,9 @@ func (f *fakeProductRepo) Create(context.Context, *domain.CreateProductDTO) (*do
 func (f *fakeProductRepo) GetByCustomerID(context.Context, string) ([]domain.Product, error) {
 	return nil, nil
 }
+func (f *fakeProductRepo) GetOwnByCustomerID(context.Context, string) ([]domain.Product, error) {
+	return nil, nil
+}
 func (f *fakeProductRepo) Update(context.Context, string, *domain.UpdateProductDTO) (*domain.Product, error) {
 	return nil, nil
 }
@@ -85,7 +88,7 @@ func (f *fakeChainRepo) Create(_ context.Context, c *domain.Chain) (*domain.Chai
 	return &stored, nil
 }
 
-func (f *fakeChainRepo) GetByID(_ context.Context, id string) (*domain.Chain, error) {
+func (f *fakeChainRepo) GetByID(_ context.Context, id string, customerID string) (*domain.Chain, error) {
 	c, ok := f.chains[id]
 	if !ok {
 		return nil, errNoRows
@@ -101,6 +104,17 @@ func (f *fakeChainRepo) UpdateStatus(_ context.Context, id string, status domain
 	c.Status = string(status)
 	f.chains[id] = c
 	return nil
+}
+
+func (f *fakeChainRepo) UpdateStatusIfCurrent(ctx context.Context, id string, customerID string, current, next domain.ChainStatus) error {
+	chain, err := f.GetByID(ctx, id, customerID)
+	if err != nil {
+		return err
+	}
+	if chain.Status != string(current) {
+		return errNoRows
+	}
+	return f.UpdateStatus(ctx, id, next)
 }
 
 // CompleteExchange повторяет главное свойство настоящего: меняет владельцев
@@ -173,7 +187,7 @@ func isOutgoingCompetingOffer(other, completed domain.Chain) bool {
 		other.FromProductID == *completed.ToProductID
 }
 
-func (f *fakeChainRepo) GetByProductID(context.Context, string) ([]domain.Chain, error) {
+func (f *fakeChainRepo) GetByProductID(context.Context, string, string) ([]domain.Chain, error) {
 	return nil, nil
 }
 func (f *fakeChainRepo) GetByCustomerID(ctx context.Context, customerID string) ([]domain.Chain, error) {
@@ -216,7 +230,8 @@ func matchesStatus(c domain.Chain, statuses []domain.ChainStatus) bool {
 func (f *fakeChainRepo) GetFullChain(context.Context, string) ([]domain.Chain, error) {
 	return nil, nil
 }
-func (f *fakeChainRepo) Delete(context.Context, string) error { return nil }
+func (f *fakeChainRepo) ExpirePending(context.Context) ([]domain.Chain, error) { return nil, nil }
+func (f *fakeChainRepo) Delete(context.Context, string, string) error          { return nil }
 
 type fakeNegotiationRepo struct {
 	messages      []domain.ChainMessage
@@ -498,7 +513,7 @@ func TestSingleNegativeConfirmationFailsExchange(t *testing.T) {
 		t.Fatalf("неожиданная ошибка: %v", err)
 	}
 
-	chain, _ := f.service.GetByID(ctx, chainID)
+	chain, _ := f.service.GetByID(ctx, chainID, initiator)
 	if chain.Status != string(domain.ChainFailed) {
 		t.Errorf("статус %q, ожидался %q — не состоявшийся обмен решает одна сторона", chain.Status, domain.ChainFailed)
 	}

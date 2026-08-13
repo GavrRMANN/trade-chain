@@ -1,4 +1,4 @@
-import {useEffect, useMemo, useReducer, useRef} from 'react';
+import {useEffect, useMemo, useReducer, useRef, useState} from 'react';
 
 import ControlStyles from '../control/Control.module.css';
 import Styles from './Selector.module.css';
@@ -15,6 +15,9 @@ type TUseSelectorParams = {
     onSelect?: (value: string) => void;
 };
 
+/** Список длиннее этого — пролистать глазами уже сложнее, чем набрать пару букв. */
+const SEARCH_THRESHOLD = 10;
+
 /** Инкапсулирует состояние и взаимодействия выпадающего списка. */
 export const useSelector = ({label, value, options, disabled, loading, error, onSelect}: TUseSelectorParams) => {
     const [state, dispatch] = useReducer(
@@ -26,10 +29,21 @@ export const useSelector = ({label, value, options, disabled, loading, error, on
     );
     const {isExpanded} = state;
     const wrapperRef = useRef<HTMLLabelElement>(null);
+    const searchInputRef = useRef<HTMLInputElement>(null);
+    const [searchQuery, setSearchQuery] = useState('');
     const selectedLabel = useMemo(
         () => options.find((option) => option.value === value)?.label || label || options[0]?.label,
         [label, options, value],
     );
+    const selectableOptions = useMemo(() => options.filter((option) => option.value !== ''), [options]);
+    const isSearchable = selectableOptions.length > SEARCH_THRESHOLD;
+    const visibleOptions = useMemo(() => {
+        if (!isSearchable || !searchQuery.trim()) {
+            return selectableOptions;
+        }
+        const query = searchQuery.trim().toLowerCase();
+        return selectableOptions.filter((option) => option.label.toLowerCase().includes(query));
+    }, [selectableOptions, isSearchable, searchQuery]);
     const selectorClasses = [
         Styles.selector,
         ControlStyles.text,
@@ -65,5 +79,34 @@ export const useSelector = ({label, value, options, disabled, loading, error, on
         return () => document.removeEventListener('mousedown', handleDocumentClick);
     }, [isExpanded]);
 
-    return {isExpanded, wrapperRef, selectedLabel, selectorClasses, buttonClasses, wrapperClasses, textClasses, toggle, selectOption};
+    /* Запрос — состояние конкретного открытия списка: следующий раз он должен
+       начинаться с чистого поля, а не с прошлого фильтра. */
+    useEffect(() => {
+        if (!isExpanded) {
+            setSearchQuery('');
+        }
+    }, [isExpanded]);
+
+    useEffect(() => {
+        if (isExpanded && isSearchable) {
+            searchInputRef.current?.focus();
+        }
+    }, [isExpanded, isSearchable]);
+
+    return {
+        isExpanded,
+        wrapperRef,
+        searchInputRef,
+        selectedLabel,
+        selectorClasses,
+        buttonClasses,
+        wrapperClasses,
+        textClasses,
+        isSearchable,
+        searchQuery,
+        setSearchQuery,
+        visibleOptions,
+        toggle,
+        selectOption,
+    };
 };

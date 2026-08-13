@@ -80,6 +80,18 @@ func (s *productService) GetByCustomerID(ctx context.Context, customerID string)
 	return products, nil
 }
 
+// GetOwnByCustomerID возвращает владельцу в том числе архивные товары для истории.
+func (s *productService) GetOwnByCustomerID(ctx context.Context, customerID string) ([]domain.Product, error) {
+	if blank(customerID) {
+		return nil, ErrInvalidInput
+	}
+	products, err := s.repo.GetOwnByCustomerID(ctx, customerID)
+	if err != nil {
+		return nil, normalizeError(err)
+	}
+	return products, nil
+}
+
 // Update – частичное обновление продукта
 func (s *productService) Update(ctx context.Context, id string, dto *domain.UpdateProductDTO) (*domain.Product, error) {
 	if blank(id) || dto == nil {
@@ -136,11 +148,11 @@ func (s *productService) List(
 	customerID *string,
 	q string,
 	categoryID *string,
-	page int,
+	offset int,
 	limit int,
 ) ([]domain.Product, error) {
-	if page < 1 {
-		page = 1
+	if offset < 0 {
+		offset = 0
 	}
 
 	if limit < 1 {
@@ -156,7 +168,7 @@ func (s *productService) List(
 		customerID,
 		q,
 		categoryID,
-		page,
+		offset,
 		limit,
 	)
 	if err != nil {

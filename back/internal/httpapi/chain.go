@@ -1,6 +1,7 @@
 package httpapi
 
 import (
+	"errors"
 	"net/http"
 
 	"trade-chain/internal/auth"
@@ -23,14 +24,17 @@ func mountChainRoutes(r chi.Router, s service.ChainService) {
 		// Статичный сегмент объявляется до шаблона, иначе chi разберёт
 		// «my» как идентификатор звена.
 		r.With(auth.AuthMiddleware).Get("/my", h.mine)
-		r.Get("/{id}", h.get)
+
+		// Временно сделал получение цепочек запросом, требующим авторизацию, чтобы внутри неё получать айдишник. Ну плюс странно, что это получается публичный запрос
+		r.With(auth.AuthMiddleware).Get("/{id}", h.get)
+
 		r.Get("/{id}/full", h.full)
 		r.With(auth.AuthMiddleware).Patch("/{id}/status", h.status)
 		r.With(auth.AuthMiddleware).Post("/{id}/confirm", h.confirm)
 		r.With(auth.AuthMiddleware).Get("/{id}/messages", h.messages)
 		r.With(auth.AuthMiddleware).Post("/{id}/messages", h.sendMessage)
-		r.Delete("/{id}", h.delete)
-		r.Get("/by-product/{productID}", h.byProduct)
+		r.With(auth.AuthMiddleware).Delete("/{id}", h.delete)
+		r.With(auth.AuthMiddleware).Get("/by-product/{productID}", h.byProduct)
 	})
 }
 
@@ -81,11 +85,24 @@ func (h chainHandler) create(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} ErrorResponse
 // @Router /chains/{id} [get]
 func (h chainHandler) get(w http.ResponseWriter, r *http.Request) {
-	v, err := h.s.GetByID(r.Context(), chi.URLParam(r, "id"))
+	customerID, ok := auth.UserIDFromContext(r.Context())
+	if !ok {
+		writeError(w, errors.New("Ошибка при получении ID пользователя"))
+		return
+	}
+
+	v, err := h.s.GetByID(
+		r.Context(),
+		chi.URLParam(r, "id"),
+		customerID,
+	)
 	if err != nil {
 		writeError(w, err)
 		return
 	}
+
+	orientChainForCustomer(v, customerID)
+
 	writeJSON(w, http.StatusOK, v)
 }
 
@@ -122,7 +139,12 @@ func (h chainHandler) full(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} ErrorResponse
 // @Router /chains/by-product/{productID} [get]
 func (h chainHandler) byProduct(w http.ResponseWriter, r *http.Request) {
-	v, err := h.s.GetByProductID(r.Context(), chi.URLParam(r, "productID"))
+	customerID, ok := auth.UserIDFromContext(r.Context())
+	if !ok {
+		writeError(w, errors.New("Ошибка при получении ID пользователя"))
+		return
+	}
+	v, err := h.s.GetByProductID(r.Context(), chi.URLParam(r, "productID"), customerID)
 	if err != nil {
 		writeError(w, err)
 		return
@@ -176,7 +198,12 @@ func (h chainHandler) status(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} ErrorResponse
 // @Router /chains/{id} [delete]
 func (h chainHandler) delete(w http.ResponseWriter, r *http.Request) {
-	if err := h.s.Delete(r.Context(), chi.URLParam(r, "id")); err != nil {
+	userID, ok := auth.UserIDFromContext(r.Context())
+	if !ok {
+		writeError(w, service.ErrForbidden)
+		return
+	}
+	if err := h.s.Delete(r.Context(), chi.URLParam(r, "id"), userID); err != nil {
 		writeError(w, err)
 		return
 	}

@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS customers (
 CREATE TABLE IF NOT EXISTS categories (
     category_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(255) NOT NULL,
+    icon VARCHAR(16) NOT NULL DEFAULT '',
     parent_id UUID REFERENCES categories(category_id) ON DELETE SET NULL,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
@@ -38,10 +39,19 @@ CREATE TABLE IF NOT EXISTS products (
 -- Таблица вишлистов (желаний пользователя)
 CREATE TABLE IF NOT EXISTS wishlists (
     wishlist_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    product_id UUID NOT NULL UNIQUE REFERENCES products(product_id) ON DELETE CASCADE,
+    product_id UUID NOT NULL REFERENCES products(product_id) ON DELETE CASCADE,
+   
     name VARCHAR(255) NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Таблица личных предпочтений пользователя для добавления в профиль
+CREATE TABLE IF NOT EXISTS customer_wishlist_options (
+    customer_id UUID NOT NULL REFERENCES customers(customer_id) ON DELETE CASCADE,
+    category_id UUID NOT NULL REFERENCES categories(category_id) ON DELETE CASCADE,
+
+    PRIMARY KEY (customer_id, category_id)
 );
 
 -- Таблица связей категорий с вишлистами (многие ко многим)
@@ -109,3 +119,14 @@ CREATE OR REPLACE TRIGGER update_categories_updated_at BEFORE UPDATE ON categori
 CREATE OR REPLACE TRIGGER update_wishlists_updated_at BEFORE UPDATE ON wishlists FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE OR REPLACE TRIGGER update_chains_updated_at BEFORE UPDATE ON chains FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE OR REPLACE TRIGGER update_reviews_updated_at BEFORE UPDATE ON reviews FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+UPDATE categories AS c
+SET icon = seed.icon
+FROM (VALUES
+    ('Товары для компьютера', '🖥️'),
+    ('Комплектующие',         '🔧'),
+    ('Видеокарты',            '🎮'),
+    ('Игры для приставок',    '🕹️')
+) AS seed(name, icon)
+WHERE c.name = seed.name
+  AND c.icon = '';

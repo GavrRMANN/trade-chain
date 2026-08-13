@@ -6,6 +6,8 @@ import {ExchangeRow} from '@widgets/exchangeRow';
 import {ProfileSidebar} from '@widgets/profileSidebar';
 import {ReviewCard} from '@entities/review';
 import {ProfileProductRow} from '@widgets/profile';
+import {PageHeader} from '@shared/ui/pageHeader';
+import {CustomerRecommendationsEditor} from '@features/customerRecommendations';
 
 import {EmptyState} from './EmptyState';
 import Styles from './profile-content.module.css';
@@ -14,6 +16,7 @@ type TProfileContentViewModel = {
     activeTab: TProfileTab;
     setActiveTab: (tab: TProfileTab) => void;
     products: TProduct[];
+    archivedProducts: TProduct[];
     reviews: TReview[];
     exchanges: TProfileExchange[];
     rating: number;
@@ -42,6 +45,7 @@ type TProfileContentProps = {
 
 const OWNER_TABS: {id: TProfileTab; label: string}[] = [
     {id: 'products', label: 'Товары'},
+    {id: 'archive', label: 'Архив'},
     {id: 'exchanges', label: 'Цепочки обменов'},
     {id: 'reviews', label: 'Отзывы'},
 ];
@@ -114,9 +118,9 @@ export const ProfileContent = ({
 
         return (
             <>
-                {viewModel.products.length ? (
+                {(viewModel.activeTab === 'archive' ? viewModel.archivedProducts : viewModel.products).length ? (
                     <div className={Styles.list}>
-                        {viewModel.products.map((product) => (
+                        {(viewModel.activeTab === 'archive' ? viewModel.archivedProducts : viewModel.products).map((product) => (
                             <ProfileProductRow
                                 key={product.product_id}
                                 product={product}
@@ -128,83 +132,84 @@ export const ProfileContent = ({
                     </div>
                 ) : (
                     <EmptyState
-                        title={isOwner ? 'У вас пока нет товаров' : 'У пользователя пока нет товаров'}
-                        description={isOwner ? 'Добавьте первый товар, чтобы начать обмен.' : 'Здесь появятся активные объявления пользователя.'}
-                        actionLabel={isOwner ? 'Добавить товар' : undefined}
-                        onAction={isOwner ? viewModel.openCreate : undefined}
+                        title={viewModel.activeTab === 'archive' ? 'Архив пока пуст' : isOwner ? 'У вас пока нет товаров' : 'У пользователя пока нет товаров'}
+                        description={viewModel.activeTab === 'archive' ? 'Здесь сохраняются товары после завершённых обменов и снятые с обмена объявления.' : isOwner ? 'Добавьте первый товар, чтобы начать обмен.' : 'Здесь появятся активные объявления пользователя.'}
+                        actionLabel={isOwner && viewModel.activeTab !== 'archive' ? 'Добавить товар' : undefined}
+                        onAction={isOwner && viewModel.activeTab !== 'archive' ? viewModel.openCreate : undefined}
                     />
-                )}
-
-                {isOwner && !viewModel.isExchangesError && viewModel.exchanges.length > 0 && (
-                    <section className={Styles.preview} aria-labelledby="profile-exchanges-preview">
-                        <div className={Styles.previewHeading}>
-                            <div>
-                                <h3 id="profile-exchanges-preview">Последние цепочки</h3>
-                                <p>Ваши недавние предложения и обмены.</p>
-                            </div>
-                            <Button variant="text" onClick={() => viewModel.setActiveTab('exchanges')}>
-                                Все цепочки
-                            </Button>
-                        </div>
-                        <ExchangeRow
-                            row={viewModel.exchanges[0]}
-                            onOpen={viewModel.openExchange}
-                        />
-                    </section>
                 )}
             </>
         );
     };
 
     return (
-        <div className={Styles.layout}>
-            <ProfileSidebar
-                name={viewModel.maskedName}
-                createdAt={user.created_at}
-                rating={viewModel.rating}
-                reviewsCount={viewModel.reviewsCount}
-                productsCount={viewModel.products.length}
-                exchangesCount={isOwner ? viewModel.exchanges.length : undefined}
-                onReviewsClick={() => viewModel.setActiveTab('reviews')}
-                onLogout={isOwner ? viewModel.onLogout : undefined}
+        <>
+            {/* Имя и разделы профиля закреплены: боковая колонка с карточкой
+                пользователя уезжает вверх, а список товаров длинный. */}
+            <PageHeader
+                title={viewModel.maskedName}
+                tabs={
+                    <nav className={Styles.tabs} aria-label="Разделы профиля">
+                        {tabs.map((tab) => (
+                            <Button
+                                key={tab.id}
+                                variant="text"
+                                active={viewModel.activeTab === tab.id}
+                                className={`${Styles.tab} ${viewModel.activeTab === tab.id ? Styles.tabActive : ''}`}
+                                onClick={() => viewModel.setActiveTab(tab.id)}
+                                ariaLabel={`${tab.label}: ${viewModel.getTabCount(tab.id)}`}
+                            >
+                                {tab.label} <span>{viewModel.getTabCount(tab.id)}</span>
+                            </Button>
+                        ))}
+                    </nav>
+                }
             />
 
-            <section className={Styles.content}>
-                <nav className={Styles.tabs} aria-label="Разделы профиля">
-                    {tabs.map((tab) => (
-                        <Button
-                            key={tab.id}
-                            variant="text"
-                            active={viewModel.activeTab === tab.id}
-                            className={`${Styles.tab} ${viewModel.activeTab === tab.id ? Styles.tabActive : ''}`}
-                            onClick={() => viewModel.setActiveTab(tab.id)}
-                            ariaLabel={`${tab.label}: ${viewModel.getTabCount(tab.id)}`}
-                        >
-                            {tab.label} <span>{viewModel.getTabCount(tab.id)}</span>
-                        </Button>
-                    ))}
-                </nav>
+            <div className={Styles.layout}>
+                <ProfileSidebar
+                    name={viewModel.maskedName}
+                    createdAt={user.created_at}
+                    rating={viewModel.rating}
+                    reviewsCount={viewModel.reviewsCount}
+                    productsCount={viewModel.products.length}
+                    exchangesCount={isOwner ? viewModel.exchanges.length : undefined}
+                    onReviewsClick={() => viewModel.setActiveTab('reviews')}
+                    onLogout={isOwner ? viewModel.onLogout : undefined}
+                />
 
-                <div className={Styles.heading}>
-                    <div>
-                        <h2>
-                            {viewModel.activeTab === 'products'
-                                ? isOwner ? 'Мои товары' : 'Товары пользователя'
-                                : viewModel.activeTab === 'exchanges'
-                                    ? 'Мои цепочки обменов'
-                                    : 'Отзывы'}
-                        </h2>
-                        {viewModel.activeTab === 'exchanges' && (
-                            <p>Показываем только ваши цепочки: чужая история недоступна через API.</p>
+                <section className={Styles.content}>
+                    {isOwner && viewModel.activeTab === 'products' && <CustomerRecommendationsEditor />}
+
+                    <div className={Styles.heading}>
+                        <div>
+                            <h2>
+                                {viewModel.activeTab === 'products' ||
+                                viewModel.activeTab === 'archive'
+                                    ? viewModel.activeTab === 'archive'
+                                        ? 'Архив товаров'
+                                        : isOwner
+                                          ? 'Мои товары'
+                                          : 'Товары пользователя'
+                                    : viewModel.activeTab === 'exchanges'
+                                      ? 'Мои цепочки обменов'
+                                      : 'Отзывы'}
+                            </h2>
+                            {viewModel.activeTab === 'exchanges' && (
+                                <p>
+                                    Показываем только ваши цепочки: чужая история недоступна
+                                    через API.
+                                </p>
+                            )}
+                        </div>
+                        {isOwner && viewModel.activeTab === 'products' && (
+                            <Button onClick={viewModel.openCreate}>Добавить товар</Button>
                         )}
                     </div>
-                    {isOwner && viewModel.activeTab === 'products' && (
-                        <Button onClick={viewModel.openCreate}>Добавить товар</Button>
-                    )}
-                </div>
 
-                {renderContent()}
-            </section>
-        </div>
+                    {renderContent()}
+                </section>
+            </div>
+        </>
     );
 };

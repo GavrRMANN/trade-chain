@@ -1,42 +1,10 @@
-import {useCallback, useMemo, useReducer} from 'react';
-import {useNavigate} from 'react-router-dom';
+import {useCallback, useEffect, useMemo} from 'react';
+import {useNavigate, useSearchParams} from 'react-router-dom';
 
-import {useGetMyChainsQuery} from '@entities/chain';
-import type {TChain, TChainStatus} from '@entities/chain';
-import {useGetProductsQuery} from '@entities/product';
-import type {TProduct} from '@entities/product';
-import {useGetCurrentUserQuery} from '@entities/user';
-import {usePageTitle} from '@app/providers/pageTitle';
-import {useLayoutEffect} from 'react';
+import {buildRoutePath, MODAL_ROUTE_PATHS, useIsMobile, useOpenModalRoute} from '@shared/lib';
 
-/** Статусы, считающиеся терминальными — обмен завершён и больше не активен. */
-const FINAL_STATUSES: ReadonlySet<TChainStatus> = new Set<TChainStatus>([
-    'completed',
-    'cancelled',
-    'rejected',
-    'failed',
-    'expired',
-    'unavailable',
-]);
-
-export type TExchangeRow = {
-    chain: TChain;
-    fromProduct?: TProduct;
-    toProduct?: TProduct;
-    goalProduct?: TProduct;
-};
-
-export type TExchangeRouteGroup = {
-    goalId: string;
-    goalCategoryId?: string;
-    goalProduct?: TProduct;
-    sourceProduct?: TProduct;
-    sourceProductId: string;
-    offersCount: number;
-    openOffersCount: number;
-    completedOffersCount: number;
-    updatedAt: string;
-};
+import {getFilterableProducts} from './getFilterableProducts';
+import {useExchangeRows} from './useExchangeRows';
 
 export type TExchangeTab = 'active' | 'incoming' | 'outgoing' | 'completed';
 
@@ -44,17 +12,11 @@ export type TExchangeRouteTab = 'active' | 'completed';
 
 export type TExchangeView = 'routes' | 'exchanges';
 
-type TExchangeUiState = {
-    activeTab: TExchangeTab;
-    activeRouteTab: TExchangeRouteTab;
-    activeView: TExchangeView;
-    isBuilderOpen: boolean;
-};
-type TExchangeUiAction = {type: 'update'; payload: Partial<TExchangeUiState>};
-const exchangeUiReducer = (state: TExchangeUiState, action: TExchangeUiAction): TExchangeUiState => ({
-    ...state,
-    ...action.payload,
-});
+export const isExchangeTab = (value: string | null): value is TExchangeTab =>
+    value === 'active' || value === 'incoming' || value === 'outgoing' || value === 'completed';
+
+const isRouteTab = (value: string | null): value is TExchangeRouteTab =>
+    value === 'active' || value === 'completed';
 
 const formatActiveOffers = (count: number): string => {
     const lastTwo = count % 100;
@@ -72,141 +34,93 @@ const formatActiveOffers = (count: number): string => {
 };
 
 /**
- * Управляет данными, фильтрацией по вкладкам и навигацией страницы «Мои обмены».
+ * Управляет фильтрацией по вкладкам и навигацией страницы «Мои обмены».
  *
- * Деление по вкладкам сознательно упрощено во избежание неоднозначности
- * (терминальный обмен мог быть и входящим, и исходящим):
- *   — «Завершённые»: все цепочки с терминальным статусом (независимо от инициатора).
- *   — «Входящие»: незавершённые И инициатор — не текущий пользователь.
- *   — «Исходящие»: незавершённые И инициатор — текущий пользователь.
+ * Разбор цепочек вынесен в {@link useExchangeRows}, а обе модалки страницы
+ * (создание цепочки и фильтр по товару) живут отдельными маршрутами.
  */
 export const useExchanges = () => {
-    const {setTitle} = usePageTitle();
     const navigate = useNavigate();
+    const openModalRoute = useOpenModalRoute();
+    const isMobile = useIsMobile();
+    const [searchParams, setSearchParams] = useSearchParams();
 
-    // UI-состояние
-    const [uiState, dispatchUi] = useReducer(exchangeUiReducer, {
-        activeTab: 'active',
-        activeRouteTab: 'active',
-        activeView: 'routes',
-        isBuilderOpen: false,
+    const activeView: TExchangeView = searchParams.get('view') === 'exchanges' ? 'exchanges' : 'routes';
+    const tab = searchParams.get('tab');
+    const activeTab: TExchangeTab = isExchangeTab(tab)
+        ? tab
+        : 'active';
+    const activeRouteTab: TExchangeRouteTab = isRouteTab(tab)
+        ? tab
+        : 'active';
+    const selectedTab = activeView === 'exchanges' ? activeTab : activeRouteTab;
+    const productFilter = searchParams.get('product');
+    const setActiveTab = (value: TExchangeTab) => setSearchParams((currentParams) => {
+        currentParams.set('view', 'exchanges');
+        currentParams.set('tab', value);
+        currentParams.delete('product');
+        return currentParams;
     });
-    const {activeTab, activeRouteTab, activeView, isBuilderOpen} = uiState;
-    const setActiveTab = (value: TExchangeTab) => dispatchUi({type: 'update', payload: {activeTab: value}});
-    const setActiveRouteTab = (value: TExchangeRouteTab) => dispatchUi({type: 'update', payload: {activeRouteTab: value}});
-    const setActiveView = (value: TExchangeView) => dispatchUi({type: 'update', payload: {activeView: value}});
-    const setIsBuilderOpen = (value: boolean) => dispatchUi({type: 'update', payload: {isBuilderOpen: value}});
+    const setActiveRouteTab = (value: TExchangeRouteTab) => setSearchParams((currentParams) => {
+        currentParams.set('view', 'routes');
+        currentParams.set('tab', value);
+        currentParams.delete('product');
+        return currentParams;
+    });
+    const setActiveView = (value: TExchangeView) => setSearchParams((currentParams) => {
+        const currentTab = currentParams.get('tab');
+        currentParams.set('view', value);
+        currentParams.delete('product');
+        currentParams.set(
+            'tab',
+            value === 'exchanges'
+                ? (isExchangeTab(currentTab) ? currentTab : 'active')
+                : (isRouteTab(currentTab) ? currentTab : 'active'),
+        );
+        return currentParams;
+    });
+    const resetProductFilter = () => setSearchParams((currentParams) => {
+        currentParams.delete('product');
+        return currentParams;
+    }, {replace: true});
 
-    const {data: currentUser} = useGetCurrentUserQuery();
-    const currentUserId = currentUser?.customer_id ?? '';
+    /* Обе модалки страницы открываются как маршруты. Фильтр получает текущую
+       query-строку: вкладка и выбранный товар нужны ему, чтобы показать те же
+       товары, что фильтруются под ним. Создание цепочки на телефоне — не
+       модалка поверх фона, а обычная страница, поэтому туда переходят без
+       backgroundLocation. */
+    const openRouteBuilder = () => {
+        if (isMobile) {
+            navigate(MODAL_ROUTE_PATHS.routeBuilder);
+            return;
+        }
+        openModalRoute({name: 'routeBuilder'});
+    };
+    const openProductFilter = () =>
+        openModalRoute({name: 'exchangeFilter', search: searchParams.toString()});
+
+    useEffect(() => {
+        if (searchParams.get('view') === activeView && searchParams.get('tab') === selectedTab) {
+            return;
+        }
+        setSearchParams((currentParams) => {
+            currentParams.set('view', activeView);
+            currentParams.set('tab', selectedTab);
+            return currentParams;
+        }, {replace: true});
+    }, [activeView, searchParams, selectedTab, setSearchParams]);
 
     const {
-        data: chains = [],
-        isLoading: isChainsLoading,
-        isFetching: isChainsFetching,
-        isError: isChainsError,
-    } = useGetMyChainsQuery();
-
-    const {data: products = []} = useGetProductsQuery();
-
-    const productsById = useMemo(() => {
-        const map = new Map<string, TProduct>();
-        for (const product of products) {
-            map.set(product.product_id, product);
-        }
-        return map;
-    }, [products]);
-
-    const buildRow = useMemo(() => {
-        return (chain: TChain): TExchangeRow => ({
-            chain,
-            fromProduct: productsById.get(chain.from_product_id),
-            toProduct: chain.to_product_id ? productsById.get(chain.to_product_id) : undefined,
-            goalProduct: chain.exchange_goal_id
-                ? productsById.get(chain.exchange_goal_id)
-                : chain.to_product_id
-                  ? productsById.get(chain.to_product_id)
-                  : undefined,
-        });
-    }, [productsById]);
-
-    const routeGroups = useMemo<TExchangeRouteGroup[]>(() => {
-        const groups = new Map<string, TExchangeRouteGroup>();
-
-        for (const chain of chains) {
-            if (chain.initiator_id !== currentUserId) {
-                continue;
-            }
-
-            const goalId = chain.exchange_goal_id ?? chain.to_product_id ?? chain.to_category_id;
-            if (!goalId) {
-                continue;
-            }
-            const goalCategoryId = chain.to_category_id && !chain.to_product_id
-                ? chain.to_category_id
-                : undefined;
-            const current = groups.get(goalId);
-            const isOpen = !FINAL_STATUSES.has(chain.status);
-            const isCompleted = chain.status === 'completed';
-
-            if (!current) {
-                groups.set(goalId, {
-                    goalId,
-                    goalCategoryId,
-                    goalProduct: productsById.get(goalId),
-                    sourceProductId: chain.route_step_id ?? chain.from_product_id,
-                    sourceProduct: productsById.get(chain.route_step_id ?? chain.from_product_id),
-                    offersCount: 1,
-                    openOffersCount: isOpen ? 1 : 0,
-                    completedOffersCount: isCompleted ? 1 : 0,
-                    updatedAt: chain.updated_at,
-                });
-                continue;
-            }
-
-            current.offersCount += 1;
-            current.openOffersCount += isOpen ? 1 : 0;
-            current.completedOffersCount += isCompleted ? 1 : 0;
-
-            if (chain.updated_at > current.updatedAt) {
-                current.updatedAt = chain.updated_at;
-                current.sourceProductId = chain.route_step_id ?? chain.from_product_id;
-                current.sourceProduct = productsById.get(
-                    chain.route_step_id ?? chain.from_product_id,
-                );
-            }
-        }
-
-        return [...groups.values()].sort((left, right) =>
-            right.updatedAt.localeCompare(left.updatedAt),
-        );
-    }, [chains, currentUserId, productsById]);
-
-    const {active, incoming, outgoing, completed} = useMemo(() => {
-        const active: TExchangeRow[] = [];
-        const inc: TExchangeRow[] = [];
-        const out: TExchangeRow[] = [];
-        const done: TExchangeRow[] = [];
-
-        for (const chain of chains) {
-            if (FINAL_STATUSES.has(chain.status)) {
-                done.push(buildRow(chain));
-                continue;
-            }
-
-            if (chain.status === 'active') {
-                active.push(buildRow(chain));
-            }
-
-            if (chain.initiator_id === currentUserId) {
-                out.push(buildRow(chain));
-            } else {
-                inc.push(buildRow(chain));
-            }
-        }
-
-        return {active, incoming: inc, outgoing: out, completed: done};
-    }, [chains, currentUserId, buildRow]);
+        currentUserId,
+        active,
+        incoming,
+        outgoing,
+        completed,
+        routeGroups,
+        isLoading,
+        isFetching,
+        isError,
+    } = useExchangeRows();
 
     const visibleRouteGroups = useMemo(() => {
         return routeGroups.filter((group) =>
@@ -214,28 +128,39 @@ export const useExchanges = () => {
         );
     }, [activeRouteTab, routeGroups]);
 
-    const visibleRows = useMemo(() => {
-        if (activeTab === 'active') return active;
-        if (activeTab === 'incoming') return incoming;
-        if (activeTab === 'outgoing') return outgoing;
-        return completed;
-    }, [activeTab, active, incoming, outgoing, completed]);
+    const filterableProducts = useMemo(
+        () => getFilterableProducts(activeTab, {incoming, outgoing}),
+        [activeTab, incoming, outgoing],
+    );
 
-    useLayoutEffect(() => {
-        setTitle('Мои обмены');
-    }, [setTitle]);
+    const selectedFilterProduct = useMemo(
+        () => filterableProducts.find((product) => product.product_id === productFilter),
+        [filterableProducts, productFilter],
+    );
+
+    const visibleRows = useMemo(() => {
+        const rows =
+            activeTab === 'active'
+                ? active
+                : activeTab === 'incoming'
+                  ? incoming
+                  : activeTab === 'outgoing'
+                    ? outgoing
+                    : completed;
+
+        if (!productFilter || (activeTab !== 'incoming' && activeTab !== 'outgoing')) {
+            return rows;
+        }
+
+        return rows.filter((row) => row.fromProduct?.product_id === productFilter);
+    }, [activeTab, active, incoming, outgoing, completed, productFilter]);
 
     const openExchange = useCallback((chainId: string) => {
         navigate(`/exchanges/${chainId}`);
     }, [navigate]);
 
     const openRoute = useCallback((goalId: string, sourceId?: string, goalCategoryId?: string) => {
-        const params = new URLSearchParams();
-        params.set(goalCategoryId ? 'targetCategory' : 'target', goalId);
-        if (sourceId) {
-            params.set('from', sourceId);
-        }
-        navigate(`/route?${params.toString()}`);
+        navigate(buildRoutePath({goalId, sourceProductId: sourceId, goalCategoryId}));
     }, [navigate]);
 
     return {
@@ -247,8 +172,13 @@ export const useExchanges = () => {
         setActiveRouteTab,
         activeView,
         setActiveView,
-        isBuilderOpen,
-        setIsBuilderOpen,
+        productFilter,
+        resetProductFilter,
+        filterableProducts,
+        selectedFilterProduct,
+        // модальные маршруты
+        openRouteBuilder,
+        openProductFilter,
         // данные
         active,
         incoming,
@@ -257,9 +187,9 @@ export const useExchanges = () => {
         visibleRows,
         routeGroups,
         visibleRouteGroups,
-        isLoading: isChainsLoading,
-        isFetching: isChainsFetching,
-        isError: isChainsError,
+        isLoading,
+        isFetching,
+        isError,
         // навигация
         openExchange,
         openRoute,

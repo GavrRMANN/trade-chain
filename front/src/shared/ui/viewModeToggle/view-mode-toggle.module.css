@@ -1,0 +1,87 @@
+.view-mode-toggle {
+    display: inline-flex;
+    gap: var(--space-1);
+
+    padding: var(--space-1);
+    border-radius: var(--radius-pill);
+
+    background: var(--bg-neutral);
+}
+
+.view-mode-toggle__option {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1-5);
+
+    padding: var(--space-1-5) var(--space-3);
+    border: none;
+    border-radius: var(--radius-pill);
+
+    background: transparent;
+    color: var(--neutral-secondary);
+
+    font-family: var(--font-text);
+    font-size: var(--text-sm-font-size);
+    line-height: var(--text-sm-line-height);
+    font-weight: 600;
+    white-space: nowrap;
+
+    cursor: pointer;
+    transition:
+        background var(--animation-fast),
+        color var(--animation-fast);
+}
+
+.view-mode-toggle__option:hover {
+    color: var(--neutral-primary);
+}
+
+.view-mode-toggle__option:focus {
+    outline: none;
+}
+
+.view-mode-toggle__option:focus-visible {
+    outline: 1px solid var(--accent-primary);
+    outline-offset: 1px;
+}
+
+.view-mode-toggle__option--active {
+    background: var(--bg-primary);
+    color: var(--neutral-primary);
+    box-shadow: 0 1px 3px var(--bg-shadows);
+}
+
+.view-mode-toggle__icon {
+    display: inline-flex;
+
+    width: 16px;
+    height: 16px;
+}
+
+.view-mode-toggle__icon svg {
+    width: 100%;
+    height: 100%;
+}
+
+/* Компактный размер: переключатель стоит в одной строке с заголовком и не
+   должен спорить с ним по величине. */
+.view-mode-toggle--sm {
+    padding: 2px;
+}
+
+.view-mode-toggle--sm .view-mode-toggle__option {
+    padding: var(--space-1) var(--space-2-5);
+
+    font-size: var(--text-xs-font-size);
+    line-height: var(--text-xs-line-height);
+}
+
+@media (max-width: 768px) {
+    .view-mode-toggle__option {
+        padding: var(--space-1-5) var(--space-2-5);
+    }
+
+    .view-mode-toggle--sm .view-mode-toggle__option {
+        padding: var(--space-1) var(--space-2);
+    }
+}

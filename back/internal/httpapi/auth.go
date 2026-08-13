@@ -2,6 +2,8 @@ package httpapi
 
 import (
 	"net/http"
+	"os"
+	"strings"
 
 	"trade-chain/internal/auth"
 	"trade-chain/internal/domain"
@@ -23,6 +25,7 @@ func (h *authHandler) mountAuth(r chi.Router) {
 	r.Route("/auth", func(r chi.Router) {
 		r.Post("/login", h.login)
 		r.Post("/register", h.register)
+		r.Post("/demo-login", h.demoLogin)
 
 		r.Group(func(r chi.Router) {
 			r.Use(auth.AuthMiddleware)
@@ -65,6 +68,60 @@ func (h *authHandler) login(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := bcrypt.CompareHashAndPassword([]byte(customer.PasswordHash), []byte(req.Password)); err != nil {
 		writeError(w, service.ErrInvalidInput)
+		return
+	}
+	token, err := auth.GenerateToken(customer.CustomerID)
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, AuthResponse{User: *customer, Token: token})
+}
+
+type DemoLoginRequest struct {
+	CustomerID string `json:"customer_id"`
+}
+
+// demoLoginEnabled сообщает, поднят ли вход по выбору участника.
+//
+// Значение читается на каждом запросе, а не один раз при старте: маршрут
+// объявлен всегда, и выключенный флаг должен давать понятную ошибку вместо
+// 404 от роутера — иначе клиент не отличает «выключено» от «опечатка в пути».
+func demoLoginEnabled() bool {
+	return strings.EqualFold(strings.TrimSpace(os.Getenv("DEMO_LOGIN_ENABLED")), "true")
+}
+
+// demoLogin godoc
+// @Summary Login as a demo customer
+// @Description Issue a JWT for the given customer without a password. Available only when DEMO_LOGIN_ENABLED=true
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param request body DemoLoginRequest true "Customer to sign in as"
+// @Success 200 {object} AuthResponse
+// @Failure 400 {object} ErrorResponse
+// @Failure 403 {object} ErrorResponse
+// @Failure 404 {object} ErrorResponse
+// @Router /auth/demo-login [post]
+//
+// Пароль здесь не спрашивается намеренно. Чтобы увидеть обмен, нужны две
+// стороны с товарами, желаниями и историей: пустой свежезарегистрированный
+// аккаунт не показывает ни каталога, ни цепочки. Это ход ради демонстрации,
+// а не часть продуктовой авторизации, поэтому вход живёт за отдельным флагом
+// и в окружении без DEMO_LOGIN_ENABLED отвечает 403.
+func (h *authHandler) demoLogin(w http.ResponseWriter, r *http.Request) {
+	if !demoLoginEnabled() {
+		writeError(w, service.ErrForbidden)
+		return
+	}
+	var req DemoLoginRequest
+	if decodeJSON(r, &req) != nil {
+		writeError(w, service.ErrInvalidInput)
+		return
+	}
+	customer, err := h.customerService.GetByID(r.Context(), req.CustomerID)
+	if err != nil {
+		writeError(w, err)
 		return
 	}
 	token, err := auth.GenerateToken(customer.CustomerID)

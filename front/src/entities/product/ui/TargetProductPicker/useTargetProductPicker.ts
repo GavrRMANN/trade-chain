@@ -38,7 +38,11 @@ const pickerReducer = (state: TPickerState, action: TPickerAction): TPickerState
                 selectedCategoryId: '',
             };
         case 'selectCategory':
-            return { ...state, categoryId: action.categoryId, selectedCategoryId: '' };
+            return {
+                ...state,
+                categoryId: action.categoryId,
+                selectedCategoryId: action.categoryId,
+            };
         case 'selectCategoryAsGoal':
             return { ...state, selectedCategoryId: state.categoryId };
         case 'selectProduct':
@@ -91,7 +95,7 @@ export const useTargetProductPicker = ({
 
     const selectCategory = (value: string) => {
         dispatch({ type: 'selectCategory', categoryId: value });
-        onSelect({});
+        onSelect(value ? { categoryId: value } : {});
     };
 
     const selectCategoryAsGoal = () => {

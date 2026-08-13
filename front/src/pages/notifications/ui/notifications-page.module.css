@@ -1,13 +1,10 @@
 .notifications-page {
     display: flex;
     flex-direction: column;
+    flex: 1 1 auto;
     gap: var(--main-gap);
-}
-
-.notifications-page__header {
-    display: flex;
-    align-items: baseline;
-    gap: var(--space-3);
+    min-height: 0;
+    overflow: hidden;
 }
 
 .notifications-page__counter {
@@ -18,10 +15,25 @@
     font-weight: 600;
 }
 
+.notifications-page__read-all {
+    padding: 0;
+
+    font-size: var(--text-sm-font-size);
+    line-height: var(--text-sm-line-height);
+    font-weight: 600;
+}
+
 .notifications-page__list {
     display: flex;
     flex-direction: column;
     gap: var(--space-3);
+    min-height: 0;
+    overflow: hidden;
+}
+
+.notifications-page__pagination {
+    display: flex;
+    justify-content: center;
 }
 
 .notifications-page__empty {

@@ -35,7 +35,22 @@ export const Selector = forwardRef<HTMLDivElement, TSelectorProps>(({
                                                                         disabled = false,
                                                                         loading = false
                                                                     }, ref) => {
-    const {isExpanded, wrapperRef, selectedLabel, selectorClasses, buttonClasses, wrapperClasses, textClasses, toggle, selectOption} = useSelector({
+    const {
+        isExpanded,
+        wrapperRef,
+        searchInputRef,
+        selectedLabel,
+        selectorClasses,
+        buttonClasses,
+        wrapperClasses,
+        textClasses,
+        isSearchable,
+        searchQuery,
+        setSearchQuery,
+        visibleOptions,
+        toggle,
+        selectOption,
+    } = useSelector({
         label, value, options, disabled, loading, error, onSelect,
     });
 
@@ -73,20 +88,41 @@ export const Selector = forwardRef<HTMLDivElement, TSelectorProps>(({
                 )}
                 {isExpanded && (
                     <ul className={wrapperClasses} role="listbox">
-                        {options
-                            .filter((opt) => opt.value !== "")
-                            .map((opt: TOption) => (
+                        {isSearchable && (
+                            <li className={Styles['wrapper__search']} role="presentation">
+                                <input
+                                    ref={searchInputRef}
+                                    type="text"
+                                    className={Styles['wrapper__search-input']}
+                                    placeholder="Поиск..."
+                                    value={searchQuery}
+                                    onChange={(event) => setSearchQuery(event.target.value)}
+                                    onClick={(event) => event.stopPropagation()}
+                                    onKeyDown={(event) => event.stopPropagation()}
+                                />
+                            </li>
+                        )}
+                        {visibleOptions.length > 0 ? (
+                            visibleOptions.map((opt: TOption) => (
                                 <li
                                     key={opt.value}
                                     className={`${Styles['wrapper__item']} ${opt.value === value && Styles['wrapper__item--active']}`}
                                     data-value={opt.value}
-                                    onClick={() => selectOption(opt)}
+                                    onClick={(event) => {
+                                        event.stopPropagation();
+                                        selectOption(opt);
+                                    }}
                                     role="option"
                                     aria-selected={opt.value === value}
                                 >
                                     {opt.label}
                                 </li>
-                            ))}
+                            ))
+                        ) : (
+                            <li className={Styles['wrapper__empty']} role="presentation">
+                                Ничего не найдено
+                            </li>
+                        )}
                     </ul>
                 )}
             </div>

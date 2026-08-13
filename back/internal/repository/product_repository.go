@@ -33,9 +33,10 @@ func (r *productRepository) Create(
 			description,
 			image,
 			price,
-			location
+			location,
+			status
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, COALESCE($8, 'active'))
 		RETURNING
 			product_id,
 			customer_id,
@@ -52,6 +53,15 @@ func (r *productRepository) Create(
 
 	var created domain.Product
 
+	// Статус передаётся отдельным параметром, а не остаётся на умолчании
+	// колонки: сервис его проверяет и нормализует, и молча терять выбор
+	// вызывающего значит отдавать активной вещь, которую просили придержать.
+	var status *string
+	if dto.Status != nil {
+		value := string(*dto.Status)
+		status = &value
+	}
+
 	err := r.db.QueryRow(
 		ctx,
 		query,
@@ -62,6 +72,7 @@ func (r *productRepository) Create(
 		dto.Image,
 		dto.Price,
 		dto.Location,
+		status,
 	).Scan(
 		&created.ProductID,
 		&created.CustomerID,
@@ -98,7 +109,7 @@ func (r *productRepository) GetByID(ctx context.Context, id string) (*domain.Pro
 			created_at,
 			updated_at
 		FROM products
-		WHERE product_id = $1 AND status != 'archived'
+		WHERE product_id = $1
 	`
 
 	var product domain.Product
@@ -172,6 +183,55 @@ func (r *productRepository) GetByCustomerID(ctx context.Context, customerID stri
 	return products, rows.Err()
 }
 
+// GetOwnByCustomerID возвращает все товары владельца, включая архивные.
+func (r *productRepository) GetOwnByCustomerID(ctx context.Context, customerID string) ([]domain.Product, error) {
+	query := `
+		SELECT
+			product_id,
+			customer_id,
+			COALESCE(category_id::text, ''),
+			title,
+			COALESCE(description, ''),
+			COALESCE(image, ''),
+			price,
+			COALESCE(location, ''),
+			status,
+			created_at,
+			updated_at
+		FROM products
+		WHERE customer_id = $1
+		ORDER BY created_at DESC
+	`
+
+	rows, err := r.db.Query(ctx, query, customerID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var products []domain.Product
+	for rows.Next() {
+		var p domain.Product
+		if err := rows.Scan(
+			&p.ProductID,
+			&p.CustomerID,
+			&p.CategoryID,
+			&p.Title,
+			&p.Description,
+			&p.Image,
+			&p.Price,
+			&p.Location,
+			&p.Status,
+			&p.CreatedAt,
+			&p.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		products = append(products, p)
+	}
+	return products, rows.Err()
+}
+
 func (r *productRepository) Update(ctx context.Context, id string, dto *domain.UpdateProductDTO) (*domain.Product, error) {
 	query := `
 		UPDATE products
@@ -183,7 +243,7 @@ func (r *productRepository) Update(ctx context.Context, id string, dto *domain.U
 			price = COALESCE($5, price),
 			location = COALESCE($6, location),
 			status = COALESCE($7, status)
-		WHERE product_id = $8
+		WHERE product_id = $8 AND status != 'archived'
 		RETURNING
 			product_id,
 			customer_id,
@@ -258,38 +318,70 @@ func (r *productRepository) List(
 	customerID *string,
 	q string,
 	categoryID *string,
-	page int,
+	offset int,
 	limit int,
 ) ([]domain.Product, error) {
-	offset := (page - 1) * limit
-
-	query := `
-		SELECT
-			product_id,
-			customer_id,
-			COALESCE(category_id::text, ''),
-			title,
-			COALESCE(description, ''),
-			COALESCE(image, ''),
-			price,
-			COALESCE(location, ''),
-			status,
-			created_at,
-			updated_at
-		FROM products
-		WHERE status NOT IN ('archived', 'exchanged')
-	`
-
 	args := []interface{}{}
 	argIndex := 1
 
-	if customerID != nil {
-		query += fmt.Sprintf(`
-			AND customer_id != $%d
-		`, argIndex)
+	// Товар зрителя, который закрывает желание владельца карточки. Считается
+	// в самом запросе, а не отдельным проходом по ленте: иначе на каждую
+	// страницу выдачи пришлось бы делать ещё один поход в базу. LATERAL, а не
+	// подзапрос в SELECT: результат нужен ещё и в ORDER BY, а на выражение из
+	// списка выборки там ссылаться нельзя.
+	matchColumn := `NULL::text`
+	matchJoin := ``
+	matchOrder := ``
 
+	var viewerArgIndex int
+
+	if customerID != nil {
+		viewerArgIndex = argIndex
 		args = append(args, *customerID)
 		argIndex++
+
+		matchColumn = `matched.product_id::text`
+		matchJoin = fmt.Sprintf(`
+			LEFT JOIN LATERAL (
+				SELECT mine.product_id
+				FROM wishlists w
+				JOIN wishlist_options wo
+					ON wo.wishlist_id = w.wishlist_id
+				JOIN products mine
+					ON mine.category_id = wo.category_id
+				WHERE w.product_id = p.product_id
+				  AND mine.customer_id = $%d
+				  AND mine.status = 'active'
+				ORDER BY mine.created_at DESC
+				LIMIT 1
+			) matched ON TRUE
+		`, viewerArgIndex)
+		matchOrder = `(matched.product_id IS NOT NULL) DESC,`
+	}
+
+	query := fmt.Sprintf(`
+		SELECT
+			p.product_id,
+			p.customer_id,
+			COALESCE(p.category_id::text, ''),
+			p.title,
+			COALESCE(p.description, ''),
+			COALESCE(p.image, ''),
+			p.price,
+			COALESCE(p.location, ''),
+			p.status,
+			p.created_at,
+			p.updated_at,
+			%s AS matched_by_product_id
+		FROM products p
+		%s
+		WHERE p.status NOT IN ('archived', 'exchanged')
+	`, matchColumn, matchJoin)
+
+	if customerID != nil {
+		query += fmt.Sprintf(`
+			AND p.customer_id != $%d
+		`, viewerArgIndex)
 	}
 
 	var searchArgIndex int
@@ -299,10 +391,10 @@ func (r *productRepository) List(
 
 		query += fmt.Sprintf(`
 			AND (
-				COALESCE(search_vector, ''::tsvector)
+				COALESCE(p.search_vector, ''::tsvector)
 					@@ websearch_to_tsquery('simple', $%d)
-				OR title %% $%d
-				OR COALESCE(description, '') %% $%d
+				OR p.title %% $%d
+				OR COALESCE(p.description, '') %% $%d
 			)
 		`, searchArgIndex, searchArgIndex, searchArgIndex)
 
@@ -312,33 +404,39 @@ func (r *productRepository) List(
 
 	if categoryID != nil {
 		query += fmt.Sprintf(`
-			AND category_id = $%d
+			AND p.category_id = $%d
 		`, argIndex)
 
 		args = append(args, *categoryID)
 		argIndex++
 	}
 
+	// Подходящие карточки идут первыми во всей выдаче, а не только на текущей
+	// странице: иначе при бесконечной прокрутке блок «Вам подойдёт» пополнялся
+	// бы новыми карточками уже после того, как пользователь его пролистал.
 	if q != "" {
 		query += fmt.Sprintf(`
 			ORDER BY
+				%s
 				(
 					0.60 * ts_rank_cd(
-						COALESCE(search_vector, ''::tsvector),
+						COALESCE(p.search_vector, ''::tsvector),
 						websearch_to_tsquery('simple', $%d)
 					) +
-					0.25 * similarity(title, $%d) +
+					0.25 * similarity(p.title, $%d) +
 					0.15 * similarity(
-						COALESCE(description, ''),
+						COALESCE(p.description, ''),
 						$%d
 					)
 				) DESC,
-				created_at DESC
-		`, searchArgIndex, searchArgIndex, searchArgIndex)
+				p.created_at DESC
+		`, matchOrder, searchArgIndex, searchArgIndex, searchArgIndex)
 	} else {
-		query += `
-			ORDER BY created_at DESC
-		`
+		query += fmt.Sprintf(`
+			ORDER BY
+				%s
+				p.created_at DESC
+		`, matchOrder)
 	}
 
 	limitArgIndex := argIndex
@@ -361,6 +459,7 @@ func (r *productRepository) List(
 
 	for rows.Next() {
 		var p domain.Product
+		var matchedBy *string
 
 		if err := rows.Scan(
 			&p.ProductID,
@@ -374,10 +473,14 @@ func (r *productRepository) List(
 			&p.Status,
 			&p.CreatedAt,
 			&p.UpdatedAt,
+			&matchedBy,
 		); err != nil {
 			log.Printf("PRODUCT LIST SCAN ERROR: %v", err)
 			return nil, err
 		}
+
+		p.MatchedByProductID = matchedBy
+		p.Matched = matchedBy != nil
 
 		products = append(products, p)
 	}
@@ -388,11 +491,11 @@ func (r *productRepository) List(
 	}
 
 	log.Printf(
-		"PRODUCT LIST SUCCESS: customerID=%v q=%q category=%v page=%d limit=%d got=%d",
+		"PRODUCT LIST SUCCESS: customerID=%v q=%q category=%v offset=%d limit=%d got=%d",
 		customerID,
 		q,
 		categoryID,
-		page,
+		offset,
 		limit,
 		len(products),
 	)
@@ -400,6 +503,14 @@ func (r *productRepository) List(
 	return products, nil
 }
 
+// GetExchangeCandidates отдаёт вещи, которые владелец исходного товара готов
+// принять взамен.
+//
+// Берутся только активные карточки: обменянная вещь уже уехала к новому
+// владельцу, а зарезервированная обещана другому обмену. И то и другое
+// сорвалось бы при попытке принять предложение (exchange.Validate требует
+// активный товар с обеих сторон), но человек узнал бы об этом только после
+// отправки — и увидел бы такую вещь в маршруте к цели как следующий шаг.
 func (r *productRepository) GetExchangeCandidates(ctx context.Context, productID string) ([]domain.Product, error) {
 	query := `
 		SELECT DISTINCT
@@ -423,7 +534,7 @@ func (r *productRepository) GetExchangeCandidates(ctx context.Context, productID
 			ON p.category_id = wo.category_id
 		WHERE
 			source.product_id = $1
-			AND p.status != 'archived'
+			AND p.status = 'active'
 			AND p.product_id <> source.product_id
 			AND p.customer_id <> source.customer_id
 		ORDER BY p.created_at DESC

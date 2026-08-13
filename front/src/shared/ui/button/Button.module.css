@@ -1,22 +1,24 @@
+/* Кнопка по эталону: высота 48, скругление 12, полужирный текст,
+   заливка вместо обводки. Границы у вторичной кнопки нет — её роль
+   играет серая подложка, как на референсе. */
 .button {
-    display: flex;
+    display: inline-flex;
     flex-direction: row;
     justify-content: center;
     align-items: center;
-    gap: 2px;
+    gap: var(--space-2);
 
-    padding: 8px 16px;
+    min-height: 48px;
+    padding: 0 var(--space-5);
+    border: none;
 
-    border-radius: 6px;
+    border-radius: var(--radius-md);
 
-    color: var(--bg-secondary);
-
-    /* text-base B */
-    font-family: Inter, sans-serif;
-    font-size: 16px;
-    line-height: 24px; /* 150% */
+    font-family: var(--font-family);
+    font-size: var(--text-base-font-size);
+    line-height: var(--line-height-normal);
     font-style: normal;
-    font-weight: 700;
+    font-weight: var(--font-weight-medium);
 
     cursor: pointer;
 
@@ -31,135 +33,104 @@
 
 .button--loading {
     cursor: progress;
-    gap: 10px;
 }
 
 .button--icon {
-    padding: 8px;
-}
+    flex: 0 0 auto;
 
-.button:hover {
+    width: 40px;
+    min-height: 40px;
+    padding: 0;
+
+    border-radius: var(--radius-pill);
 }
 
 .button:disabled {
+    opacity: 0.45;
+
     cursor: not-allowed;
 }
 
+.button:focus {
+    outline: none;
+}
+
+.button:focus-visible {
+    outline: 2px solid var(--color-link);
+    outline-offset: 2px;
+}
+
 .button--primary {
-    color: var(--neutral-white);
-    border: 1px solid var(--accent-primary);
-    background: var(--accent-primary);
+    color: var(--text-inverse);
+
+    background: var(--color-brand);
 }
 
-.button--primary:focus {
-    outline: none;
+.button--primary:hover:not(:disabled) {
+    background: var(--color-brand-hover);
 }
 
-.button--primary:focus-visible {
-    border: 1px solid var(--accent-secondary);
-}
-
-.button--primary:hover {
-    border: 1px solid var(--accent-secondary);
-    background: var(--accent-secondary);
-}
-
-.button--primary:disabled {
-    border: 1px solid var(--neutral-disable);
-    background: var(--neutral-disable);
-}
-
+/* Вторичная — серая подложка: на референсе это «второе по важности»
+   действие, а не обведённая синим копия первого. */
 .button--secondary {
-    color: var(--accent-primary);
-    border: 1px solid var(--accent-primary);
-    background: transparent;
+    color: var(--text-primary);
+
+    background: var(--surface-muted);
 }
 
-.button--secondary:focus {
-    outline: none;
-}
-
-.button--secondary:focus-visible {
-    border: 1px solid var(--accent-secondary);
-}
-
-.button--secondary:hover {
-    color: var(--accent-secondary);
-    border: 1px solid var(--accent-secondary);
-}
-
-.button--secondary:disabled {
-    color: var(--neutral-disable);
-    border: 1px solid var(--neutral-disable);
+.button--secondary:hover:not(:disabled) {
+    background: var(--border-subtle);
 }
 
 .button--text {
-    color: var(--accent-primary);
-    border: 1px solid transparent;
+    min-height: auto;
+    padding: 0;
+
+    color: var(--color-link);
+
     background: transparent;
 }
 
-.button--text:focus {
-    outline: none;
-}
-
-.button--text:focus-visible {
-    border: 1px solid var(--accent-primary);
-}
-
-.button--text:hover {
-    color: var(--accent-secondary);
-}
-
-.button--text:disabled {
-    color: var(--neutral-disable);
+.button--text:hover:not(:disabled) {
+    color: var(--color-brand-hover);
 }
 
 .button--default {
-    color: var(--neutral-primary);
-    border: 1px solid transparent;
+    color: var(--text-primary);
+
     background: transparent;
 }
 
-.button--default:focus {
-    outline: none;
+.button--default:hover:not(:disabled) {
+    background: var(--surface-muted);
 }
 
-.button--default:focus-visible {
-    border: 1px solid var(--accent-primary);
-}
-
-.button--default:hover {
-    color: var(--accent-secondary);
-}
-
-.button--default:disabled {
-    color: var(--neutral-disable);
-    border: 1px solid var(--neutral-disable);
-    background: var(--bg-disabled);
-}
-
-.button--primary .button--active {
-
-}
-
-.button--secondary .button--active {
-
-}
-
-.button--text .button--active {
-
-}
-
+/* Активное состояние описано только у нейтральной кнопки. Остальные
+   варианты его не задают намеренно: там, где кнопка играет роль вкладки
+   или чипа, внешний вид выбранного элемента задаёт сама страница, и
+   правило отсюда только перебивало бы её по специфичности. */
 .button--default.button--active {
-    color: var(--accent-primary);
-    background: var(--bg-disabled);
+    color: var(--text-inverse);
+
+    background: var(--surface-dark);
 }
 
 @media (max-width: 768px) {
     .button {
-        /* text-sm B */
-        font-size: 14px;
-        line-height: 20px; /* 142.857% */
+        min-height: 44px;
+        padding: 0 var(--space-4);
+
+        font-size: var(--text-sm-font-size);
+    }
+
+    .button--text {
+        min-height: auto;
+        padding: 0;
+    }
+
+    .button--icon {
+        width: 40px;
+        min-height: 40px;
+        padding: 0;
     }
 }

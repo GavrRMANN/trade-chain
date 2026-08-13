@@ -1,0 +1,1 @@
+export { ProductPickerGrid } from './ProductPickerGrid';

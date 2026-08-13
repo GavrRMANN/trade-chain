@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom';
+
 import { AuthForm } from '@features/auth';
 import { Modal } from '@shared/ui/modal';
 
@@ -18,6 +20,11 @@ export const AuthModal = () => {
                     Войдите, чтобы покупать, продавать и находить нужные товары.
                 </p>
                 <AuthForm />
+                {/* Прямой вход в подготовленный сценарий: на показе он нужен
+                    чаще, чем обычная регистрация. */}
+                <Link className={Styles['demo-link']} to="/demo">
+                    Войти под демо-аккаунтом
+                </Link>
             </div>
         </Modal>
     );

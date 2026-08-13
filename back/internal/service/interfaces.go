@@ -14,12 +14,20 @@ type CustomerService interface {
 	Update(context.Context, string, *domain.UpdateCustomerDTO) (*domain.Customer, error)
 	Delete(context.Context, string) error
 	List(context.Context, int, int) ([]domain.Customer, error)
+	ListOverview(context.Context, int, int) ([]domain.CustomerOverview, error)
+
+	// Работа с вишлистами пользователя
+	GetCustomerWishlistOptions(ctx context.Context, customerID string) ([]domain.CustomerWishlistOption, error)
+	AddCustomerWishlistOption(ctx context.Context, customerID string, categoryID string) error
+	DeleteCustomerWishlistOption(ctx context.Context, customerID string, categoryID string) error
+	ReplaceCustomerWishlistOptions(ctx context.Context, cutomserID string, dto *domain.UpdateCustomerWishlistDTO) error
 }
 
 type ProductService interface {
 	Create(context.Context, *domain.CreateProductDTO) (*domain.Product, error)
 	GetByID(context.Context, string) (*domain.Product, error)
 	GetByCustomerID(context.Context, string) ([]domain.Product, error)
+	GetOwnByCustomerID(context.Context, string) ([]domain.Product, error)
 	Update(context.Context, string, *domain.UpdateProductDTO) (*domain.Product, error)
 	Delete(context.Context, string, string) error
 	List(context.Context, *string, string, *string, int, int) ([]domain.Product, error)
@@ -28,8 +36,8 @@ type ProductService interface {
 
 type ChainService interface {
 	Create(context.Context, *domain.Chain) (*domain.Chain, error)
-	GetByID(context.Context, string) (*domain.Chain, error)
-	GetByProductID(context.Context, string) ([]domain.Chain, error)
+	GetByID(context.Context, string, string) (*domain.Chain, error)
+	GetByProductID(context.Context, string, string) ([]domain.Chain, error)
 	GetByCustomerID(context.Context, string) ([]domain.Chain, error)
 	GetFullChain(context.Context, string) ([]domain.Chain, error)
 	UpdateStatus(context.Context, string, domain.ChainStatus, string) error // добавили userID
@@ -37,8 +45,15 @@ type ChainService interface {
 	Confirm(ctx context.Context, chainID, actorID string, success bool, reason string) (*domain.Chain, error)
 	Messages(ctx context.Context, chainID, actorID string) ([]domain.ChainMessage, error)
 	SendMessage(ctx context.Context, chainID, actorID, body string) (*domain.ChainMessage, error)
+	ExpireOffers(ctx context.Context) error
 	CanReview(ctx context.Context, chainID, actorID string) (string, error)
-	Delete(context.Context, string) error
+	Delete(ctx context.Context, chainID, actorID string) error
+}
+
+type NotificationService interface {
+	ListReads(ctx context.Context, customerID string) ([]domain.NotificationRead, error)
+	MarkRead(ctx context.Context, customerID, chainID string, kind domain.NotificationKind) error
+	MarkAllRead(ctx context.Context, customerID string) error
 }
 
 // OfferService — экран предложений: отправить, ответить, довести до итога.

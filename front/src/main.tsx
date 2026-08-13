@@ -5,9 +5,8 @@ import { BrowserRouter } from 'react-router-dom';
 import 'antd/dist/reset.css';
 import './index.css';
 
-import { StoreProvider } from '@app/providers';
+import { RealtimeProvider, StoreProvider } from '@app/providers';
 import { AppRouter } from '@app/router';
-import {PageTitleProvider} from "@app/providers/pageTitle";
 import { store } from '@app/redux';
 import { initAuth } from '@entities/user';
 
@@ -18,20 +17,26 @@ store.dispatch(initAuth());
 createRoot(document.getElementById('root')!).render(
     <StrictMode>
         <StoreProvider>
-            <ConfigProvider
-                theme={{
-                    token: {
-                        colorPrimary: '#1677ff',
-                        colorBgLayout: '#ffffff'
-                    },
-                }}
-            >
-                <PageTitleProvider>
+            <RealtimeProvider>
+                <ConfigProvider
+                    theme={{
+                        token: {
+                            colorPrimary: '#00aaff',
+                            colorBgLayout: '#ffffff',
+                            colorText: '#000000',
+                            colorTextSecondary: '#8c8c8c',
+                            colorBorder: '#e7e6e4',
+                            borderRadius: 12,
+                            fontFamily:
+                                "Manrope, 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+                        },
+                    }}
+                >
                     <BrowserRouter>
                         <AppRouter />
                     </BrowserRouter>
-                </PageTitleProvider>
-            </ConfigProvider>
+                </ConfigProvider>
+            </RealtimeProvider>
         </StoreProvider>
     </StrictMode>,
 );

@@ -5,7 +5,10 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
+	"trade-chain/internal/auth"
+	"trade-chain/internal/events"
 	"trade-chain/internal/httpapi"
 	"trade-chain/internal/repository"
 	"trade-chain/internal/search"
@@ -16,6 +19,9 @@ import (
 
 func main() {
 	ctx := context.Background()
+	if err := auth.RequireSigningSecret(); err != nil {
+		log.Fatal(err)
+	}
 
 	dbURL := os.Getenv("DATABASE_URL")
 	if dbURL == "" {
@@ -40,29 +46,38 @@ func main() {
 	chainRepo := repository.NewChainRepository(pool)
 	negotiationRepo := repository.NewNegotiationRepository(pool)
 	reviewRepo := repository.NewReviewRepository(pool)
+	notificationRepo := repository.NewNotificationRepository(pool)
 
 	// Сервисы
 	customerService := service.NewCustomerService(customerRepo)
 	productService := service.NewProductService(productRepo, customerRepo)
 	categoryService := service.NewCategoryService(categoryRepo)
 	wishlistService := service.NewWishlistService(wishlistRepo, productRepo)
-	chainService := service.NewChainService(chainRepo, productRepo, negotiationRepo)
+	eventBroker := events.NewBroker(pool)
+	chainService := service.NewChainService(chainRepo, productRepo, negotiationRepo, eventBroker)
 	offerService := service.NewOfferService(chainService, chainRepo, negotiationRepo)
 	reviewService := service.NewReviewService(reviewRepo, customerRepo, productRepo, chainService)
+	notificationService := service.NewNotificationService(chainRepo, notificationRepo)
 
 	// Сервис поиска
 	searchService := search.NewSearchService(productService, categoryService)
 
 	// HTTP роутер
 	deps := httpapi.Dependencies{
-		Customers:  customerService,
-		Products:   productService,
-		Chains:     chainService,
-		Offers:     offerService,
-		Reviews:    reviewService,
-		Categories: categoryService,
-		Wishlists:  wishlistService,
-		Search:     searchService,
+		Customers:     customerService,
+		Products:      productService,
+		Chains:        chainService,
+		Offers:        offerService,
+		Reviews:       reviewService,
+		Categories:    categoryService,
+		Wishlists:     wishlistService,
+		Notifications: notificationService,
+		Search:        searchService,
+		Events:        eventBroker,
+		CronSecret:    os.Getenv("CRON_SECRET"),
+
+		DB:              pool,
+		DemoResetSecret: os.Getenv("DEMO_RESET_SECRET"),
 	}
 	router := httpapi.NewRouter(deps)
 
@@ -71,7 +86,14 @@ func main() {
 		port = "8080"
 	}
 	log.Printf("starting server on port %s", port)
-	if err := http.ListenAndServe(":"+port, router); err != nil {
+	server := &http.Server{
+		Addr:              ":" + port,
+		Handler:           router,
+		ReadHeaderTimeout: 5 * time.Second,
+		IdleTimeout:       65 * time.Second,
+		MaxHeaderBytes:    1 << 20,
+	}
+	if err := server.ListenAndServe(); err != nil {
 		log.Fatal(err)
 	}
 }

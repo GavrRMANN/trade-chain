@@ -23,6 +23,7 @@ func (s *customerService) Create(ctx context.Context, dto *domain.CreateCustomer
 		return nil, ErrInvalidInput
 	}
 	dto.Email = strings.ToLower(strings.TrimSpace(dto.Email))
+	dto.FullName = strings.TrimSpace(dto.FullName)
 	if _, err := s.repo.GetByEmail(ctx, dto.Email); err == nil {
 		return nil, ErrConflict
 	} else if !errors.Is(err, sql.ErrNoRows) {
@@ -56,6 +57,12 @@ func (s *customerService) Update(ctx context.Context, id string, dto *domain.Upd
 		}
 		copyDTO.Email = &v
 	}
+	if copyDTO.FullName != nil {
+		// Пустое ФИО — это осознанное «убрать имя», а не пропуск поля:
+		// пропуск приходит как отсутствующий ключ и остаётся nil.
+		v := strings.TrimSpace(*copyDTO.FullName)
+		copyDTO.FullName = &v
+	}
 	if copyDTO.Password != nil {
 		if len(*copyDTO.Password) < 8 {
 			return nil, ErrInvalidInput
@@ -85,10 +92,94 @@ func (s *customerService) List(ctx context.Context, offset, limit int) ([]domain
 	return v, normalizeError(e)
 }
 
+// ListOverview отдаёт участников вместе с их показателями на площадке.
+func (s *customerService) ListOverview(ctx context.Context, offset, limit int) ([]domain.CustomerOverview, error) {
+	o, l, e := validatePage(offset, limit)
+	if e != nil {
+		return nil, e
+	}
+	v, e := s.repo.ListOverview(ctx, o, l)
+	return v, normalizeError(e)
+}
+
 func (s *customerService) GetByEmail(ctx context.Context, email string) (*domain.Customer, error) {
 	if blank(email) {
 		return nil, ErrInvalidInput
 	}
 	v, err := s.repo.GetByEmail(ctx, email)
 	return v, normalizeError(err)
+}
+
+// Функции для работы с личным вишлистом
+
+func (s *customerService) GetCustomerWishlistOptions(
+	ctx context.Context,
+	customerID string,
+) ([]domain.CustomerWishlistOption, error) {
+	if blank(customerID) {
+		return nil, ErrInvalidInput
+	}
+
+	v, err := s.repo.GetCustomerWishlistOptions(ctx, customerID)
+	return v, normalizeError(err)
+}
+
+func (s *customerService) AddCustomerWishlistOption(
+	ctx context.Context,
+	customerID string,
+	categoryID string,
+) error {
+	if blank(customerID) || blank(categoryID) {
+		return ErrInvalidInput
+	}
+
+	err := s.repo.AddCustomerWishlistOption(
+		ctx,
+		customerID,
+		categoryID,
+	)
+
+	return normalizeError(err)
+}
+
+func (s *customerService) DeleteCustomerWishlistOption(
+	ctx context.Context,
+	customerID string,
+	categoryID string,
+) error {
+	if blank(customerID) || blank(categoryID) {
+		return ErrInvalidInput
+	}
+
+	err := s.repo.DeleteCustomerWishlistOption(
+		ctx,
+		customerID,
+		categoryID,
+	)
+
+	return normalizeError(err)
+}
+
+func (s *customerService) ReplaceCustomerWishlistOptions(
+	ctx context.Context,
+	customerID string,
+	dto *domain.UpdateCustomerWishlistDTO,
+) error {
+	if blank(customerID) || dto == nil {
+		return ErrInvalidInput
+	}
+
+	for _, categoryID := range dto.CategoryIDs {
+		if blank(categoryID) {
+			return ErrInvalidInput
+		}
+	}
+
+	err := s.repo.ReplaceCustomerWishlistOptions(
+		ctx,
+		customerID,
+		dto,
+	)
+
+	return normalizeError(err)
 }

@@ -1,5 +1,6 @@
 import { createApi } from '@reduxjs/toolkit/query/react';
 import type {
+    TDemoLoginPayload,
     TLoginPayload,
     TRegisterPayload,
     TUser,
@@ -11,6 +12,9 @@ export const userApi = createApi({
     reducerPath: 'userApi',
     baseQuery: apiBaseQuery,
     tagTypes: ['CurrentUser'],
+    refetchOnFocus: true,
+    refetchOnReconnect: true,
+    refetchOnMountOrArgChange: true,
     endpoints: (builder) => ({
         loginUser: builder.mutation<TAuthResponse, TLoginPayload>({
             query: (body) => ({url: '/auth/login', method: 'POST', body}),
@@ -18,6 +22,10 @@ export const userApi = createApi({
         }),
         registerUser: builder.mutation<TAuthResponse, TRegisterPayload>({
             query: (body) => ({url: '/auth/register', method: 'POST', body}),
+            invalidatesTags: ['CurrentUser'],
+        }),
+        demoLoginUser: builder.mutation<TAuthResponse, TDemoLoginPayload>({
+            query: (body) => ({url: '/auth/demo-login', method: 'POST', body}),
             invalidatesTags: ['CurrentUser'],
         }),
         getCurrentUser: builder.query<TUser, void>({
@@ -30,5 +38,6 @@ export const userApi = createApi({
 export const {
     useLoginUserMutation,
     useRegisterUserMutation,
+    useDemoLoginUserMutation,
     useGetCurrentUserQuery,
 } = userApi;

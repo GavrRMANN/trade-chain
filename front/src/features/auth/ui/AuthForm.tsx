@@ -1,73 +1,56 @@
-import { Button } from '@shared/ui/button';
-import { Input } from '@shared/ui/input';
+import { useState } from 'react';
 
 import Styles from './auth-form.module.css';
-import { useAuthForm } from './useAuthForm';
+import { PasswordForm } from './PasswordForm';
+import { UserPicker } from './UserPicker';
 
+type TAuthMethod = 'password' | 'participant';
+
+const METHODS: {value: TAuthMethod; label: string}[] = [
+    {value: 'password', label: 'Почта и пароль'},
+    {value: 'participant', label: 'Выбрать участника'},
+];
+
+/**
+ * Вход двумя способами.
+ *
+ * Обычный — почта и пароль. Второй, выбор участника из списка, нужен, чтобы
+ * увидеть обмен: для него требуются две стороны с товарами, желаниями и
+ * историей, а свежезарегистрированный аккаунт пуст и не показывает ни
+ * каталога, ни цепочки.
+ */
 export const AuthForm = () => {
-    const {
-        mode,
-        email,
-        password,
-        confirmPassword,
-        errors,
-        requestError,
-        successMessage,
-        isLoading,
-        setEmail,
-        setPassword,
-        setConfirmPassword,
-        handleSubmit,
-        switchMode,
-    } = useAuthForm();
+    const [method, setMethod] = useState<TAuthMethod>('password');
 
     return (
-        <form className={Styles.form} onSubmit={handleSubmit} noValidate>
-            <div className={Styles.fields}>
-                <Input
-                    label="Email"
-                    name="email"
-                    type="email"
-                    value={email}
-                    placeholder="you@example.com"
-                    onChange={setEmail}
-                    disabled={isLoading}
-                    error={{showError: Boolean(errors.email), errorMessage: errors.email ?? ''}}
-                />
-                <Input
-                    label="Пароль"
-                    name="password"
-                    type="password"
-                    value={password}
-                    placeholder="Минимум 8 символов"
-                    onChange={setPassword}
-                    disabled={isLoading}
-                    error={{showError: Boolean(errors.password), errorMessage: errors.password ?? ''}}
-                />
-                {mode === 'register' && (
-                    <Input
-                        label="Повторите пароль"
-                        name="confirmPassword"
-                        type="password"
-                        value={confirmPassword}
-                        placeholder="Повторите пароль"
-                        onChange={setConfirmPassword}
-                        disabled={isLoading}
-                        error={{showError: Boolean(errors.confirmPassword), errorMessage: errors.confirmPassword ?? ''}}
-                    />
-                )}
+        <div className={Styles.auth}>
+            <div className={Styles.methods} role="tablist" aria-label="Способ входа">
+                {METHODS.map(({value, label}) => (
+                    <button
+                        key={value}
+                        type="button"
+                        role="tab"
+                        id={`auth-method-${value}`}
+                        aria-selected={method === value}
+                        aria-controls={`auth-panel-${value}`}
+                        className={[Styles.method, method === value && Styles['method--active']]
+                            .filter(Boolean)
+                            .join(' ')}
+                        onClick={() => setMethod(value)}
+                    >
+                        {label}
+                    </button>
+                ))}
             </div>
 
-            {requestError && <p className={Styles.error}>{requestError}</p>}
-            {successMessage && <p className={Styles.success}>{successMessage}</p>}
-
-            <Button type="submit" loading={isLoading}>
-                {mode === 'login' ? 'Войти' : 'Зарегистрироваться'}
-            </Button>
-
-            <Button type="button" variant="text" onClick={switchMode} disabled={isLoading}>
-                {mode === 'login' ? 'Создать аккаунт' : 'Уже есть аккаунт? Войти'}
-            </Button>
-        </form>
+            <div
+                className={Styles.panel}
+                role="tabpanel"
+                id={`auth-panel-${method}`}
+                aria-labelledby={`auth-method-${method}`}
+            >
+                {method === 'password' ? <PasswordForm /> : <UserPicker />}
+            </div>
+        </div>
     );
 };

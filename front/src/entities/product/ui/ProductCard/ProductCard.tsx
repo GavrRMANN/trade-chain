@@ -11,6 +11,8 @@ type TProductCardProps = {
     location?: string;
     description?: string;
     variant?: 'vertical' | 'horizontal';
+    /** Владельцу товара подходит что-то из вещей текущего пользователя. */
+    matched?: boolean;
     onClick?: () => void;
 }
 
@@ -21,6 +23,7 @@ export const ProductCard = ({
                                 location,
                                 description,
                                 variant = 'vertical',
+                                matched = false,
                                 onClick,
                             }: TProductCardProps) => {
     const {isImageAvailable, className, handleKeyDown} = useProductCard({image: img, variant, onClick});
@@ -39,6 +42,10 @@ export const ProductCard = ({
                 ) : (
                     <p className={Styles['image-title']}>{title}</p>
                 )}
+
+                {/* Плашка отвечает на вопрос «почему мне это показали» до того,
+                    как пользователь откроет объявление. */}
+                {matched && <span className={Styles.matched}>Подходит вам</span>}
             </div>
 
             <div className={Styles['desc-container']}>

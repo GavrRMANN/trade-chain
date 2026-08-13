@@ -21,6 +21,9 @@ linters:
     - gocritic
     - revive
 
+    # Dead code search
+    - unused
+
     # PostgreSQL / pgx
     - rowserrcheck
     - sqlclosecheck
