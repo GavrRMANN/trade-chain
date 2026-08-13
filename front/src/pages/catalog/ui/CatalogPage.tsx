@@ -1,14 +1,26 @@
 import Styles from './catalog-page.module.css';
 import { MainSection } from '@shared/ui/mainSection';
-import { ProductCard, type TProduct } from '@entities/product';
 import { Preloader } from '@shared/ui/preloader';
 import { WhiteBox } from '@shared/ui/whiteBox';
 import { Button } from '@shared/ui/button';
 import { PageHeader } from '@shared/ui/pageHeader';
-import { formatProductCount, useCatalog } from '../lib';
+import { ViewModeToggle } from '@shared/ui/viewModeToggle';
+import { ProductFeed, useFeedOwners } from '@widgets/productFeed';
+import { formatProductCount, useCatalog, useCatalogViewMode } from '../lib';
 import { PageError } from '@shared/ui/pageError';
 
+import { ProductGrid } from './ProductGrid';
+
+const VIEW_MODE_OPTIONS = [
+    { value: 'feed' as const, label: 'Лента' },
+    { value: 'grid' as const, label: 'Сетка' },
+];
+
 export const CatalogPage = () => {
+    const { viewMode, setViewMode } = useCatalogViewMode();
+    /* Имя и рейтинг владельца видны только в ленте, поэтому в режиме сетки
+       список участников не запрашивается. */
+    const owners = useFeedOwners({ skip: viewMode !== 'feed' });
     const {
         title,
         categoryTitle,
@@ -24,10 +36,17 @@ export const CatalogPage = () => {
         isCategoriesLoading,
         isCategoriesError,
         loadMoreRef,
+        categoryNames,
+        filtersKey,
+        feedIndex,
+        saveFeedIndex,
         selectCategory,
         openProduct,
         openCreateProduct,
-    } = useCatalog();
+        openOwner,
+        openRouteTo,
+        openOffer,
+    } = useCatalog(viewMode);
 
     if (isCategoriesLoading) {
         return <Preloader message={'Загрузка...'} />;
@@ -52,20 +71,62 @@ export const CatalogPage = () => {
                         )}
                     </>
                 }
+                compactActions
+                actions={
+                    <ViewModeToggle
+                        ariaLabel="Режим просмотра каталога"
+                        options={VIEW_MODE_OPTIONS}
+                        value={viewMode}
+                        onChange={setViewMode}
+                        size="sm"
+                    />
+                }
             />
 
-            <div className={Styles.categories} aria-label="Быстрый фильтр по категориям">
-                {categoryFilters.map((category) => (
-                    <WhiteBox
-                        key={category.id}
-                        title={category.title}
-                        icon={category.icon}
-                        img={category.image}
-                        active={selectedCategory === category.id}
-                        onClick={() => selectCategory(category.id)}
-                    />
-                ))}
-            </div>
+            {/* В ленте фильтр категорий скрыт: карточка должна занимать экран
+                целиком, а ряд плиток съедал бы её верх на каждом товаре.
+                Категория остаётся в адресе и переключается в режиме сетки. */}
+            {viewMode === 'grid' && (
+                <div className={Styles.categories} aria-label="Быстрый фильтр по категориям">
+                    {categoryFilters.map((category) => (
+                        <WhiteBox
+                            key={category.id}
+                            title={category.title}
+                            icon={category.icon}
+                            img={category.image}
+                            active={selectedCategory === category.id}
+                            onClick={() => selectCategory(category.id)}
+                        />
+                    ))}
+                </div>
+            )}
+            {viewMode === 'feed' ? (
+                <>
+                    {isLoading && products.length === 0 ? (
+                        <div className={Styles['catalog-state']}>
+                            <Preloader />
+                        </div>
+                    ) : isError && products.length === 0 ? (
+                        <p className={Styles['catalog-state']}>Не удалось загрузить товары</p>
+                    ) : (
+                        <ProductFeed
+                            products={products}
+                            hasMore={hasMore}
+                            isFetching={isFetching}
+                            loadMoreRef={loadMoreRef}
+                            categoryNames={categoryNames}
+                            owners={owners}
+                            initialIndex={feedIndex}
+                            positionKey={filtersKey}
+                            onActiveIndexChange={saveFeedIndex}
+                            onOpenProduct={openProduct}
+                            onOpenOwner={openOwner}
+                            onOfferExchange={openOffer}
+                            onBuildRoute={openRouteTo}
+                        />
+                    )}
+                </>
+            ) : (
             <div className={Styles['catalog-page']}>
                 {(isLoading || (isFetching && products.length === 0)) && (
                     <div className={Styles['catalog-state']}>
@@ -117,27 +178,7 @@ export const CatalogPage = () => {
                     <p className={Styles['catalog-state']}>Не удалось загрузить следующие товары</p>
                 )}
             </div>
+            )}
         </MainSection>
     );
 };
-
-type TProductGridProps = {
-    products: TProduct[];
-    onOpen: (productId: string) => void;
-};
-
-const ProductGrid = ({ products, onOpen }: TProductGridProps) => (
-    <div className={Styles.grid}>
-        {products.map((product) => (
-            <ProductCard
-                key={product.product_id}
-                title={product.title}
-                img={product.image}
-                price={product.price}
-                location={product.location}
-                matched={product.matched}
-                onClick={() => onOpen(product.product_id)}
-            />
-        ))}
-    </div>
-);

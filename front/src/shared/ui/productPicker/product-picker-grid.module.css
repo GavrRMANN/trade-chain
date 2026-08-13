@@ -1,0 +1,27 @@
+.grid {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+
+    max-height: 320px;
+    overflow-y: auto;
+}
+
+.item {
+    padding: 0;
+    border: 2px solid transparent;
+    border-radius: var(--radius-md);
+    background: transparent;
+
+    cursor: pointer;
+
+    transition: border-color var(--animation-normal);
+}
+
+.item > * {
+    pointer-events: none;
+}
+
+.item--selected {
+    border-color: var(--accent-primary);
+}

@@ -12,7 +12,7 @@
 
     width: calc(100% + var(--space-6) * 2);
     margin: 0 calc(var(--space-6) * -1);
-    padding: var(--space-4) var(--space-6);
+    padding: 0 var(--space-6);
 
     background: var(--surface-page);
 
@@ -164,6 +164,16 @@
 
     .page-header__actions > * {
         flex: 1 1 auto;
+    }
+
+    /* Компактное управление остаётся справа от заголовка: целая строка во всю
+       ширину нужна только крупному основному действию. */
+    .page-header__actions--compact {
+        flex: 0 0 auto;
+    }
+
+    .page-header__actions--compact > * {
+        flex: 0 0 auto;
     }
 
     .page-header--stuck .page-header__actions > * {

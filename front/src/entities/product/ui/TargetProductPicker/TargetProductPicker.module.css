@@ -1,8 +1,10 @@
 .picker {
     display: flex;
+    flex: 1 1 auto;
     flex-direction: column;
-    gap: var(--space-4);
-    padding: var(--space-5);
+    gap: var(--space-3);
+    min-height: 0;
+    padding: var(--space-4);
     border: 1px solid var(--bg-shadows);
     border-radius: var(--radius-md);
     background: color-mix(in srgb, var(--bg-primary) 68%, var(--bg-secondary));
@@ -10,6 +12,7 @@
 
 .picker__heading {
     display: flex;
+    flex: 0 0 auto;
     align-items: center;
     gap: var(--space-3);
 }
@@ -31,8 +34,15 @@
     line-height: var(--text-base-line-height);
 }
 
-.picker__heading p,
+.picker__heading p {
+    color: var(--neutral-secondary);
+    font-size: var(--text-sm-font-size);
+    line-height: var(--text-sm-line-height);
+}
+
 .picker__state {
+    flex: 1 1 auto;
+    min-height: 0;
     color: var(--neutral-secondary);
     font-size: var(--text-sm-font-size);
     line-height: var(--text-sm-line-height);
@@ -40,6 +50,7 @@
 
 .picker__mode {
     display: flex;
+    flex: 0 0 auto;
     align-self: flex-start;
     padding: var(--space-1);
     border-radius: var(--radius-pill);
@@ -60,11 +71,19 @@
     color: var(--text-secondary);
 }
 
+.picker > label {
+    flex: 0 0 auto;
+}
+
 .picker__grid {
     display: grid;
+    flex: 1 1 auto;
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-content: start;
     gap: var(--space-2);
-    max-height: 350px;
+    min-height: 0;
+    /* Контейнер с ограниченной высотой (модалка) снимает кэп через переменную. */
+    max-height: var(--picker-grid-max-height, 350px);
     overflow-y: auto;
 }
 
@@ -144,16 +163,15 @@
     padding: var(--space-3);
     border: 2px dashed var(--bg-shadows);
     border-radius: var(--radius-sm);
-    background: color-mix(in srgb, var(--bg-primary) 50%, var(--accent-secondary));
+    background: var(--bg-secondary);
     color: var(--neutral-primary);
     text-align: left;
     cursor: pointer;
-    transition: border-color var(--animation-fast), background var(--animation-fast);
+    transition: border-color var(--animation-fast), background var(--animation-fast), box-shadow var(--animation-fast);
 }
 
 .picker__category:hover:not(:disabled) {
-    border-color: var(--accent-secondary);
-    background: color-mix(in srgb, var(--bg-primary) 30%, var(--accent-secondary));
+    border-color: color-mix(in srgb, var(--accent-primary) 45%, var(--bg-shadows));
 }
 
 .picker__category:focus-visible {
@@ -163,8 +181,9 @@
 
 .picker__category--selected {
     border-style: solid;
-    border-color: var(--accent-secondary);
-    background: color-mix(in srgb, var(--bg-primary) 20%, var(--accent-secondary));
+    border-color: var(--accent-primary);
+    background: color-mix(in srgb, var(--bg-primary) 88%, var(--accent-primary));
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent-primary) 12%, transparent);
 }
 
 .picker__category:disabled {
@@ -215,6 +234,6 @@
 
     .picker__grid {
         grid-template-columns: 1fr;
-        max-height: 280px;
+        max-height: var(--picker-grid-max-height, 280px);
     }
 }

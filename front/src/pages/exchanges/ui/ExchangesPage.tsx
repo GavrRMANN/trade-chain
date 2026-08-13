@@ -4,9 +4,7 @@ import {PageError} from '@shared/ui/pageError';
 import {PageHeader} from '@shared/ui/pageHeader';
 import {Preloader} from '@shared/ui/preloader';
 import {ExchangeRow} from '@widgets/exchangeRow';
-import {Modal} from '@shared/ui/modal';
 import {formatDate} from '@shared/lib';
-import {RouteBuilder} from '@features/routeBuilder';
 
 import Styles from './exchanges-page.module.css';
 import {RouteGroupCard} from './RouteGroupCard';
@@ -48,8 +46,12 @@ export const ExchangesPage = () => {
         setActiveRouteTab,
         activeView,
         setActiveView,
-        isBuilderOpen,
-        setIsBuilderOpen,
+        openRouteBuilder,
+        openProductFilter,
+        productFilter,
+        resetProductFilter,
+        filterableProducts,
+        selectedFilterProduct,
         visibleRows,
         routeGroups,
         visibleRouteGroups,
@@ -60,6 +62,8 @@ export const ExchangesPage = () => {
         openRoute,
         formatActiveOffers,
     } = useExchanges();
+
+    const isFilterableTab = activeTab === 'incoming' || activeTab === 'outgoing';
 
     if (isLoading || isFetching) {
         return <Preloader message={'Загрузка обменов…'} />;
@@ -106,7 +110,7 @@ export const ExchangesPage = () => {
                 }
                 actions={
                     activeView === 'routes' ? (
-                        <Button onClick={() => setIsBuilderOpen(true)}>Создать цепочку</Button>
+                        <Button onClick={openRouteBuilder}>Создать цепочку</Button>
                     ) : undefined
                 }
             />
@@ -149,8 +153,8 @@ export const ExchangesPage = () => {
                                         следующего обмена.
                                     </p>
                                 </div>
-                                {activeRouteTab === 'active' && !isBuilderOpen && (
-                                    <Button variant="secondary" onClick={() => setIsBuilderOpen(true)}>
+                                {activeRouteTab === 'active' && (
+                                    <Button variant="secondary" onClick={openRouteBuilder}>
                                         Построить первую
                                     </Button>
                                 )}
@@ -201,9 +205,26 @@ export const ExchangesPage = () => {
                             ))}
                         </div>
 
+                        {isFilterableTab && (filterableProducts.length > 0 || productFilter) && (
+                            <div className={Styles['exchanges-page__filter']}>
+                                <Button variant="secondary" onClick={openProductFilter}>
+                                    {selectedFilterProduct
+                                        ? `Товар: ${selectedFilterProduct.title}`
+                                        : 'Фильтр по товару'}
+                                </Button>
+                                {productFilter && (
+                                    <Button variant="text" onClick={resetProductFilter}>
+                                        Сбросить
+                                    </Button>
+                                )}
+                            </div>
+                        )}
+
                         {visibleRows.length === 0 ? (
                             <div className={Styles['exchanges-page__empty']}>
-                                {EMPTY_TEXT[activeTab]}
+                                {productFilter
+                                    ? 'Нет предложений по выбранному товару'
+                                    : EMPTY_TEXT[activeTab]}
                             </div>
                         ) : (
                             <div className={Styles['exchanges-page__list']}>
@@ -218,18 +239,6 @@ export const ExchangesPage = () => {
                         )}
                     </>
                 )}
-
-                <Modal
-                    title="Создание цепочки"
-                    isOpen={isBuilderOpen}
-                    size="large"
-                    onClose={() => setIsBuilderOpen(false)}
-                >
-                    <RouteBuilder
-                        variant="modal"
-                        onCancel={() => setIsBuilderOpen(false)}
-                    />
-                </Modal>
             </div>
         </MainSection>
     );

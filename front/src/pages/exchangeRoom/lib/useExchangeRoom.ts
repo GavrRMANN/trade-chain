@@ -2,6 +2,8 @@ import { useCallback, useMemo, useReducer } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import {
+    FINAL_CHAIN_STATUSES,
+    getRequiredAction,
     useConfirmChainMutation,
     useGetChainDetailsQuery,
     useGetChainMessagesQuery,
@@ -14,6 +16,8 @@ import { useGetProductQuery, useGetProductsQuery } from '@entities/product';
 import type { TProduct } from '@entities/product';
 import { useCreateReviewMutation } from '@entities/review';
 import { useGetCurrentUserQuery } from '@entities/user';
+
+import { useChainRoute } from './useChainRoute';
 
 const getErrorMessage = (error: unknown) => {
     if (typeof error === 'object' && error !== null && 'data' in error) {
@@ -81,10 +85,18 @@ export const useExchangeRoom = () => {
     const currentUserId = currentUserQuery.data?.customer_id;
     const isInitiator = Boolean(chain && currentUserId && chain.initiator_id === currentUserId);
 
-    const isPendingLike = chain?.status === 'pending' || chain?.status === 'countered';
+    /* Отвечать можно только на предложение, которое ещё ждёт ответа.
+       countered сюда не входит: встречное предложение — отдельное звено, а
+       исходное на сервере уже закрыто, и кнопки «принять/отклонить» на нём
+       возвращали бы «обмен уже завершён» на каждое нажатие. */
+    const isPendingLike = chain?.status === 'pending';
     const isActive = chain?.status === 'active';
     const isCompleted = chain?.status === 'completed';
     const isUnavailable = chain?.status === 'unavailable';
+    /* Переписка живёт вместе со сделкой: по закрытой писать некуда, и сервер
+       такое сообщение не примет. Поле ввода в этом случае не показывается,
+       а не отвечает ошибкой на отправку. */
+    const isClosed = Boolean(chain && FINAL_CHAIN_STATUSES.has(chain.status));
     const hasConfirmedSuccessfulOutcome = Boolean(
         currentUserId &&
             chainDetailsQuery.data?.confirmations.some(
@@ -177,10 +189,26 @@ export const useExchangeRoom = () => {
 
     const isActionLoading = isStatusUpdating || isConfirming;
 
+    /* В комнате известны подтверждения, поэтому требование точнее, чем в
+       списке обменов: видно, чьего именно подтверждения ещё ждут. */
+    /* Обмен может быть звеном пути к цели: тогда рядом со сделкой нужно
+       показать, к какой именно цепочке она относится. */
+    const chainRoute = useChainRoute({ chain, currentUserId });
+
+    const requiredAction = chain
+        ? getRequiredAction({
+              chain,
+              currentUserId,
+              confirmations: chainDetailsQuery.data?.confirmations,
+          })
+        : undefined;
+
     return {
         chain,
         currentUserId,
         isInitiator,
+        requiredAction,
+        chainRoute,
         fromProduct,
         toProduct,
         messages: messagesQuery.data ?? [],
@@ -191,6 +219,7 @@ export const useExchangeRoom = () => {
         isActive,
         isCompleted,
         isUnavailable,
+        isClosed,
         isWaitingForOtherConfirmation,
         // навигация
         openProduct,

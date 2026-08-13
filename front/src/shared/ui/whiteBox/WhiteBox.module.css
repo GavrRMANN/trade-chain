@@ -60,10 +60,16 @@
 .title {
     align-self: flex-start;
 
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+
     font-family: var(--font-family);
     font-size: clamp(12px, 9cqw, var(--text-sm-font-size));
     font-weight: var(--font-weight-medium);
     line-height: var(--line-height-tight);
+    overflow-wrap: anywhere;
 }
 
 .white-box--without-image .title {

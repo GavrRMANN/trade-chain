@@ -8,12 +8,13 @@ import { PageError } from '@shared/ui/pageError';
 import { PageHeader } from '@shared/ui/pageHeader';
 import { Preloader } from '@shared/ui/preloader';
 import { ProductCard } from '@entities/product';
-import { ChainStatusBadge } from '@entities/chain';
+import { ChainStatusBadge, RequiredAction } from '@entities/chain';
 import { Textarea } from '@shared/ui/textarea';
 import { formatDate } from '@shared/lib';
 
 import StarSVG from '@shared/assets/icons/Star.svg?react';
 
+import { ChainRouteBanner } from './ChainRouteBanner';
 import Styles from './exchange-room.module.css';
 
 const STAR_VALUES = [1, 2, 3, 4, 5] as const;
@@ -28,10 +29,13 @@ export const ExchangeRoomPage = () => {
         messages,
         isLoading,
         isError,
+        requiredAction,
+        chainRoute,
         isPendingLike,
         isActive,
         isCompleted,
         isUnavailable,
+        isClosed,
         isWaitingForOtherConfirmation,
         openProduct,
         messageDraft,
@@ -70,12 +74,20 @@ export const ExchangeRoomPage = () => {
                 meta={
                     <>
                         <ChainStatusBadge status={chain.status} />
+                        {/* Принадлежность к цепочке остаётся в закреплённой шапке:
+                            от неё зависит смысл сделки, а сам блок цепочки
+                            уезжает вверх при прокрутке. */}
+                        {chainRoute && (
+                            <span className={Styles['chain-route-chip']}>Часть цепочки</span>
+                        )}
                         <span>Создано: {formatDate(chain.created_at)}</span>
                     </>
                 }
             />
 
             <div className={Styles.page}>
+                {chainRoute && <ChainRouteBanner route={chainRoute} />}
+
                 <section className={Styles.products} aria-label="Товары обмена">
                     <div className={Styles.product}>
                         {fromProduct ? (
@@ -110,6 +122,16 @@ export const ExchangeRoomPage = () => {
 
                 <section className={Styles.section} aria-label="Действия по сделке">
                     <h2 className={Styles['section__title']}>Действия</h2>
+
+                    {/* Статус переводится в требование прямо над кнопками:
+                        иначе пользователю приходится догадываться, какое из
+                        действий сейчас его. */}
+                    {requiredAction && (
+                        <RequiredAction
+                            action={requiredAction}
+                            className={Styles['required-action']}
+                        />
+                    )}
 
                     {isPendingLike && (
                         <div className={Styles.actions}>
@@ -188,13 +210,19 @@ export const ExchangeRoomPage = () => {
                             <MessageList messages={messages} currentCustomerId={currentUserId} />
                         </div>
                         {messageError && <p className={Styles['message-error']}>{messageError}</p>}
-                        <MessageInput
-                            value={messageDraft}
-                            onChange={setMessageDraft}
-                            onSend={handleSendMessage}
-                            loading={isMessageSending}
-                            placeholder="Напишите сообщение участнику сделки…"
-                        />
+                        {isClosed ? (
+                            <p className={Styles['actions__note']}>
+                                Сделка закрыта — переписка доступна только для чтения.
+                            </p>
+                        ) : (
+                            <MessageInput
+                                value={messageDraft}
+                                onChange={setMessageDraft}
+                                onSend={handleSendMessage}
+                                loading={isMessageSending}
+                                placeholder="Напишите сообщение участнику сделки…"
+                            />
+                        )}
                     </div>
                 </section>
 

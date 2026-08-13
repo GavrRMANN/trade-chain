@@ -1,7 +1,12 @@
 import { createApi } from '@reduxjs/toolkit/query/react';
 
 import { apiBaseQuery } from '@shared/api';
-import type { TFindChainRequest, TFindChainResponse } from '../types';
+import type {
+    TFindCandidatesRequest,
+    TFindCandidatesResponse,
+    TFindChainRequest,
+    TFindChainResponse,
+} from '../types';
 
 export const searchApi = createApi({
     reducerPath: 'searchApi',
@@ -13,7 +18,10 @@ export const searchApi = createApi({
         findChain: builder.query<TFindChainResponse, TFindChainRequest>({
             query: (params) => ({ url: '/search/chain', params }),
         }),
+        findCandidates: builder.query<TFindCandidatesResponse, TFindCandidatesRequest>({
+            query: (params) => ({ url: '/search/candidates', params }),
+        }),
     }),
 });
 
-export const { useFindChainQuery, useLazyFindChainQuery } = searchApi;
+export const { useFindChainQuery, useLazyFindChainQuery, useFindCandidatesQuery } = searchApi;

@@ -20,7 +20,7 @@ export const useProtectedNavigation = () => {
                 navigate(path);
                 return;
             }
-            openModal('auth');
+            openModal({ name: 'auth' });
         },
         [navigate, openModal, isAuthenticated],
     );

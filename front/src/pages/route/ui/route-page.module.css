@@ -4,72 +4,126 @@
     gap: var(--space-5);
 }
 
-.route-page__goal,
-.route-page__current {
+/* Путь показан парой «отдаю → получаю» — тем же приёмом, что в карточке
+   обмена: одинаковые по весу плитки, стрелка между ними и акцентная
+   подложка только на той стороне, ради которой открыт экран. */
+.route-track {
     display: grid;
-    grid-template-columns: 112px minmax(0, 1fr) auto;
-    align-items: center;
-    gap: var(--space-5);
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    align-items: stretch;
+    gap: var(--space-3);
+}
 
-    padding: var(--space-4);
+.route-track__step {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    min-width: 0;
+    padding: var(--space-3);
     border: 1px solid var(--bg-shadows);
     border-radius: var(--radius-md);
 
     background: var(--bg-secondary);
+
+    transition: border-color var(--animation-fast) ease;
 }
 
-.route-page__goal {
-    border-color: color-mix(in srgb, var(--accent-primary) 28%, var(--bg-shadows));
+.route-track__step[role='button'] {
+    cursor: pointer;
+}
+
+.route-track__step[role='button']:hover {
+    border-color: color-mix(in srgb, var(--accent-primary) 50%, var(--bg-shadows));
+}
+
+.route-track__step[role='button']:focus-visible {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: 2px;
+}
+
+.route-track__step--goal {
+    border-color: color-mix(in srgb, var(--accent-primary) 30%, var(--bg-shadows));
     background: color-mix(in srgb, var(--accent-primary) 5%, var(--bg-secondary));
 }
 
-.route-page__goal--category {
-    grid-template-columns: minmax(0, 1fr);
+.route-track__label {
+    color: var(--neutral-secondary);
+    font-size: var(--text-xs-font-size);
+    line-height: var(--text-xs-line-height);
+    font-weight: 600;
 }
 
-.route-page__goal--category .route-page__goal-body {
-    flex-direction: row;
+.route-track__step--goal .route-track__label {
+    color: var(--accent-primary);
+}
+
+.route-track__body {
+    display: flex;
     align-items: center;
+    gap: var(--space-3);
+    min-width: 0;
 }
 
-.route-page__goal-media,
-.route-page__current-media {
-    width: 112px;
+.route-track__media {
+    flex: 0 0 auto;
+    width: 56px;
+    height: 56px;
 }
 
-.route-page__goal-body,
-.route-page__current-body {
+.route-track__media > * {
+    width: 100%;
+    height: 100%;
+}
+
+.route-track__text {
     display: flex;
     flex-direction: column;
     gap: var(--space-1);
     min-width: 0;
 }
 
-.route-page__goal-body h2,
-.route-page__current-body h2 {
+.route-track__title {
     overflow: hidden;
-    font-size: var(--h2-font-size);
-    line-height: var(--h2-line-height);
+
+    font-size: var(--text-base-font-size);
+    line-height: var(--text-base-line-height);
+    font-weight: 700;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
-.route-page__goal-body p,
-.route-page__current-body > span,
-.route-page__current-body div span {
+.route-track__note {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+
     color: var(--neutral-secondary);
     font-size: var(--text-sm-font-size);
     line-height: var(--text-sm-line-height);
 }
 
-.route-page__goal-body p {
+.route-track__note strong {
+    color: var(--neutral-primary);
+    font-weight: 700;
+}
+
+/* Остаток шагов — главный факт экрана: он и держит акцентный цвет, пока
+   всё остальное в паре остаётся нейтральным. */
+.route-track__step--goal .route-track__note {
     color: var(--accent-primary);
     font-weight: 600;
 }
 
-.route-page__goal-action,
-.route-page__current-action {
-    white-space: nowrap;
+.route-track__note > span::before {
+    content: '·';
+    margin-right: var(--space-2);
+}
+
+.route-track__connector {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
 }
 
 .route-page__recommendations {
@@ -83,18 +137,17 @@
     background: var(--bg-secondary);
 }
 
-.route-page__section-heading,
-.route-page__history-heading {
-    display: flex;
-    align-items: flex-end;
-    justify-content: space-between;
-    gap: var(--space-4);
-}
-
-.route-page__section-heading > div {
+.route-page__section-heading {
     display: flex;
     flex-direction: column;
     gap: var(--space-1);
+}
+
+.route-page__history-heading {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-4);
 }
 
 .route-page__section-heading h2,
@@ -104,15 +157,10 @@
 }
 
 .route-page__section-heading p,
-.route-page__section-heading > span,
 .route-page__history-heading > span {
     color: var(--neutral-secondary);
     font-size: var(--text-sm-font-size);
     line-height: var(--text-sm-line-height);
-}
-
-.route-page__section-heading > span {
-    text-align: right;
 }
 
 .route-page__feedback--success,
@@ -134,17 +182,6 @@
     color: var(--accent-danger);
 }
 
-.route-page__current-body div {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-2);
-}
-
-.route-page__current-body div span::before {
-    content: '·';
-    margin-right: var(--space-2);
-}
-
 .route-page__history {
     display: flex;
     flex-direction: column;
@@ -163,7 +200,7 @@
 
 .route-page__history-list li {
     display: grid;
-    grid-template-columns: var(--space-8) 88px minmax(0, 1fr) auto;
+    grid-template-columns: var(--space-7) 56px minmax(0, 1fr) auto;
     align-items: center;
     gap: var(--space-3);
 
@@ -189,7 +226,13 @@
 }
 
 .route-page__history-media {
-    width: 88px;
+    width: 56px;
+    height: 56px;
+}
+
+.route-page__history-media > * {
+    width: 100%;
+    height: 100%;
 }
 
 .route-page__history-body {
@@ -205,19 +248,10 @@
     white-space: nowrap;
 }
 
-.route-page__history-body span,
-.route-page__history-empty {
+.route-page__history-body span {
     color: var(--neutral-secondary);
     font-size: var(--text-sm-font-size);
     line-height: var(--text-sm-line-height);
-}
-
-.route-page__history-empty {
-    padding: var(--space-5);
-    border: 1px dashed var(--bg-shadows);
-    border-radius: var(--radius-md);
-
-    text-align: center;
 }
 
 .route-page__complete {
@@ -300,29 +334,20 @@
         gap: var(--space-4);
     }
 
-    .route-page__goal,
-    .route-page__current {
-        grid-template-columns: 72px minmax(0, 1fr);
-        gap: var(--space-3);
-        padding: var(--space-3);
+    /* Пара встаёт в столбик, а стрелка разворачивается вниз — как в
+       карточке обмена: на 360px две плитки в ряд остаются от названия
+       одни многоточия. */
+    .route-track {
+        grid-template-columns: minmax(0, 1fr);
+        gap: var(--space-2);
     }
 
-    .route-page__goal-media,
-    .route-page__current-media {
-        width: 72px;
+    .route-track__connector {
+        height: var(--space-4);
     }
 
-    .route-page__goal-body h2,
-    .route-page__current-body h2 {
-        font-size: var(--text-base-font-size);
-        line-height: var(--text-base-line-height);
-    }
-
-    .route-page__goal-action,
-    .route-page__current-action {
-        grid-column: 1 / -1;
-        justify-self: flex-start;
-        padding-left: 0;
+    .route-track__connector > span {
+        transform: rotate(90deg);
     }
 
     .route-page__recommendations {
@@ -330,25 +355,15 @@
         overflow: hidden;
     }
 
-
-    .route-page__section-heading,
     .route-page__history-heading {
         align-items: flex-start;
         flex-direction: column;
         gap: var(--space-1);
     }
 
-    .route-page__section-heading > span {
-        text-align: left;
-    }
-
     .route-page__history-list li {
-        grid-template-columns: var(--space-7) 64px minmax(0, 1fr);
+        grid-template-columns: var(--space-7) 56px minmax(0, 1fr);
         gap: var(--space-2);
-    }
-
-    .route-page__history-media {
-        width: 64px;
     }
 
     .route-page__history-list li > button {

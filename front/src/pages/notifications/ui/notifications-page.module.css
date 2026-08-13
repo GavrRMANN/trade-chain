@@ -86,12 +86,6 @@
 }
 
 @media (max-width: 768px) {
-    .notifications-page {
-        height: calc(
-            100dvh - var(--header-height) - var(--mobile-nav-height) - var(--space-12) - var(--space-1-5)
-        );
-    }
-
     .notifications-page__guest {
         width: 100%;
         margin: var(--space-8) 0;
