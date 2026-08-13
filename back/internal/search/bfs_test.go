@@ -48,20 +48,25 @@ func equal(left, right []string) bool {
 	return true
 }
 
-// Порядок маршрута — не деталь оформления: интерфейс читает следующим обменом
-// соседа текущей вещи, и развёрнутый путь подсовывает ему финальный товар
-// цепочки вместо ближайшего шага.
-func TestFindChainBFSReturnsPathFromSourceToTarget(t *testing.T) {
+// Обход идёт от цели к вещи пользователя: соседи берутся у цели, а найденный
+// путь выходит целью вперёд. Порядок закреплён за обеими ручками поиска, и
+// клиент разворачивает его у себя (см. orderChainForRoute на фронте), поэтому
+// смена порядка здесь тихо перевернула бы страницу маршрута.
+//
+// Параметры объявлены как (target, source), где target — вещь, до которой
+// идёт поиск: аргументы передаются позиционно, и FindChain вызывает функцию
+// со своими (source, target).
+func TestFindChainBFSReturnsPathFromTargetToSource(t *testing.T) {
 	stub := stubProductService{neighbours: map[string][]domain.Product{
-		"source": {product("middle")},
-		"middle": {product("target")},
+		"goal":   {product("middle")},
+		"middle": {product("mine")},
 	}}
 
 	result, err := findChainBFS(
 		context.Background(),
 		stub,
-		product("source"),
-		product("target"),
+		product("mine"),
+		product("goal"),
 		10,
 	)
 	if err != nil {
@@ -71,7 +76,7 @@ func TestFindChainBFSReturnsPathFromSourceToTarget(t *testing.T) {
 		t.Fatal("маршрут не найден, хотя путь существует")
 	}
 
-	want := []string{"source", "middle", "target"}
+	want := []string{"goal", "middle", "mine"}
 	if got := ids(result.Products); !equal(got, want) {
 		t.Errorf("порядок маршрута: получено %v, ожидалось %v", got, want)
 	}
@@ -82,14 +87,14 @@ func TestFindChainBFSReturnsPathFromSourceToTarget(t *testing.T) {
 
 func TestFindChainBFSReturnsNilWhenNoPath(t *testing.T) {
 	stub := stubProductService{neighbours: map[string][]domain.Product{
-		"source": {product("dead-end")},
+		"goal": {product("dead-end")},
 	}}
 
 	result, err := findChainBFS(
 		context.Background(),
 		stub,
-		product("source"),
-		product("target"),
+		product("mine"),
+		product("goal"),
 		10,
 	)
 	if err != nil {
@@ -104,15 +109,15 @@ func TestFindChainBFSReturnsNilWhenNoPath(t *testing.T) {
 // лимита должна считаться недостижимой.
 func TestFindChainBFSRespectsMaxDepth(t *testing.T) {
 	stub := stubProductService{neighbours: map[string][]domain.Product{
-		"source": {product("middle")},
-		"middle": {product("target")},
+		"goal":   {product("middle")},
+		"middle": {product("mine")},
 	}}
 
 	result, err := findChainBFS(
 		context.Background(),
 		stub,
-		product("source"),
-		product("target"),
+		product("mine"),
+		product("goal"),
 		1,
 	)
 	if err != nil {

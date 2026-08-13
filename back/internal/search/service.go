@@ -100,10 +100,17 @@ func (s *SearchService) FindChainToTarget(
 // вишлисту, см. GetExchangeCandidates), отсортированные по CalculateScore,
 // а если их не хватает до limit — остальные активные товары каталога,
 // кроме собственных вещей владельца source-товара.
+//
+// directOnly отключает добор каталогом. Совпадение по вишлисту — это ребро
+// того же графа, по которому ищется цепочка: только до таких вещей от
+// текущего товара есть прямой путь. Остальной каталог — просто товары
+// рядом, и предлагать их следующим шагом маршрута нельзя: обмен с ними
+// никуда не ведёт, а человек видит их в одном ряду с подтверждённым шагом.
 func (s *SearchService) FindCandidates(
 	ctx context.Context,
 	productID string,
 	limit int,
+	directOnly bool,
 ) ([]domain.Product, error) {
 	if limit <= 0 {
 		limit = defaultCandidatesLimit
@@ -134,6 +141,10 @@ func (s *SearchService) FindCandidates(
 		if len(result) >= limit {
 			return result, nil
 		}
+	}
+
+	if directOnly {
+		return result, nil
 	}
 
 	// Кандидатов по вишлисту не хватило — дозаполняем остальными активными

@@ -115,6 +115,7 @@ func (h searchHandler) chain(w http.ResponseWriter, r *http.Request) {
 // @Produce json
 // @Param product_id query string true "Product ID"
 // @Param limit query int false "Max candidates, default 8"
+// @Param direct query bool false "Только вещи с прямым обменом, без добора каталогом"
 // @Success 200 {object} CandidatesResponse
 // @Failure 400 {object} ErrorResponse
 // @Failure 401 {object} ErrorResponse
@@ -137,12 +138,22 @@ func (h searchHandler) candidates(w http.ResponseWriter, r *http.Request) {
 		limit = parsed
 	}
 
+	directOnly := false
+	if raw := strings.TrimSpace(r.URL.Query().Get("direct")); raw != "" {
+		parsed, err := strconv.ParseBool(raw)
+		if err != nil {
+			writeError(w, service.ErrInvalidInput)
+			return
+		}
+		directOnly = parsed
+	}
+
 	if _, ok := auth.UserIDFromContext(r.Context()); !ok {
 		writeError(w, service.ErrForbidden)
 		return
 	}
 
-	products, err := h.s.FindCandidates(r.Context(), productID, limit)
+	products, err := h.s.FindCandidates(r.Context(), productID, limit, directOnly)
 	if err != nil {
 		writeError(w, err)
 		return

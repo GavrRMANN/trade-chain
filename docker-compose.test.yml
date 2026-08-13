@@ -1,0 +1,91 @@
+# Отдельное имя проекта: тестовый стек не должен делить сеть/контейнеры
+# с обычным docker-compose.yml, если тот поднят параллельно (например,
+# для ручной разработки во время прогона E2E).
+name: xakaton-avito-e2e
+
+services:
+
+  postgres-test:
+    image: postgres:16-alpine
+    container_name: trade-chain-db-e2e
+    restart: "no"
+
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: trade_chain_e2e
+
+    ports:
+      - "5433:5432"
+
+    # tmpfs вместо именованного volume: данные живут только на время
+    # контейнера, а `docker compose down` без -v всё равно оставляет
+    # тестовую БД пустой при следующем прогоне.
+    tmpfs:
+      - /var/lib/postgresql/data
+
+    volumes:
+      - ./back/infrastructure/migrations/001_create_tables.sql:/docker-entrypoint-initdb.d/001_create_tables.sql:ro
+      - ./back/infrastructure/migrations/002_create_search_extension.sql:/docker-entrypoint-initdb.d/002_create_search_extension.sql:ro
+      - ./back/infrastructure/migrations/003_align_schema_with_domain.sql:/docker-entrypoint-initdb.d/003_align_schema_with_domain.sql:ro
+      - ./back/infrastructure/migrations/004_exchange_negotiation.sql:/docker-entrypoint-initdb.d/004_exchange_negotiation.sql:ro
+      - ./back/infrastructure/migrations/005_exchange_offer_details.sql:/docker-entrypoint-initdb.d/005_exchange_offer_details.sql:ro
+      - ./back/infrastructure/migrations/006_seed_mock_data.sql:/docker-entrypoint-initdb.d/006_seed_mock_data.sql:ro
+      - ./back/infrastructure/migrations/007_category_goal.sql:/docker-entrypoint-initdb.d/007_category_goal.sql:ro
+      - ./back/infrastructure/migrations/008_unavailable_chain_status.sql:/docker-entrypoint-initdb.d/008_unavailable_chain_status.sql:ro
+      - ./back/infrastructure/migrations/009_prevent_archived_product_reactivation.sql:/docker-entrypoint-initdb.d/009_prevent_archived_product_reactivation.sql:ro
+      - ./back/infrastructure/migrations/010_notification_reads.sql:/docker-entrypoint-initdb.d/010_notification_reads.sql:ro
+      - ./back/infrastructure/migrations/011_customer_full_name.sql:/docker-entrypoint-initdb.d/011_customer_full_name.sql:ro
+      - ./back/infrastructure/migrations/012_category_icon.sql:/docker-entrypoint-initdb.d/012_category_icon.sql:ro
+      - ./back/infrastructure/migrations/013_demo_accounts.sql:/docker-entrypoint-initdb.d/013_demo_accounts.sql:ro
+      # 014-017 генерируют объёмный demo/social-proof датасет для витрины и не
+      # нужны E2E-тестам (свои товары и обмены тесты заводят сами через API).
+      # 016 к тому же не бутстрапится с нуля: ссылается на product_id, которого
+      # нет ни в одной из миграций 001-015 — это существующий баг сид-скрипта,
+      # не связанный с тестовой инфраструктурой.
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d trade_chain_e2e"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  app-test:
+    build:
+      context: ./back
+      dockerfile: Dockerfile
+
+    container_name: trade-chain-back-e2e
+    restart: "no"
+
+    depends_on:
+      postgres-test:
+        condition: service_healthy
+
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@postgres-test:5432/trade_chain_e2e?sslmode=disable
+      PORT: 8080
+      # Тестовый секрет не переиспользует боевой/дев JWT_SECRET намеренно:
+      # стенд одноразовый и не должен зависеть от .env разработчика.
+      JWT_SECRET: e2e-tests-only-jwt-secret-do-not-reuse-me
+      CORS_ALLOWED_ORIGINS: http://localhost:3002
+      DEMO_LOGIN_ENABLED: "true"
+
+    ports:
+      - "8081:8080"
+
+  front-test:
+    build:
+      context: ./front
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: http://localhost:8081
+
+    container_name: trade-chain-front-e2e
+    restart: "no"
+
+    depends_on:
+      - app-test
+
+    ports:
+      - "3002:80"

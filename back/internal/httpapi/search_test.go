@@ -154,6 +154,70 @@ func TestSearchChainReturnsFoundPath(t *testing.T) {
 	}
 }
 
+// Подборка следующего шага маршрута читает эту ручку с direct=true: в ряду
+// «Следующий обмен» должны стоять только вещи, до которых от текущего товара
+// есть прямой путь. Добор каталогом подставлял туда случайные товары, обмен с
+// которыми никуда не ведёт.
+func TestSearchCandidatesDirectSkipsCatalogFallback(t *testing.T) {
+	source := domain.Product{ProductID: "mine", CustomerID: testUserID, Status: domain.ProductActive}
+	wanted := domain.Product{ProductID: "wanted", CustomerID: "seller", Status: domain.ProductActive}
+	stranger := domain.Product{ProductID: "stranger", CustomerID: "someone", Status: domain.ProductActive}
+	products := &fakeProductService{
+		byID:       map[string]domain.Product{"mine": source},
+		candidates: map[string][]domain.Product{"mine": {wanted}},
+		listResult: []domain.Product{stranger},
+	}
+	handler, token := newSearchServer(t, products)
+
+	rec := do(t, handler, http.MethodGet, "/api/v1/search/candidates?product_id=mine&direct=true", token, "")
+	if rec.Code != http.StatusOK {
+		t.Fatalf("код %d, ожидался 200: %s", rec.Code, rec.Body.String())
+	}
+
+	var out CandidatesResponse
+	if err := json.Unmarshal(rec.Body.Bytes(), &out); err != nil {
+		t.Fatalf("ответ не разобрался: %v", err)
+	}
+	if len(out.Products) != 1 || out.Products[0].ProductID != "wanted" {
+		t.Errorf("ожидался только прямой кандидат, получено %+v", out.Products)
+	}
+}
+
+// Без direct ручка остаётся прежней: не хватило совпадений по вишлисту —
+// добираем каталогом.
+func TestSearchCandidatesFallsBackToCatalogByDefault(t *testing.T) {
+	source := domain.Product{ProductID: "mine", CustomerID: testUserID, Status: domain.ProductActive}
+	stranger := domain.Product{ProductID: "stranger", CustomerID: "someone", Status: domain.ProductActive}
+	products := &fakeProductService{
+		byID:       map[string]domain.Product{"mine": source},
+		candidates: map[string][]domain.Product{},
+		listResult: []domain.Product{stranger},
+	}
+	handler, token := newSearchServer(t, products)
+
+	rec := do(t, handler, http.MethodGet, "/api/v1/search/candidates?product_id=mine", token, "")
+	if rec.Code != http.StatusOK {
+		t.Fatalf("код %d, ожидался 200: %s", rec.Code, rec.Body.String())
+	}
+
+	var out CandidatesResponse
+	if err := json.Unmarshal(rec.Body.Bytes(), &out); err != nil {
+		t.Fatalf("ответ не разобрался: %v", err)
+	}
+	if len(out.Products) != 1 || out.Products[0].ProductID != "stranger" {
+		t.Errorf("ожидался добор каталогом, получено %+v", out.Products)
+	}
+}
+
+func TestSearchCandidatesValidatesDirectFlag(t *testing.T) {
+	handler, token := newSearchServer(t, &fakeProductService{})
+
+	rec := do(t, handler, http.MethodGet, "/api/v1/search/candidates?product_id=mine&direct=maybe", token, "")
+	if rec.Code != http.StatusBadRequest {
+		t.Errorf("код %d, ожидался 400", rec.Code)
+	}
+}
+
 func TestProductSearchRequiresQuery(t *testing.T) {
 	handler := NewRouter(Dependencies{Products: &fakeProductService{}})
 
