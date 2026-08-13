@@ -9,6 +9,7 @@ import {useGetMyChainsQuery} from '@entities/chain';
 import type {TChain} from '@entities/chain';
 import {useGetProductsQuery} from '@entities/product';
 import type {TUser} from '@entities/user';
+import {getDisplayName} from '@shared/lib';
 
 export type TProfileTab = 'products' | 'archive' | 'exchanges' | 'reviews';
 
@@ -16,12 +17,6 @@ export type TProfileExchange = {
     chain: TChain;
     fromProduct?: TProduct;
     toProduct?: TProduct;
-};
-
-const maskEmail = (email: string): string => {
-    const [name, domain] = email.split('@');
-    if (!domain) return 'Пользователь';
-    return `${name.slice(0, 2)}***@${domain}`;
 };
 
 export const useProfile = (user?: TUser, isOwner = false) => {
@@ -84,11 +79,10 @@ export const useProfile = (user?: TUser, isOwner = false) => {
             .sort((a, b) => b.chain.updated_at.localeCompare(a.chain.updated_at));
     }, [chainsQuery.data, productsById]);
 
-    const maskedName = useMemo(() => {
-        const fullName = user?.full_name?.trim();
-        if (fullName) return fullName;
-        return user?.email ? maskEmail(user.email) : '';
-    }, [user?.email, user?.full_name]);
+    const maskedName = useMemo(
+        () => getDisplayName(user?.full_name, user?.email),
+        [user?.email, user?.full_name],
+    );
 
     const openProduct = useCallback(
         (productId: string) => navigate(`/product/${productId}`),

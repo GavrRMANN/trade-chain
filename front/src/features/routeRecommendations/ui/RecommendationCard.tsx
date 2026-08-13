@@ -23,7 +23,11 @@ export const RecommendationCard = ({
     onOpenProduct,
     onOpenOffer,
 }: TRecommendationCardProps) => {
-    const {product, offer, classes, priceLabel, locationLabel} = useRecommendationCard(item, selected, compact);
+    const {product, offer, isBestMatch, classes, priceLabel, locationLabel} = useRecommendationCard(
+        item,
+        selected,
+        compact,
+    );
 
     return (
         <article className={classes}>
@@ -34,6 +38,9 @@ export const RecommendationCard = ({
                 aria-label={`Открыть товар ${product.title}`}
             >
                 <ProductImage src={product.image} alt={product.title} title={product.title} />
+                {/* Отличает подтверждённый шаг найденного маршрута от
+                    остальных вариантов, подобранных лишь по категории. */}
+                {isBestMatch && <span className={Styles.recommendation__badge}>Лучший вариант</span>}
             </button>
 
             <div className={Styles.recommendation__body}>

@@ -57,6 +57,7 @@ export const ProductPage = () => {
         openProduct,
         openEditProduct,
         openExchanges,
+        openIncomingOffers,
         openCreateForTarget,
         openRoute,
         openExchangeRoom,
@@ -166,6 +167,55 @@ export const ProductPage = () => {
                             <p>{product.description || 'Владелец пока не добавил описание.'}</p>
                         </section>
 
+                        {!isOwner && isAuthenticated && (
+                            <section className={Styles['product-page__wide-section']}>
+                                <div className={Styles['product-page__section-heading']}>
+                                    <div>
+                                        <h2>Ваши варианты обмена</h2>
+                                        <p>Эти вещи совпадают с пожеланиями владельца.</p>
+                                    </div>
+                                </div>
+                                {matchingProducts.length ? (
+                                    <div className={Styles['product-page__matches']}>
+                                        {matchingProducts.slice(0, 2).map((match) => (
+                                            <ProductCard
+                                                key={match.product_id}
+                                                title={match.title}
+                                                img={match.image}
+                                                price={match.price}
+                                                location={match.location}
+                                                onClick={openOffer}
+                                            />
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <p className={Styles['product-page__muted']}>
+                                        Прямого совпадения нет, но владелец может принять другое
+                                        предложение.
+                                    </p>
+                                )}
+                                {routeChain.length > 1 && (
+                                    <div className={Styles['product-page__route']}>
+                                        <h3>Маршрут через цепочку</h3>
+                                        <ChainRow
+                                            nodes={routeChain.map((item, index) => ({
+                                                product: item,
+                                                isCurrent: index === 0,
+                                                isGoal: index === routeChain.length - 1,
+                                            }))}
+                                            onNodeClick={openProduct}
+                                        />
+                                        <Button
+                                            variant="text"
+                                            onClick={() => openRoute(product.product_id)}
+                                        >
+                                            Открыть маршрут обмена
+                                        </Button>
+                                    </div>
+                                )}
+                            </section>
+                        )}
+
                         {!isOwner && myProductOffers.length > 0 && (
                             <section className={Styles['product-page__wide-section']}>
                                 <div className={Styles['product-page__section-heading']}>
@@ -196,7 +246,7 @@ export const ProductPage = () => {
                                         <h2>Предложения по этому товару</h2>
                                         <p>Все цепочки, в которых ваш товар указан целью обмена.</p>
                                     </div>
-                                    <Button variant="text" onClick={openExchanges}>
+                                    <Button variant="text" onClick={openIncomingOffers}>
                                         Все предложения
                                     </Button>
                                 </div>
@@ -224,12 +274,6 @@ export const ProductPage = () => {
                             <h2>{isOwner ? 'Управление объявлением' : 'Обмен'}</h2>
                             {isOwner ? (
                                 <div className={Styles['product-page__actions']}>
-                                    <Button
-                                        variant="secondary"
-                                        onClick={() => openEditProduct(product.product_id)}
-                                    >
-                                        Редактировать
-                                    </Button>
                                     {status === 'active' ? (
                                         <Button variant="secondary" onClick={requestArchive}>
                                             Снять с обмена
@@ -242,21 +286,13 @@ export const ProductPage = () => {
                                     <div className={Styles['product-page__offer-summary']}>
                                         <span>Активных предложений</span>
                                         <strong>{incomingOffers}</strong>
-                                        <Button variant="text" onClick={openExchanges}>
+                                        <Button variant="text" onClick={openIncomingOffers}>
                                             Смотреть предложения
                                         </Button>
                                     </div>
                                 </div>
                             ) : (
                                 <div className={Styles['product-page__actions']}>
-                                    <Button
-                                        onClick={openOffer}
-                                        disabled={isAuthenticated && !canOffer}
-                                    >
-                                        {isAuthenticated
-                                            ? 'Предложить обмен'
-                                            : 'Войти, чтобы предложить обмен'}
-                                    </Button>
                                     {isAuthenticated && targetChain ? (
                                         <Button
                                             variant="secondary"
@@ -338,55 +374,6 @@ export const ProductPage = () => {
                                 </>
                             )}
                         </section>
-
-                        {!isOwner && isAuthenticated && (
-                            <section className={Styles['product-page__panel']}>
-                                <h2>Ваши варианты обмена</h2>
-                                {matchingProducts.length ? (
-                                    <>
-                                        <p className={Styles['product-page__muted']}>
-                                            Эти вещи совпадают с пожеланиями владельца.
-                                        </p>
-                                        <div className={Styles['product-page__matches']}>
-                                            {matchingProducts.slice(0, 2).map((match) => (
-                                                <ProductCard
-                                                    key={match.product_id}
-                                                    title={match.title}
-                                                    img={match.image}
-                                                    price={match.price}
-                                                    location={match.location}
-                                                    onClick={openOffer}
-                                                />
-                                            ))}
-                                        </div>
-                                    </>
-                                ) : (
-                                    <p className={Styles['product-page__muted']}>
-                                        Прямого совпадения нет, но владелец может принять другое
-                                        предложение.
-                                    </p>
-                                )}
-                                {routeChain.length > 1 && (
-                                    <div className={Styles['product-page__route']}>
-                                        <h3>Маршрут через цепочку</h3>
-                                        <ChainRow
-                                            nodes={routeChain.map((item, index) => ({
-                                                product: item,
-                                                isCurrent: index === 0,
-                                                isGoal: index === routeChain.length - 1,
-                                            }))}
-                                            onNodeClick={openProduct}
-                                        />
-                                        <Button
-                                            variant="text"
-                                            onClick={() => openRoute(product.product_id)}
-                                        >
-                                            Открыть маршрут обмена
-                                        </Button>
-                                    </div>
-                                )}
-                            </section>
-                        )}
                     </aside>
                 </div>
             </article>

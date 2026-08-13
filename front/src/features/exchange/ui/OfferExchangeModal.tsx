@@ -2,7 +2,7 @@ import {Button} from '@shared/ui/button';
 import {Input} from '@shared/ui/input';
 import {Modal} from '@shared/ui/modal';
 import {Preloader} from '@shared/ui/preloader';
-import {ProductCard} from '@entities/product';
+import {ProductPickerGrid} from '@shared/ui/productPicker';
 import type {TRouteContext} from '@entities/chain';
 import {QuickProductForm} from '@features/productForm';
 
@@ -119,31 +119,11 @@ export const OfferExchangeModal = ({
                             </div>
                         )
                     ) : (
-                        <div className={Styles['form__products']}>
-                            {myProducts.map((product) => (
-                                <button
-                                    key={product.product_id}
-                                    type="button"
-                                    className={[
-                                        Styles['form__product'],
-                                        selectedProductId === product.product_id &&
-                                            Styles['form__product--selected'],
-                                    ]
-                                        .filter(Boolean)
-                                        .join(' ')}
-                                    onClick={() => setSelectedProductId(product.product_id)}
-                                    aria-pressed={selectedProductId === product.product_id}
-                                >
-                                    <ProductCard
-                                        title={product.title}
-                                        img={product.image}
-                                        price={product.price}
-                                        location={product.location}
-                                        variant="horizontal"
-                                    />
-                                </button>
-                            ))}
-                        </div>
+                        <ProductPickerGrid
+                            products={myProducts}
+                            selectedProductId={selectedProductId}
+                            onSelect={setSelectedProductId}
+                        />
                     )}
                 </section>
 

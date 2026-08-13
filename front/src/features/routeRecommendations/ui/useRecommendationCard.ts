@@ -9,6 +9,7 @@ export const useRecommendationCard = (
 ) => ({
     product: item.product,
     offer: item.offer,
+    isBestMatch: item.isBestMatch,
     priceLabel: item.product.price === undefined ? 'Цена не указана' : formatAmount(item.product.price),
     locationLabel: item.product.location ?? 'Город не указан',
     classes: [

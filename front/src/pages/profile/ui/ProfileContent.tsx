@@ -7,6 +7,7 @@ import {ProfileSidebar} from '@widgets/profileSidebar';
 import {ReviewCard} from '@entities/review';
 import {ProfileProductRow} from '@widgets/profile';
 import {PageHeader} from '@shared/ui/pageHeader';
+import {CustomerRecommendationsEditor} from '@features/customerRecommendations';
 
 import {EmptyState} from './EmptyState';
 import Styles from './profile-content.module.css';
@@ -137,24 +138,6 @@ export const ProfileContent = ({
                         onAction={isOwner && viewModel.activeTab !== 'archive' ? viewModel.openCreate : undefined}
                     />
                 )}
-
-                {isOwner && !viewModel.isExchangesError && viewModel.exchanges.length > 0 && (
-                    <section className={Styles.preview} aria-labelledby="profile-exchanges-preview">
-                        <div className={Styles.previewHeading}>
-                            <div>
-                                <h3 id="profile-exchanges-preview">Последние цепочки</h3>
-                                <p>Ваши недавние предложения и обмены.</p>
-                            </div>
-                            <Button variant="text" onClick={() => viewModel.setActiveTab('exchanges')}>
-                                Все цепочки
-                            </Button>
-                        </div>
-                        <ExchangeRow
-                            row={viewModel.exchanges[0]}
-                            onOpen={viewModel.openExchange}
-                        />
-                    </section>
-                )}
             </>
         );
     };
@@ -196,6 +179,8 @@ export const ProfileContent = ({
                 />
 
                 <section className={Styles.content}>
+                    {isOwner && viewModel.activeTab === 'products' && <CustomerRecommendationsEditor />}
+
                     <div className={Styles.heading}>
                         <div>
                             <h2>

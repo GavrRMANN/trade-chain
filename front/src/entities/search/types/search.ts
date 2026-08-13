@@ -15,3 +15,15 @@ export type TFindChainResponse = {
     /** Количество звеньев найденной цепочки. */
     length: number;
 };
+
+export type TFindCandidatesRequest = {
+    /** Идентификатор товара, для которого подбирается следующий шаг обмена. */
+    product_id: string;
+    /** Максимальное число кандидатов. */
+    limit?: number;
+};
+
+export type TFindCandidatesResponse = {
+    /** Подобранные товары: сперва совпадения по вишлисту, затем остальные. */
+    products: TProduct[];
+};

@@ -34,6 +34,7 @@ export type TExchangeView = 'routes' | 'exchanges';
 
 type TExchangeUiState = {
     isBuilderOpen: boolean;
+    isProductFilterOpen: boolean;
 };
 type TExchangeUiAction = {type: 'update'; payload: Partial<TExchangeUiState>};
 const exchangeUiReducer = (state: TExchangeUiState, action: TExchangeUiAction): TExchangeUiState => ({
@@ -78,8 +79,9 @@ export const useExchanges = () => {
     // UI-состояние
     const [uiState, dispatchUi] = useReducer(exchangeUiReducer, {
         isBuilderOpen: false,
+        isProductFilterOpen: false,
     });
-    const {isBuilderOpen} = uiState;
+    const {isBuilderOpen, isProductFilterOpen} = uiState;
     const activeView: TExchangeView = searchParams.get('view') === 'exchanges' ? 'exchanges' : 'routes';
     const tab = searchParams.get('tab');
     const activeTab: TExchangeTab = isExchangeTab(tab)
@@ -89,19 +91,23 @@ export const useExchanges = () => {
         ? tab
         : 'active';
     const selectedTab = activeView === 'exchanges' ? activeTab : activeRouteTab;
+    const productFilter = searchParams.get('product');
     const setActiveTab = (value: TExchangeTab) => setSearchParams((currentParams) => {
         currentParams.set('view', 'exchanges');
         currentParams.set('tab', value);
+        currentParams.delete('product');
         return currentParams;
     });
     const setActiveRouteTab = (value: TExchangeRouteTab) => setSearchParams((currentParams) => {
         currentParams.set('view', 'routes');
         currentParams.set('tab', value);
+        currentParams.delete('product');
         return currentParams;
     });
     const setActiveView = (value: TExchangeView) => setSearchParams((currentParams) => {
         const currentTab = currentParams.get('tab');
         currentParams.set('view', value);
+        currentParams.delete('product');
         currentParams.set(
             'tab',
             value === 'exchanges'
@@ -111,6 +117,16 @@ export const useExchanges = () => {
         return currentParams;
     });
     const setIsBuilderOpen = (value: boolean) => dispatchUi({type: 'update', payload: {isBuilderOpen: value}});
+    const setIsProductFilterOpen = (value: boolean) =>
+        dispatchUi({type: 'update', payload: {isProductFilterOpen: value}});
+    const setProductFilter = (productId: string | null) => setSearchParams((currentParams) => {
+        if (productId) {
+            currentParams.set('product', productId);
+        } else {
+            currentParams.delete('product');
+        }
+        return currentParams;
+    }, {replace: true});
 
     useEffect(() => {
         if (searchParams.get('view') === activeView && searchParams.get('tab') === selectedTab) {
@@ -204,12 +220,41 @@ export const useExchanges = () => {
         );
     }, [activeRouteTab, routeGroups]);
 
+    /* Бэкенд отдаёт /chains/my уже развёрнутым под зрителя (см.
+       orientChainForCustomer на бэкенде): from_product_id — всегда мой
+       товар, to_product_id — товар второй стороны, независимо от того,
+       кто инициировал цепочку. Поэтому и во входящих, и в исходящих для
+       фильтра берём именно fromProduct. */
+    const filterableProducts = useMemo(() => {
+        const rows = activeTab === 'incoming' ? incoming : activeTab === 'outgoing' ? outgoing : [];
+        const byId = new Map<string, TProduct>();
+        for (const row of rows) {
+            if (row.fromProduct) byId.set(row.fromProduct.product_id, row.fromProduct);
+        }
+        return [...byId.values()];
+    }, [activeTab, incoming, outgoing]);
+
+    const selectedFilterProduct = useMemo(
+        () => filterableProducts.find((product) => product.product_id === productFilter),
+        [filterableProducts, productFilter],
+    );
+
     const visibleRows = useMemo(() => {
-        if (activeTab === 'active') return active;
-        if (activeTab === 'incoming') return incoming;
-        if (activeTab === 'outgoing') return outgoing;
-        return completed;
-    }, [activeTab, active, incoming, outgoing, completed]);
+        const rows =
+            activeTab === 'active'
+                ? active
+                : activeTab === 'incoming'
+                  ? incoming
+                  : activeTab === 'outgoing'
+                    ? outgoing
+                    : completed;
+
+        if (!productFilter || (activeTab !== 'incoming' && activeTab !== 'outgoing')) {
+            return rows;
+        }
+
+        return rows.filter((row) => row.fromProduct?.product_id === productFilter);
+    }, [activeTab, active, incoming, outgoing, completed, productFilter]);
 
     const openExchange = useCallback((chainId: string) => {
         navigate(`/exchanges/${chainId}`);
@@ -235,6 +280,12 @@ export const useExchanges = () => {
         setActiveView,
         isBuilderOpen,
         setIsBuilderOpen,
+        isProductFilterOpen,
+        setIsProductFilterOpen,
+        productFilter,
+        setProductFilter,
+        filterableProducts,
+        selectedFilterProduct,
         // данные
         active,
         incoming,

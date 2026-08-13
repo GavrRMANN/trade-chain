@@ -6,7 +6,7 @@ import { buildChainPayload, useCreateChainMutation, useGetMyChainsQuery } from '
 import type { TChain } from '@entities/chain';
 import { useGetProductsByCustomerQuery, useGetProductsQuery, useProductsById } from '@entities/product';
 import type { TProduct } from '@entities/product';
-import { useFindChainQuery } from '@entities/search';
+import { useFindCandidatesQuery, useFindChainQuery } from '@entities/search';
 import { useGetCurrentUserQuery } from '@entities/user';
 import type { TRouteRecommendation } from '@features/routeRecommendations';
 
@@ -37,15 +37,18 @@ export const useRoute = () => {
         skip: !currentCustomerId,
         refetchOnMountOrArgChange: true,
     });
+    /* Оба запроса нужны только со второго шага (когда стартовый товар уже
+       выбран): без sourceId экран показывает лишь список своих объявлений,
+       и загружать сюда весь каталог и историю цепочек незачем. */
     const productsQuery = useGetProductsQuery(
         { limit: 100 },
-        { skip: !targetId && !targetCategoryId, refetchOnMountOrArgChange: true },
+        { skip: (!targetId && !targetCategoryId) || !sourceId, refetchOnMountOrArgChange: true },
     );
     /* Цепочки маршрута обновляет SSE и собственные мутации страницы:
        принудительный перезапрос на каждом монтировании перезагружал их при
        любом возврате на экран, ничего при этом не меняя. */
     const myChainsQuery = useGetMyChainsQuery(undefined, {
-        skip: !targetId && !targetCategoryId,
+        skip: (!targetId && !targetCategoryId) || !sourceId,
     });
     const [createChain, { isLoading: isSubmitting }] = useCreateChainMutation();
 
@@ -143,6 +146,13 @@ export const useRoute = () => {
             : undefined
         : undefined;
     const currentProduct = completedStepProduct ?? selectedSource ?? routeSource;
+    /* Кандидаты следующего шага считает бэкенд (сперва совпадения по
+       вишлисту, затем остальной каталог) — фронт больше не перебирает 100
+       товаров руками, подбирая совпадение по категории. */
+    const candidatesQuery = useFindCandidatesQuery(
+        { product_id: currentProduct?.product_id ?? '' },
+        { skip: !currentProduct?.product_id, refetchOnMountOrArgChange: true },
+    );
     const currentProductIndex = chain.findIndex(
         (product) => product.product_id === currentProduct?.product_id,
     );
@@ -202,6 +212,9 @@ export const useRoute = () => {
         }
 
         const candidates = new Map<string, TProduct>();
+        /* Кандидат из найденного маршрута — не догадка по категории, а
+           подтверждённый шаг до цели: на карточке это стоит показать явно. */
+        const bestMatchId = firstHop.product_id;
 
         /* Первый шаг маршрута попадает в список, только если по нему вообще
            можно предложить обмен: ушедшую или свою вещь выбрать нельзя, и
@@ -217,17 +230,12 @@ export const useRoute = () => {
             }
         }
 
-        for (const product of productsQuery.data ?? []) {
-            const isSameCategory = firstHop.category_id
-                ? product.category_id === firstHop.category_id
-                : product.product_id === firstHop.product_id;
-            const isAvailable = product.status === 'active';
-            const belongsToAnotherUser = product.customer_id !== currentCustomerId;
-            const isDifferentProduct = product.product_id !== currentProduct.product_id;
-
-            if (isSameCategory && isAvailable && belongsToAnotherUser && isDifferentProduct) {
-                candidates.set(product.product_id, product);
+        for (const product of candidatesQuery.data?.products ?? []) {
+            if (product.product_id === currentProduct.product_id) {
+                continue;
             }
+
+            candidates.set(product.product_id, product);
 
             if (candidates.size >= 8) {
                 break;
@@ -237,14 +245,15 @@ export const useRoute = () => {
         return [...candidates.values()].map((product) => ({
             product,
             offer: offerByTargetId.get(product.product_id),
+            isBestMatch: product.product_id === bestMatchId,
         }));
     }, [
+        candidatesQuery.data,
         currentCustomerId,
         currentProduct,
         firstHop,
         offerByTargetId,
         productsById,
-        productsQuery.data,
         stageOffers,
     ]);
 
@@ -387,12 +396,14 @@ export const useRoute = () => {
         productsQuery.isLoading ||
         myProductsQuery.isLoading ||
         myChainsQuery.isLoading ||
+        candidatesQuery.isLoading ||
         isSourceResolving;
     const isError =
         routeQuery.isError ||
         productsQuery.isError ||
         myProductsQuery.isError ||
-        myChainsQuery.isError;
+        myChainsQuery.isError ||
+        candidatesQuery.isError;
     const isEmpty = !isLoading && !isError && (!currentProduct || (!targetCategoryId && !goalProduct));
 
     return {

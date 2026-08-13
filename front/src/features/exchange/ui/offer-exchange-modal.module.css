@@ -17,34 +17,6 @@
     font-weight: 700;
 }
 
-.form__products {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-
-    max-height: 320px;
-    overflow-y: auto;
-}
-
-.form__product {
-    padding: 0;
-    border: 2px solid transparent;
-    border-radius: var(--radius-md);
-    background: transparent;
-
-    cursor: pointer;
-
-    transition: border-color var(--animation-normal);
-}
-
-.form__product > * {
-    pointer-events: none;
-}
-
-.form__product--selected {
-    border-color: var(--accent-primary);
-}
-
 .form__goals {
     display: flex;
     flex-direction: column;

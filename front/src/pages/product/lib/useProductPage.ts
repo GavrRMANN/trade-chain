@@ -1,7 +1,7 @@
 import { useCallback, useReducer } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
-import { useOpenModalRoute } from '@shared/lib';
+import { getDisplayName, useOpenModalRoute } from '@shared/lib';
 
 import { useProductPageData } from './useProductPageData';
 import { useProductActions } from './useProductActions';
@@ -62,7 +62,7 @@ export const useProductPage = () => {
     } = useProductActions(product?.product_id);
 
     const status: keyof typeof statusLabels = actionStatus ?? product?.status ?? 'active';
-    const sellerName = customer?.email || 'Email не указан';
+    const sellerName = getDisplayName(customer?.full_name, customer?.email) || 'Email не указан';
     const hasRating = typeof averageRating === 'number' && averageRating > 0;
     const ratingText = hasRating
         ? `${averageRating.toFixed(1)} · Отзывов: ${reviews.length}`
@@ -98,6 +98,16 @@ export const useProductPage = () => {
     );
 
     const openExchanges = useCallback(() => navigate('/exchanges'), [navigate]);
+
+    const openIncomingOffers = useCallback(() => {
+        if (!product) {
+            navigate('/exchanges?view=exchanges&tab=incoming');
+            return;
+        }
+        navigate(
+            `/exchanges?view=exchanges&tab=incoming&product=${encodeURIComponent(product.product_id)}`,
+        );
+    }, [navigate, product]);
 
     const openCreate = useCallback(() => navigate('/create'), [navigate]);
 
@@ -177,6 +187,7 @@ export const useProductPage = () => {
         openProduct,
         openEditProduct,
         openExchanges,
+        openIncomingOffers,
         openCreate,
         openCreateForTarget,
         openRoute,

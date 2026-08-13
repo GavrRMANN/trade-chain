@@ -9,6 +9,8 @@ import {useRouteRecommendations} from './useRouteRecommendations';
 export type TRouteRecommendation = {
     product: TProduct;
     offer?: TChain;
+    /** Этот вариант — подтверждённый следующий шаг найденного маршрута до цели. */
+    isBestMatch?: boolean;
 };
 
 type TRouteRecommendationsProps = {

@@ -9,6 +9,7 @@ import {formatDate} from '@shared/lib';
 import {RouteBuilder} from '@features/routeBuilder';
 
 import Styles from './exchanges-page.module.css';
+import {ProductFilterModal} from './ProductFilterModal';
 import {RouteGroupCard} from './RouteGroupCard';
 import {useExchanges} from '../lib';
 import type {TExchangeRouteTab, TExchangeTab} from '../lib/useExchanges';
@@ -50,6 +51,12 @@ export const ExchangesPage = () => {
         setActiveView,
         isBuilderOpen,
         setIsBuilderOpen,
+        isProductFilterOpen,
+        setIsProductFilterOpen,
+        productFilter,
+        setProductFilter,
+        filterableProducts,
+        selectedFilterProduct,
         visibleRows,
         routeGroups,
         visibleRouteGroups,
@@ -60,6 +67,8 @@ export const ExchangesPage = () => {
         openRoute,
         formatActiveOffers,
     } = useExchanges();
+
+    const isFilterableTab = activeTab === 'incoming' || activeTab === 'outgoing';
 
     if (isLoading || isFetching) {
         return <Preloader message={'Загрузка обменов…'} />;
@@ -201,9 +210,26 @@ export const ExchangesPage = () => {
                             ))}
                         </div>
 
+                        {isFilterableTab && (filterableProducts.length > 0 || productFilter) && (
+                            <div className={Styles['exchanges-page__filter']}>
+                                <Button variant="secondary" onClick={() => setIsProductFilterOpen(true)}>
+                                    {selectedFilterProduct
+                                        ? `Товар: ${selectedFilterProduct.title}`
+                                        : 'Фильтр по товару'}
+                                </Button>
+                                {productFilter && (
+                                    <Button variant="text" onClick={() => setProductFilter(null)}>
+                                        Сбросить
+                                    </Button>
+                                )}
+                            </div>
+                        )}
+
                         {visibleRows.length === 0 ? (
                             <div className={Styles['exchanges-page__empty']}>
-                                {EMPTY_TEXT[activeTab]}
+                                {productFilter
+                                    ? 'Нет предложений по выбранному товару'
+                                    : EMPTY_TEXT[activeTab]}
                             </div>
                         ) : (
                             <div className={Styles['exchanges-page__list']}>
@@ -230,6 +256,15 @@ export const ExchangesPage = () => {
                         onCancel={() => setIsBuilderOpen(false)}
                     />
                 </Modal>
+
+                <ProductFilterModal
+                    isOpen={isProductFilterOpen}
+                    onClose={() => setIsProductFilterOpen(false)}
+                    title={activeTab === 'incoming' ? 'Товар из входящих' : 'Товар из исходящих'}
+                    products={filterableProducts}
+                    selectedProductId={productFilter ?? undefined}
+                    onSelect={setProductFilter}
+                />
             </div>
         </MainSection>
     );

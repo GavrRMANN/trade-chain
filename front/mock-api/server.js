@@ -20,6 +20,7 @@ import {
     reviews,
     wishlists,
     wishlistOptions,
+    customerRecommendations,
 } from './data.js';
 
 const port = Number(process.env.PORT || 3001);
@@ -71,6 +72,8 @@ const server = createServer(async (request, response) => {
             return handleWishlists(request, response, url);
         if (url.pathname === '/api/v1/search/chain' && request.method === 'GET')
             return findChain(request, response, url.searchParams);
+        if (url.pathname === '/api/v1/search/candidates' && request.method === 'GET')
+            return findCandidates(request, response, url.searchParams);
         return sendError(response, 404, 'Ресурс не найден');
     } catch (error) {
         console.error(error);
@@ -151,6 +154,42 @@ async function handleCustomers(request, response, url) {
                 .map(customerOverview),
         );
     }
+    // Рекомендации текущего пользователя проверяются раньше {id}: иначе 'me'
+    // уедет в поиск клиента по идентификатору и вернёт 404.
+    if (parts.length >= 2 && parts[0] === 'me' && parts[1] === 'recommendations') {
+        const user = requireUser(request);
+        if (!user) return sendError(response, 403, 'operation forbidden');
+
+        if (request.method === 'GET' && parts.length === 2)
+            return sendJson(response, 200, customerRecommendationList(user.id));
+
+        if (request.method === 'POST' && parts.length === 2) {
+            const body = await readJson(request);
+            for (const categoryId of body?.category_ids || []) addCustomerRecommendation(user.id, categoryId);
+            return sendJson(response, 201, customerRecommendationList(user.id));
+        }
+
+        if (request.method === 'PATCH' && parts.length === 2) {
+            const body = await readJson(request);
+            customerRecommendations[user.id] = [...new Set(body?.category_ids || [])];
+            return sendJson(response, 200, customerRecommendationList(user.id));
+        }
+
+        if (request.method === 'DELETE' && parts.length === 3) {
+            customerRecommendations[user.id] = (customerRecommendations[user.id] || []).filter(
+                (categoryId) => categoryId !== parts[2],
+            );
+            response.writeHead(204);
+            return response.end();
+        }
+
+        return sendError(response, 405, 'Метод не поддерживается');
+    }
+
+    if (request.method === 'GET' && parts.length === 2 && parts[1] === 'recommendations') {
+        return sendJson(response, 200, customerRecommendationList(parts[0]));
+    }
+
     // POST /customers на бэкенде не смонтирован — регистрация идёт через /auth/register.
     if (request.method === 'GET' && parts.length === 0) {
         return sendJson(
@@ -1172,6 +1211,66 @@ function findChain(request, response, params) {
     return sendJson(response, 200, { chain, length: chain.length });
 }
 
+/**
+ * Соседи по вишлисту: активные чужие товары, чьи владельцы хотят категорию
+ * source. Повторяет productRepository.GetExchangeCandidates.
+ */
+function exchangeCandidates(source) {
+    if (!source.category_id) return [];
+    return products.filter((item) => {
+        if (item.product_id === source.product_id) return false;
+        if (item.customer_id === source.customer_id) return false;
+        if (item.status !== 'active') return false;
+        const wishlist = wishlists.find((entry) => entry.product_id === item.product_id);
+        const wanted = wishlist ? wishlistOptions[wishlist.wishlist_id] || [] : [];
+        return wanted.includes(source.category_id);
+    });
+}
+
+function findCandidates(request, response, params) {
+    const user = requireUser(request);
+    if (!user) return sendError(response, 403, 'operation forbidden');
+
+    const productId = params.get('product_id');
+    if (!productId) return sendError(response, 400, 'Некорректный поисковый запрос');
+
+    let limit = 8;
+    const limitRaw = params.get('limit');
+    if (limitRaw !== null) {
+        const parsed = Number.parseInt(limitRaw, 10);
+        if (!Number.isFinite(parsed) || parsed <= 0)
+            return sendError(response, 400, 'Некорректный поисковый запрос');
+        limit = parsed;
+    }
+
+    const source = products.find((item) => item.product_id === productId);
+    if (!source) return sendError(response, 404, 'Товар не найден');
+
+    const seen = new Set([source.product_id]);
+    const result = [];
+
+    for (const candidate of exchangeCandidates(source)) {
+        if (seen.has(candidate.product_id)) continue;
+        seen.add(candidate.product_id);
+        result.push(candidate);
+        if (result.length >= limit) return sendJson(response, 200, { products: result });
+    }
+
+    // Кандидатов по вишлисту не хватило — дозаполняем остальными активными
+    // товарами каталога, кроме собственных вещей владельца source.
+    const rest = products
+        .filter((item) => item.status === 'active' && item.customer_id !== source.customer_id)
+        .sort(sortByDateDesc);
+    for (const product of rest) {
+        if (seen.has(product.product_id)) continue;
+        seen.add(product.product_id);
+        result.push(product);
+        if (result.length >= limit) break;
+    }
+
+    return sendJson(response, 200, { products: result });
+}
+
 function productRecommendations(request, response, productId) {
     const user = requireUser(request);
     if (!user) return sendError(response, 403, 'operation forbidden');
@@ -1250,6 +1349,20 @@ function makeCategory(body) {
 
 function mockError(status, message) {
     return { status, message };
+}
+
+// customerRecommendationList повторяет domain.CustomerWishlistOption[]: пары
+// customer_id/category_id, а не полные карточки категорий.
+function customerRecommendationList(customerId) {
+    return (customerRecommendations[customerId] || []).map((categoryId) => ({
+        customer_id: customerId,
+        category_id: categoryId,
+    }));
+}
+
+function addCustomerRecommendation(customerId, categoryId) {
+    const list = customerRecommendations[customerId] || (customerRecommendations[customerId] = []);
+    if (!list.includes(categoryId)) list.push(categoryId);
 }
 
 function publicCustomer(customer) {

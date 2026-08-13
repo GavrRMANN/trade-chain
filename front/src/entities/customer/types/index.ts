@@ -5,3 +5,7 @@ export type {
     TCustomerOverview,
     TUpdateCustomerRequest,
 } from './customer';
+export type {
+    TCustomerRecommendation,
+    TUpdateCustomerRecommendationsRequest,
+} from './customerRecommendation';

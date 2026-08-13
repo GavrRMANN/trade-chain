@@ -461,6 +461,9 @@ const wishlistOptions = {
     'wishlist-pskov-07': ['video-cards'],
 };
 
+// Категории, которые клиент отметил себе интересными — customer_id -> category_id[].
+const customerRecommendations = {};
+
 export {
     categories,
     customers,
@@ -471,4 +474,5 @@ export {
     reviews,
     wishlists,
     wishlistOptions,
+    customerRecommendations,
 };
