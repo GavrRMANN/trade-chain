@@ -12,19 +12,11 @@ type queueNode struct {
 	Depth   int
 }
 
-// findChainBFS идёт от вещи пользователя к цели и отдаёт путь в том порядке,
-// в котором его проходит человек: своя вещь первой, цель последней.
-//
-// Имена параметров совпадают с порядком аргументов у вызывающего кода
-// (FindChain передаёт source, затем target). Развернуть выдачу, поменяв их
-// местами в сигнатуре, нельзя: аргументы передаются позиционно, поэтому обмен
-// имён не переставляет данные, а тихо разворачивает сам обход графа — и
-// call-site начинает читаться наоборот тому, что происходит.
 func findChainBFS(
 	ctx context.Context,
 	service service.ProductService,
-	source domain.Product,
 	target domain.Product,
+	source domain.Product,
 	maxDepth int,
 ) (*ProductSearchResult, error) {
 
@@ -55,11 +47,6 @@ func findChainBFS(
 				productMap,
 			)
 
-			// restorePath идёт от цели к началу по ссылкам на родителей, то
-			// есть отдаёт путь развёрнутым. Наружу маршрут должен выходить в
-			// том порядке, в котором его проходит человек: своя вещь первой,
-			// цель последней. Иначе следующим обменом читается финальный товар
-			// цепочки, а число шагов до цели всегда выходит равным одному.
 			return &ProductSearchResult{
 				Products: reverseProducts(path),
 				Length:   len(path) - 1,
@@ -100,11 +87,6 @@ func findChainBFS(
 	return nil, nil
 }
 
-// findLegacyChainBFS ищет от цели к вещам пользователя и отдаёт путь целью
-// вперёд: этот порядок закреплён за ручкой рекомендаций, и клиент
-// разворачивает его у себя. Менять его здесь нельзя — с ним считается
-// карточка товара; новый поиск маршрута (findChainBFS) отдаёт обычный
-// порядок «своя вещь → цель».
 func findLegacyChainBFS(
 	ctx context.Context,
 	service service.ProductService,
