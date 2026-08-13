@@ -1,0 +1,1 @@
+export { formatVariantCount } from './formatVariantCount';

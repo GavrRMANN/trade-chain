@@ -11,7 +11,19 @@ import { useGetCurrentUserQuery } from '@entities/user';
 import type { TRouteRecommendation } from '@features/routeRecommendations';
 import { useOpenModalRoute } from '@shared/lib';
 
+import { orderChainForRoute } from './orderChain';
+
 const OPEN_OFFER_STATUSES = new Set<TChain['status']>(['pending', 'active']);
+
+/**
+ * Сколько вариантов показывать прямо на странице маршрута.
+ *
+ * Блок отвечает на вопрос «что дальше», а не заменяет собой каталог: длинный
+ * ряд карточек отодвигал вниз и текущую вещь, и историю пути. Карточки в ряду
+ * узкие, поэтому пятёрка занимает столько же высоты, сколько раньше тройка, а
+ * сравнивать есть из чего. Остальное открывается лентой из плитки в конце ряда.
+ */
+const RECOMMENDATIONS_PREVIEW_LIMIT = 5;
 
 type TRouteHistoryItem = {
     chain: TChain;
@@ -58,10 +70,16 @@ export const useRoute = () => {
     const [submitError, setSubmitError] = useState<string>();
     const [submitMessage, setSubmitMessage] = useState<string>();
 
-    const chain = useMemo(() => {
-        const products = routeQuery.data?.chain ?? [];
-        return [...products];
-    }, [routeQuery.data?.chain]);
+    /** Маршрут в порядке прохождения: своя вещь первой, цель последней. */
+    const chain = useMemo(
+        () => orderChainForRoute(routeQuery.data?.chain ?? [], { sourceId, targetId }),
+        [routeQuery.data?.chain, sourceId, targetId],
+    );
+    /** Вещи найденного пути: до них маршрут до цели подтверждён поиском. */
+    const chainProductIds = useMemo(
+        () => new Set(chain.map((product) => product.product_id)),
+        [chain],
+    );
     const sourceProducts = useMemo(
         () =>
             (myProductsQuery.data ?? []).filter((product) => product.status === 'active'),
@@ -118,14 +136,6 @@ export const useRoute = () => {
         ? categoriesQuery.data?.find((category) => category.category_id === targetCategoryId)?.name
         : undefined;
     const goalId = targetCategoryId || goalProduct?.product_id || targetId;
-    const categoryTargetProduct = targetCategoryId
-        ? (productsQuery.data ?? []).find(
-              (product) =>
-                  product.category_id === targetCategoryId &&
-                  product.status === 'active' &&
-                  product.product_id !== sourceId,
-          )
-        : undefined;
     const lastCompletedRouteStep = useMemo(() => {
         return [...(myChainsQuery.data ?? [])]
             .filter(
@@ -147,24 +157,23 @@ export const useRoute = () => {
             : undefined
         : undefined;
     const currentProduct = completedStepProduct ?? selectedSource ?? routeSource;
-    /* Кандидаты следующего шага считает бэкенд (сперва совпадения по
-       вишлисту, затем остальной каталог) — фронт больше не перебирает 100
-       товаров руками, подбирая совпадение по категории. */
+    /* Кандидаты следующего шага считает бэкенд — фронт больше не перебирает
+       100 товаров руками, подбирая совпадение по категории. direct оставляет
+       только вещи с прямым обменом: остальной каталог сервер добирал «чтобы
+       было», и в ряду следующего шага рядом с подтверждённым вариантом
+       стояли товары, обмен с которыми к цели не ведёт. */
     const candidatesQuery = useFindCandidatesQuery(
-        { product_id: currentProduct?.product_id ?? '' },
+        { product_id: currentProduct?.product_id ?? '', direct: true },
         { skip: !currentProduct?.product_id, refetchOnMountOrArgChange: true },
     );
     const currentProductIndex = chain.findIndex(
         (product) => product.product_id === currentProduct?.product_id,
     );
-    const firstHop = targetCategoryId
-        ? categoryTargetProduct
-        :
-        currentProductIndex >= 0
-            ? chain[currentProductIndex + 1] ?? goalProduct
-            : routeSource?.customer_id === currentCustomerId
-              ? chain[1] ?? goalProduct
-              : routeSource ?? goalProduct;
+    /* Следующий шаг найденного маршрута — сосед текущей вещи в цепочке.
+       Подставлять сюда цель, когда пути нет, нельзя: прямой обмен с ней
+       предлагается отдельной кнопкой, а в подборке это была бы догадка,
+       выданная за подтверждённый шаг. */
+    const nextChainStep = currentProductIndex >= 0 ? chain[currentProductIndex + 1] : undefined;
     const hasReachedGoal = currentProduct?.product_id === goalId && currentProductIndex > 0;
     const stepsRemaining = hasReachedGoal
         ? 0
@@ -208,20 +217,23 @@ export const useRoute = () => {
     }, [stageOffers]);
 
     const recommendations = useMemo<TRouteRecommendation[]>(() => {
-        if (!currentProduct || !firstHop) {
+        if (!currentProduct) {
             return [];
         }
 
         const candidates = new Map<string, TProduct>();
-        /* Кандидат из найденного маршрута — не догадка по категории, а
-           подтверждённый шаг до цели: на карточке это стоит показать явно. */
-        const bestMatchId = firstHop.product_id;
 
-        /* Первый шаг маршрута попадает в список, только если по нему вообще
-           можно предложить обмен: ушедшую или свою вещь выбрать нельзя, и
-           сервер отклонит такое предложение уже после отправки. */
-        if (firstHop.status === 'active' && firstHop.customer_id !== currentCustomerId) {
-            candidates.set(firstHop.product_id, firstHop);
+        /* Шаг маршрута попадает в список, только если по нему вообще можно
+           предложить обмен: ушедшую или свою вещь выбрать нельзя, и сервер
+           отклонит такое предложение уже после отправки. Ставим его первым и
+           отдельно от подборки: сервер сортирует кандидатов по близости вещей
+           и мог бы не довезти подтверждённый шаг до конца списка. */
+        if (
+            nextChainStep &&
+            nextChainStep.status === 'active' &&
+            nextChainStep.customer_id !== currentCustomerId
+        ) {
+            candidates.set(nextChainStep.product_id, nextChainStep);
         }
 
         for (const offer of stageOffers) {
@@ -243,20 +255,33 @@ export const useRoute = () => {
             }
         }
 
+        /* Лучший вариант — вещь из найденной цепочки: путь до цели через неё
+           уже посчитан поиском, остальное подобрано лишь по прямому обмену с
+           текущей вещью. */
         return [...candidates.values()].map((product) => ({
             product,
             offer: offerByTargetId.get(product.product_id),
-            isBestMatch: product.product_id === bestMatchId,
+            isBestMatch:
+                product.product_id !== currentProduct.product_id &&
+                chainProductIds.has(product.product_id),
         }));
     }, [
         candidatesQuery.data,
+        chainProductIds,
         currentCustomerId,
         currentProduct,
-        firstHop,
+        nextChainStep,
         offerByTargetId,
         productsById,
         stageOffers,
     ]);
+
+    /* На странице маршрута блок показывает только начало подборки: остальное
+       листается лентой, где карточка занимает экран целиком. */
+    const previewRecommendations = useMemo(
+        () => recommendations.slice(0, RECOMMENDATIONS_PREVIEW_LIMIT),
+        [recommendations],
+    );
 
     const history = useMemo<TRouteHistoryItem[]>(() => {
         return (myChainsQuery.data ?? [])
@@ -287,6 +312,32 @@ export const useRoute = () => {
         setSubmitMessage(undefined);
     }, []);
 
+    /* Привязка предложения к маршруту собирается в одном месте: и блок на
+       странице, и лента подборки должны отправлять цепочку с той же целью,
+       текущим этапом и предыдущим шагом — иначе предложение из ленты
+       оказалось бы самостоятельным обменом мимо пути к цели. */
+    const buildOfferPayload = useCallback(
+        (toProductId: string) => {
+            if (!currentProduct) {
+                return undefined;
+            }
+
+            return buildChainPayload({
+                fromProductId: currentProduct.product_id,
+                toProductId,
+                message: `Предложение в рамках цели «${goalProduct?.title ?? 'Обмен до цели'}»`,
+                routeContext: {
+                    ...(targetCategoryId
+                        ? { goalCategoryId: targetCategoryId }
+                        : { exchangeGoalId: goalId }),
+                    routeStepId: currentProduct.product_id,
+                    previousChainId: lastCompletedRouteStep?.chain_id,
+                },
+            });
+        },
+        [currentProduct, goalId, goalProduct?.title, lastCompletedRouteStep?.chain_id, targetCategoryId],
+    );
+
     const submitSelectedOffers = useCallback(async () => {
         if (!currentProduct || selectedTargetIds.length === 0) {
             return;
@@ -296,22 +347,13 @@ export const useRoute = () => {
         setSubmitMessage(undefined);
 
         const results = await Promise.allSettled(
-            selectedTargetIds.map((productId) =>
-                createChain(
-                    buildChainPayload({
-                        fromProductId: currentProduct.product_id,
-                        toProductId: productId,
-                        message: `Предложение в рамках цели «${goalProduct?.title ?? 'Обмен до цели'}»`,
-                        routeContext: {
-                            ...(targetCategoryId
-                                ? {goalCategoryId: targetCategoryId}
-                                : {exchangeGoalId: goalId}),
-                            routeStepId: currentProduct.product_id,
-                            previousChainId: lastCompletedRouteStep?.chain_id,
-                        },
-                    }),
-                ).unwrap(),
-            ),
+            selectedTargetIds.map((productId) => {
+                const payload = buildOfferPayload(productId);
+
+                return payload
+                    ? createChain(payload).unwrap()
+                    : Promise.reject(new Error('Текущий товар маршрута не определён'));
+            }),
         );
 
         const succeededIds = selectedTargetIds.filter(
@@ -339,20 +381,22 @@ export const useRoute = () => {
         }
 
         setSelectedTargetIds(failedIds);
-    }, [
-        createChain,
-        currentProduct,
-        goalId,
-        goalProduct?.title,
-        lastCompletedRouteStep?.chain_id,
-        myChainsQuery,
-        selectedTargetIds,
-        targetCategoryId,
-    ]);
+    }, [buildOfferPayload, createChain, currentProduct, myChainsQuery, selectedTargetIds]);
 
     const openProduct = useCallback(
         (productId: string) => navigate(`/product/${productId}`),
         [navigate],
+    );
+    /* Лента подборки открывается тем же адресом маршрута: цель, категория и
+       стартовый товар остаются в query, поэтому обе страницы считают один и
+       тот же этап и переживают перезагрузку и возврат назад. */
+    const openRecommendationsFeed = useCallback(
+        () => navigate(`/route/feed?${searchParams.toString()}`),
+        [navigate, searchParams],
+    );
+    const backToRoute = useCallback(
+        () => navigate(`/route?${searchParams.toString()}`),
+        [navigate, searchParams],
     );
     const openOffer = useCallback(
         (chainId: string) => navigate(`/exchanges/${chainId}`),
@@ -384,7 +428,20 @@ export const useRoute = () => {
     ]);
     const goHome = useCallback(() => navigate('/'), [navigate]);
 
+    /**
+     * Маршрут открыт тем, кому он принадлежит.
+     *
+     * Подборка следующего шага считается от вещи, которая сейчас на руках у
+     * пользователя, — это персональная выдача, а не публичная страница.
+     * Адрес маршрута можно переслать, поэтому одной защиты роутом мало:
+     * этап обязан быть подтверждён данными самого пользователя — либо его
+     * активным стартовым товаром, либо его же завершённым шагом к этой цели.
+     * Чужой аккаунт по такой ссылке не получит ни того, ни другого.
+     */
+    const isOwnRoute = Boolean(selectedSource ?? completedStepProduct);
+
     const isLoading =
+        currentUserQuery.isLoading ||
         routeQuery.isLoading ||
         productsQuery.isLoading ||
         myProductsQuery.isLoading ||
@@ -406,6 +463,7 @@ export const useRoute = () => {
         isLoading,
         isError,
         isEmpty,
+        isOwnRoute,
         currentCustomerId,
         sourceProducts,
         selectSource,
@@ -414,16 +472,20 @@ export const useRoute = () => {
         goalId,
         stepsRemaining,
         recommendations,
+        previewRecommendations,
         selectedTargetIds,
         history,
         submitError,
         submitMessage,
         isSubmitting,
+        buildOfferPayload,
         toggleRecommendation,
         submitSelectedOffers,
         openProduct,
         openOffer,
         openGoalOffer,
+        openRecommendationsFeed,
+        backToRoute,
         goHome,
     };
 };

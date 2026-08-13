@@ -3,6 +3,10 @@ import {useEffect, useMemo, useRef, useState} from 'react';
 import {useLazyGetProductQuery} from '../api';
 import type {TProduct} from '../types';
 
+/** Сервер ответил 404 — товара точно не существует, а не временная ошибка сети. */
+const isNotFoundError = (error: unknown): boolean =>
+    typeof error === 'object' && error !== null && 'status' in error && error.status === 404;
+
 /**
  * Дополняет каталог товарами, недоступными в общем списке, но связанными с историей.
  *
@@ -16,7 +20,10 @@ export const useProductsById = (
 ): Map<string, TProduct> => {
     const [loadProduct] = useLazyGetProductQuery();
     const [loadedProducts, setLoadedProducts] = useState<TProduct[]>([]);
-    const attemptedProductIds = useRef(new Set<string>());
+    // Только подтверждённое 404 — товар удалён, и спрашивать о нём снова незачем.
+    // Сетевой сбой или таймаут в этот список не попадает: иначе временная ошибка
+    // на старте страницы навсегда клеймила бы существующий товар «недоступным».
+    const missingProductIds = useRef(new Set<string>());
     const productIdsKey = [...new Set(productIds.filter((id): id is string => Boolean(id)))].sort().join(',');
 
     const productsById = useMemo(() => {
@@ -31,19 +38,27 @@ export const useProductsById = (
     }, [availableProducts, loadedProducts]);
 
     useEffect(() => {
-        const missingProductIds = productIdsKey
+        const idsToLoad = productIdsKey
             .split(',')
-            .filter((productId) => productId && !productsById.has(productId) && !attemptedProductIds.current.has(productId));
+            .filter((productId) => productId && !productsById.has(productId) && !missingProductIds.current.has(productId));
 
-        if (missingProductIds.length === 0) {
+        if (idsToLoad.length === 0) {
             return;
         }
 
-        missingProductIds.forEach((productId) => attemptedProductIds.current.add(productId));
         let isCancelled = false;
 
         void Promise.all(
-            missingProductIds.map((productId) => loadProduct(productId, true).unwrap().catch(() => undefined)),
+            idsToLoad.map((productId) =>
+                loadProduct(productId, true)
+                    .unwrap()
+                    .catch((error) => {
+                        if (isNotFoundError(error)) {
+                            missingProductIds.current.add(productId);
+                        }
+                        return undefined;
+                    }),
+            ),
         ).then((products) => {
             if (isCancelled) {
                 return;

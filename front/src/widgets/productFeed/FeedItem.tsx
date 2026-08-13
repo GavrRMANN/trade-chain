@@ -3,7 +3,7 @@ import type { TProduct } from '@entities/product';
 import { SellerInfo } from '@widgets/sellerInfo';
 import { formatAmount, pluralize } from '@shared/lib';
 
-import { FeedActions } from './FeedActions';
+import { FeedActions, type TFeedOfferAction } from './FeedActions';
 import Styles from './feed-item.module.css';
 
 type TFeedItemProps = {
@@ -12,12 +12,14 @@ type TFeedItemProps = {
     categoryName?: string;
     /** Владелец вещи: имя, рейтинг и число обменов. */
     owner?: TCustomerOverview;
+    /** Переопределение главного действия карточки. */
+    offerAction?: TFeedOfferAction;
     isDescriptionExpanded: boolean;
     onToggleDescription: () => void;
     onOpenProduct: () => void;
     onOpenOwner: () => void;
     onOfferExchange: () => void;
-    onBuildRoute: () => void;
+    onBuildRoute?: () => void;
 };
 
 /** Порог, после которого описание сворачивается: две строки на мобильном. */
@@ -63,6 +65,7 @@ export const FeedItem = ({
     product,
     categoryName,
     owner,
+    offerAction,
     isDescriptionExpanded,
     onToggleDescription,
     onOpenProduct,
@@ -166,6 +169,7 @@ export const FeedItem = ({
                 <FeedActions
                     productTitle={product.title}
                     variant="compact"
+                    offerAction={offerAction}
                     onOfferExchange={onOfferExchange}
                     onBuildRoute={onBuildRoute}
                     onOpenProduct={onOpenProduct}
@@ -218,6 +222,7 @@ export const FeedItem = ({
                 <FeedActions
                     productTitle={product.title}
                     variant="panel"
+                    offerAction={offerAction}
                     onOfferExchange={onOfferExchange}
                     onBuildRoute={onBuildRoute}
                     onOpenProduct={onOpenProduct}

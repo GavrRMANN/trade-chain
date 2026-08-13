@@ -38,26 +38,24 @@ export const RecommendationCard = ({
                 aria-label={`Открыть товар ${product.title}`}
             >
                 <ProductImage src={product.image} alt={product.title} title={product.title} />
-                {/* Отличает подтверждённый шаг найденного маршрута от
-                    остальных вариантов, подобранных лишь по категории. */}
+                {/* Отличает вещь найденного маршрута от остальных вариантов:
+                    те подобраны лишь по прямому обмену с текущей вещью, и
+                    путь к цели через них не посчитан. */}
                 {isBestMatch && <span className={Styles.recommendation__badge}>Лучший вариант</span>}
+                {/* Отметка о выборе живёт на превью, а переключает его кнопка
+                    внизу карточки: галочка рядом с названием повторяла то же
+                    действие и отбирала у него половину строки. */}
+                {selected && (
+                    <span className={Styles.recommendation__check} aria-hidden="true">
+                        ✓
+                    </span>
+                )}
             </button>
 
             <div className={Styles.recommendation__body}>
                 <div className={Styles.recommendation__heading}>
                     <h3 className={Styles.recommendation__title}>{product.title}</h3>
-                    {offer ? (
-                        <ChainStatusBadge status={offer.status} />
-                    ) : (
-                        <label className={Styles.recommendation__choice}>
-                            <input
-                                type="checkbox"
-                                checked={selected}
-                                onChange={(event) => onToggle(event.target.checked)}
-                            />
-                            <span>{selected ? 'Выбрано' : 'Выбрать'}</span>
-                        </label>
-                    )}
+                    {offer && <ChainStatusBadge status={offer.status} />}
                 </div>
 
                 <div className={Styles.recommendation__facts}>
@@ -76,13 +74,18 @@ export const RecommendationCard = ({
                         Предложение отправлено
                     </Button>
                 ) : (
-                    <Button
-                        className={Styles.recommendation__button}
-                        variant={selected ? 'primary' : 'secondary'}
-                        onClick={() => onToggle(!selected)}
-                    >
-                        {selected ? 'Убрать из выбора' : 'Предложить обмен'}
-                    </Button>
+                    /* В свайпере выбор переключают крупные кнопки под карточкой —
+                       своя кнопка внутри неё была бы третьим способом сделать
+                       одно и то же на одном экране. */
+                    !compact && (
+                        <Button
+                            className={Styles.recommendation__button}
+                            variant={selected ? 'primary' : 'secondary'}
+                            onClick={() => onToggle(!selected)}
+                        >
+                            {selected ? 'Убрать из выбора' : 'Предложить обмен'}
+                        </Button>
+                    )
                 )}
             </div>
         </article>

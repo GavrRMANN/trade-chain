@@ -5,8 +5,8 @@ import { WhiteBox } from '@shared/ui/whiteBox';
 import { Button } from '@shared/ui/button';
 import { PageHeader } from '@shared/ui/pageHeader';
 import { ViewModeToggle } from '@shared/ui/viewModeToggle';
-import { ProductFeed } from '@widgets/productFeed';
-import { formatProductCount, useCatalog, useCatalogViewMode, useFeedOwners } from '../lib';
+import { ProductFeed, useFeedOwners } from '@widgets/productFeed';
+import { formatProductCount, useCatalog, useCatalogViewMode } from '../lib';
 import { PageError } from '@shared/ui/pageError';
 
 import { ProductGrid } from './ProductGrid';

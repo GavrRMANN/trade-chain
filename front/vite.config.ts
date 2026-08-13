@@ -5,6 +5,9 @@ import { fileURLToPath, URL } from 'node:url';
 
 export default defineConfig({
     plugins: [react(), svgr()],
+    // Порт можно задать через PORT — так дев-сервер поднимается рядом с уже
+    // запущенным на 5173, не отбирая у него порт.
+    server: process.env.PORT ? { port: Number(process.env.PORT) } : undefined,
     test: {
         /* Иконки в тестах подменяются заглушкой: превращать SVG в компонент
            умеет только плагин сборки, и без подмены на его импорте разваливался

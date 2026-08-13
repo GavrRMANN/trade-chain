@@ -6,9 +6,10 @@ import { PageHeader } from '@shared/ui/pageHeader';
 import { Preloader } from '@shared/ui/preloader';
 import { ProductImage } from '@entities/product';
 import { ProfileProductRow } from '@widgets/profile';
-import { formatAmount, formatDate } from '@shared/lib';
+import { formatDate } from '@shared/lib';
 
 import { formatCompletedCount, formatExchangeCount, useRoute } from '../lib';
+import { RouteTrack } from './RouteTrack';
 import Styles from './route-page.module.css';
 
 export const RoutePage = () => {
@@ -25,6 +26,7 @@ export const RoutePage = () => {
         goalProduct,
         stepsRemaining,
         recommendations,
+        previewRecommendations,
         selectedTargetIds,
         history,
         submitError,
@@ -35,6 +37,7 @@ export const RoutePage = () => {
         openProduct,
         openOffer,
         openGoalOffer,
+        openRecommendationsFeed,
         goHome,
     } = useRoute();
 
@@ -95,7 +98,9 @@ export const RoutePage = () => {
     return (
         <MainSection>
             {/* Цель и остаток шагов — то, ради чего открыт экран: они должны
-                оставаться на виду, пока пользователь листает рекомендации. */}
+                оставаться на виду, пока пользователь листает рекомендации.
+                Действия здесь нет: цель открывается со своей плитки в паре
+                ниже, и ссылка в шапке была бы вторым входом в то же место. */}
             <PageHeader
                 title="Путь к цели"
                 meta={
@@ -114,16 +119,6 @@ export const RoutePage = () => {
                         )}
                     </>
                 }
-                actions={
-                    goalProduct ? (
-                        <Button
-                            variant="text"
-                            onClick={() => openProduct(goalProduct.product_id)}
-                        >
-                            Открыть цель
-                        </Button>
-                    ) : undefined
-                }
             />
 
             <div className={Styles['route-page']}>
@@ -135,43 +130,16 @@ export const RoutePage = () => {
                     </div>
                 ) : (
                     <>
-                        <section
-                            className={`${Styles['route-page__goal']} ${!goalProduct ? Styles['route-page__goal--category'] : ''}`}
-                            aria-labelledby="route-goal-title"
-                        >
-                            {goalProduct && (
-                                <div className={Styles['route-page__goal-media']}>
-                                    <ProductImage
-                                        src={goalProduct.image}
-                                        alt={goalProduct.title}
-                                        title={goalProduct.title}
-                                    />
-                                </div>
-                            )}
-                            <div className={Styles['route-page__goal-body']}>
-                                <h2 id="route-goal-title">
-                                    {goalProduct
-                                        ? `Цель: ${goalProduct.title}`
-                                        : `Категория: ${targetCategoryName ?? 'категория'}`}
-                                </h2>
-                                {goalProduct && (
-                                    <p>
-                                        {stepsRemaining === 0
-                                        ? 'Цель достигнута'
-                                        : `${formatExchangeCount(stepsRemaining)} до цели`}
-                                    </p>
-                                )}
-                            </div>
-                            {goalProduct && (
-                                <Button
-                                    variant="text"
-                                    className={Styles['route-page__goal-action']}
-                                    onClick={() => openProduct(goalProduct.product_id)}
-                                >
-                                    Открыть цель
-                                </Button>
-                            )}
-                        </section>
+                        {/* Пара «сейчас у вас → цель» стоит выше подборки: сначала
+                            видно, что уходит и ради чего, и только потом — на что
+                            это менять. */}
+                        <RouteTrack
+                            currentProduct={currentProduct}
+                            goalProduct={goalProduct}
+                            categoryName={targetCategoryName}
+                            stepsRemaining={stepsRemaining}
+                            onOpenProduct={openProduct}
+                        />
 
                         {!goalProduct || stepsRemaining > 0 ? (
                             <section
@@ -179,15 +147,24 @@ export const RoutePage = () => {
                                 aria-labelledby="route-recommendations-title"
                             >
                                 <div className={Styles['route-page__section-heading']}>
-                                    <div>
-                                        <h2 id="route-recommendations-title">Следующий обмен</h2>
-                                        <p>Выберите один или несколько вариантов</p>
-                                    </div>
-                                    <span>Предложения отправляются независимо</span>
+                                    <h2 id="route-recommendations-title">Следующий обмен</h2>
+                                    <p>
+                                        Отметьте подходящие варианты — каждое предложение уходит
+                                        отдельно
+                                    </p>
                                 </div>
 
+                                {/* Подборка целиком живёт лентой: на странице видно
+                                    только начало ряда, а вход в неё стоит у самих
+                                    карточек — открытая оттуда лента считает тот же
+                                    этап маршрута, поэтому предложение уходит в
+                                    текущую цепочку, а не отдельным обменом. */}
                                 <RouteRecommendations
-                                    items={recommendations}
+                                    items={previewRecommendations}
+                                    hiddenCount={
+                                        recommendations.length - previewRecommendations.length
+                                    }
+                                    onOpenFeed={openRecommendationsFeed}
                                     selectedIds={selectedTargetIds}
                                     isSubmitting={isSubmitting}
                                     onToggle={toggleRecommendation}
@@ -226,52 +203,19 @@ export const RoutePage = () => {
                             </section>
                         )}
 
-                        <section
-                            className={Styles['route-page__current']}
-                            aria-labelledby="route-current-title"
-                        >
-                            <div className={Styles['route-page__current-media']}>
-                                <ProductImage
-                                    src={currentProduct.image}
-                                    alt={currentProduct.title}
-                                    title={currentProduct.title}
-                                />
-                            </div>
-                            <div className={Styles['route-page__current-body']}>
-                                <span>Сейчас у вас</span>
-                                <h2 id="route-current-title">{currentProduct.title}</h2>
-                                <div>
-                                    <strong>
-                                        {currentProduct.price === undefined
-                                            ? 'Цена не указана'
-                                            : formatAmount(currentProduct.price)}
-                                    </strong>
-                                    <span>{currentProduct.location ?? 'Город не указан'}</span>
-                                </div>
-                            </div>
-                            <Button
-                                variant="text"
-                                className={Styles['route-page__current-action']}
-                                onClick={() => openProduct(currentProduct.product_id)}
+                        {/* Пустая история — это ещё не факт о маршруте, а его
+                            отсутствие: на только что начатом пути целый раздел с
+                            заглушкой отодвигал бы вниз всё остальное. */}
+                        {history.length > 0 && (
+                            <section
+                                className={Styles['route-page__history']}
+                                aria-labelledby="route-history-title"
                             >
-                                Открыть товар
-                            </Button>
-                        </section>
+                                <div className={Styles['route-page__history-heading']}>
+                                    <h2 id="route-history-title">История пути</h2>
+                                    <span>{formatCompletedCount(history.length)}</span>
+                                </div>
 
-                        <section
-                            className={Styles['route-page__history']}
-                            aria-labelledby="route-history-title"
-                        >
-                            <div className={Styles['route-page__history-heading']}>
-                                <h2 id="route-history-title">История пути</h2>
-                                <span>{formatCompletedCount(history.length)}</span>
-                            </div>
-
-                            {history.length === 0 ? (
-                                <p className={Styles['route-page__history-empty']}>
-                                    Здесь появятся товары после завершённых обменов.
-                                </p>
-                            ) : (
                                 <ul className={Styles['route-page__history-list']}>
                                     {history.map(({ chain, product }) => (
                                         <li key={chain.chain_id}>
@@ -310,8 +254,8 @@ export const RoutePage = () => {
                                         </li>
                                     ))}
                                 </ul>
-                            )}
-                        </section>
+                            </section>
+                        )}
                     </>
                 )}
             </div>

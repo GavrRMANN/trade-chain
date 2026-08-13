@@ -29,13 +29,17 @@
 }
 
 .modal--large {
-    width: min(1120px, calc(100vw - var(--space-16)));
-    max-height: calc(100vh - var(--space-12));
+    gap: var(--space-3);
+
+    width: min(1120px, calc(100vw - var(--space-12)));
+    max-height: calc(100vh - var(--space-10));
+    padding: var(--space-5);
 }
 
+/* 40px оверлея + 40px падингов + заголовок с гэпом. */
 .modal--large .modal__container {
-    height: calc(100vh - 144px);
-    max-height: calc(100vh - 144px);
+    height: calc(100vh - 124px);
+    max-height: calc(100vh - 124px);
     overflow: hidden;
 }
 

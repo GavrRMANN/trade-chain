@@ -4,26 +4,32 @@ import type { TCustomerOverview } from '@entities/customer';
 import type { TProduct } from '@entities/product';
 import { Spinner } from '@shared/ui/spinner';
 
+import { type TFeedOfferAction } from './FeedActions';
 import { FeedItem } from './FeedItem';
 import Styles from './product-feed.module.css';
 import { useProductFeed } from './useProductFeed';
 
 export type TProductFeedProps = {
     products: TProduct[];
-    /** Есть ли ещё страницы — лента показывает подгрузку в конце. */
-    hasMore: boolean;
+    /** Есть ли ещё страницы — лента показывает подгрузку в конце. Без
+        постраничной выдачи (готовая подборка) не задаётся. */
+    hasMore?: boolean;
     /** Идёт ли догрузка следующей страницы. */
-    isFetching: boolean;
+    isFetching?: boolean;
     /** Sentinel каталога: на нём висит IntersectionObserver постраничной догрузки. */
-    loadMoreRef: RefObject<HTMLDivElement>;
+    loadMoreRef?: RefObject<HTMLDivElement>;
     /** Названия категорий по идентификатору — для подписи на карточке. */
     categoryNames?: Map<string, string>;
     /** Владельцы вещей по идентификатору: имя, рейтинг и число обменов. */
     owners?: Map<string, TCustomerOverview>;
+    /** Главные действия карточек по идентификатору товара — если лента
+        открыта не каталогом и действие означает не «выбрать, что отдать». */
+    offerActions?: Map<string, TFeedOfferAction>;
     onOpenProduct: (productId: string) => void;
     onOpenOwner: (customerId: string) => void;
     onOfferExchange: (productId: string) => void;
-    onBuildRoute: (productId: string) => void;
+    /** Не задан там, где цепочку строить уже не из чего — внутри самого маршрута. */
+    onBuildRoute?: (productId: string) => void;
     /** Цель, под которую открыта лента, — показывается закреплённой плашкой. */
     goalTitle?: string;
     /** Карточка, с которой открыть ленту: сохранённая позиция пользователя. */
@@ -43,11 +49,12 @@ export type TProductFeedProps = {
  */
 export const ProductFeed = ({
     products,
-    hasMore,
-    isFetching,
+    hasMore = false,
+    isFetching = false,
     loadMoreRef,
     categoryNames,
     owners,
+    offerActions,
     onOpenProduct,
     onOpenOwner,
     onOfferExchange,
@@ -97,12 +104,15 @@ export const ProductFeed = ({
                                 : undefined
                         }
                         owner={owners?.get(product.customer_id)}
+                        offerAction={offerActions?.get(product.product_id)}
                         isDescriptionExpanded={expandedIds.has(product.product_id)}
                         onToggleDescription={() => toggleDescription(product.product_id)}
                         onOpenProduct={() => onOpenProduct(product.product_id)}
                         onOpenOwner={() => onOpenOwner(product.customer_id)}
                         onOfferExchange={() => onOfferExchange(product.product_id)}
-                        onBuildRoute={() => onBuildRoute(product.product_id)}
+                        onBuildRoute={
+                            onBuildRoute ? () => onBuildRoute(product.product_id) : undefined
+                        }
                     />
                 ))}
 

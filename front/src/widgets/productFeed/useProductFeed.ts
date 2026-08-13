@@ -90,7 +90,20 @@ export const useProductFeed = (itemsCount: number, position: TProductFeedPositio
 
         updateHeight();
         window.addEventListener('resize', updateHeight);
-        return () => window.removeEventListener('resize', updateHeight);
+
+        /* Блок над лентой (шапка страницы) может поменять высоту уже после
+           этого замера — прилипнув, перенеся строку меты на вторую строку
+           или дождавшись шрифта. Ни одно из этих событий не шлёт window
+           resize, поэтому высоту ленты держит наблюдатель за самим
+           документом: он ловит изменение высоты именно то, что двигает
+           верх ленты. */
+        const bodyObserver = new ResizeObserver(updateHeight);
+        bodyObserver.observe(document.body);
+
+        return () => {
+            window.removeEventListener('resize', updateHeight);
+            bodyObserver.disconnect();
+        };
     }, [itemsCount]);
 
     /* Возврат к сохранённой карточке — до первой отрисовки кадра: иначе

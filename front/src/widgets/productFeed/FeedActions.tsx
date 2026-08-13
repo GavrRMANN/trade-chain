@@ -2,12 +2,35 @@ import { Button } from '@shared/ui/button';
 
 import Styles from './feed-item.module.css';
 
+/**
+ * Главное действие карточки, когда лента открыта не каталогом.
+ *
+ * В подборке маршрута отдаваемая вещь уже известна, а часть вариантов уже
+ * получила предложение: подпись «Предложить свою вещь» обещала бы там выбор,
+ * которого нет, и не отличала бы отправленное от неотправленного.
+ */
+export type TFeedOfferAction = {
+    /** Подпись кнопки в правой панели desktop. */
+    label: string;
+    /** Подпись под иконкой в мобильной раскладке. */
+    shortLabel: string;
+    /** Полное название действия для скринридера — вместе с названием вещи. */
+    ariaLabel: string;
+    /** Пояснение под кнопкой: что произойдёт после нажатия. */
+    hint?: string;
+    /** Действие уже сделано или сейчас недоступно. */
+    disabled?: boolean;
+};
+
 type TFeedActionsProps = {
     productTitle: string;
     /** Мобильная лента показывает круглые иконки, desktop — обычные кнопки. */
     variant: 'compact' | 'panel';
+    /** Переопределение главного действия — иначе оно ведёт в форму обмена. */
+    offerAction?: TFeedOfferAction;
     onOfferExchange: () => void;
-    onBuildRoute: () => void;
+    /** Не задан там, где цепочку строить уже не из чего — внутри самого маршрута. */
+    onBuildRoute?: () => void;
     onOpenProduct: () => void;
     onOpenOwner: () => void;
 };
@@ -45,25 +68,39 @@ const ICONS = {
 export const FeedActions = ({
     productTitle,
     variant,
+    offerAction,
     onOfferExchange,
     onBuildRoute,
     onOpenProduct,
     onOpenOwner,
 }: TFeedActionsProps) => {
+    const offer: TFeedOfferAction = offerAction ?? {
+        label: 'Предложить свою вещь',
+        shortLabel: 'Обменять',
+        ariaLabel: `Предложить свою вещь в обмен на «${productTitle}»`,
+        hint: 'Выберите, что отдаёте, — владелец ответит на предложение',
+    };
+
     if (variant === 'panel') {
         return (
             <div className={Styles['feed-item__panel-actions']}>
-                <Button onClick={onOfferExchange}>Предложить свою вещь</Button>
-                <p className={Styles['feed-item__action-hint']}>
-                    Выберите, что отдаёте, — владелец ответит на предложение
-                </p>
+                <Button
+                    onClick={onOfferExchange}
+                    disabled={offer.disabled}
+                    ariaLabel={offer.ariaLabel}
+                >
+                    {offer.label}
+                </Button>
+                {offer.hint && <p className={Styles['feed-item__action-hint']}>{offer.hint}</p>}
 
                 {/* Второй сценарий: прямого обмена может не быть, и тогда до
                     вещи ведёт цепочка. Название совпадает с карточкой товара,
                     чтобы это читалось как одно и то же действие. */}
-                <Button variant="secondary" onClick={onBuildRoute}>
-                    Построить цепочку обменов
-                </Button>
+                {onBuildRoute && (
+                    <Button variant="secondary" onClick={onBuildRoute}>
+                        Построить цепочку обменов
+                    </Button>
+                )}
 
                 <div className={Styles['feed-item__panel-secondary']}>
                     <Button variant="text" onClick={onOpenProduct}>
@@ -84,20 +121,26 @@ export const FeedActions = ({
     const actions = [
         {
             key: 'exchange',
-            label: 'Обменять',
-            ariaLabel: `Предложить свою вещь в обмен на «${productTitle}»`,
+            label: offer.shortLabel,
+            ariaLabel: offer.ariaLabel,
             icon: ICONS.exchange,
             onClick: onOfferExchange,
             isPrimary: true,
+            disabled: offer.disabled,
         },
-        {
-            key: 'route',
-            label: 'Цепочка',
-            ariaLabel: `Построить цепочку обменов до «${productTitle}»`,
-            icon: ICONS.route,
-            onClick: onBuildRoute,
-            isPrimary: false,
-        },
+        ...(onBuildRoute
+            ? [
+                  {
+                      key: 'route',
+                      label: 'Цепочка',
+                      ariaLabel: `Построить цепочку обменов до «${productTitle}»`,
+                      icon: ICONS.route,
+                      onClick: onBuildRoute,
+                      isPrimary: false,
+                      disabled: false,
+                  },
+              ]
+            : []),
         {
             key: 'open',
             label: 'Подробнее',
@@ -105,6 +148,7 @@ export const FeedActions = ({
             icon: ICONS.open,
             onClick: onOpenProduct,
             isPrimary: false,
+            disabled: false,
         },
         {
             key: 'owner',
@@ -113,6 +157,7 @@ export const FeedActions = ({
             icon: ICONS.owner,
             onClick: onOpenOwner,
             isPrimary: false,
+            disabled: false,
         },
     ];
 
@@ -130,6 +175,7 @@ export const FeedActions = ({
                         .join(' ')}
                     aria-label={action.ariaLabel}
                     onClick={action.onClick}
+                    disabled={action.disabled}
                 >
                     <span className={Styles['feed-item__action-icon']}>{action.icon}</span>
                     <span className={Styles['feed-item__action-label']}>{action.label}</span>

@@ -8,7 +8,7 @@ import {useMobileRouteStep} from './useMobileRouteStep';
 
 type TRouteBuilderProps = {
     onCancel?: () => void;
-    variant?: 'card' | 'modal';
+    variant?: 'card' | 'modal' | 'page';
 };
 
 export const RouteBuilder = ({ onCancel, variant = 'card' }: TRouteBuilderProps) => {

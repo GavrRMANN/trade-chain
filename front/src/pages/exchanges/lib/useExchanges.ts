@@ -1,7 +1,7 @@
 import {useCallback, useEffect, useMemo} from 'react';
 import {useNavigate, useSearchParams} from 'react-router-dom';
 
-import {buildRoutePath, useOpenModalRoute} from '@shared/lib';
+import {buildRoutePath, MODAL_ROUTE_PATHS, useIsMobile, useOpenModalRoute} from '@shared/lib';
 
 import {getFilterableProducts} from './getFilterableProducts';
 import {useExchangeRows} from './useExchangeRows';
@@ -42,6 +42,7 @@ const formatActiveOffers = (count: number): string => {
 export const useExchanges = () => {
     const navigate = useNavigate();
     const openModalRoute = useOpenModalRoute();
+    const isMobile = useIsMobile();
     const [searchParams, setSearchParams] = useSearchParams();
 
     const activeView: TExchangeView = searchParams.get('view') === 'exchanges' ? 'exchanges' : 'routes';
@@ -85,8 +86,16 @@ export const useExchanges = () => {
 
     /* Обе модалки страницы открываются как маршруты. Фильтр получает текущую
        query-строку: вкладка и выбранный товар нужны ему, чтобы показать те же
-       товары, что фильтруются под ним. */
-    const openRouteBuilder = () => openModalRoute({name: 'routeBuilder'});
+       товары, что фильтруются под ним. Создание цепочки на телефоне — не
+       модалка поверх фона, а обычная страница, поэтому туда переходят без
+       backgroundLocation. */
+    const openRouteBuilder = () => {
+        if (isMobile) {
+            navigate(MODAL_ROUTE_PATHS.routeBuilder);
+            return;
+        }
+        openModalRoute({name: 'routeBuilder'});
+    };
     const openProductFilter = () =>
         openModalRoute({name: 'exchangeFilter', search: searchParams.toString()});
 
