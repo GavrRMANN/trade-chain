@@ -1,23 +1,9 @@
-import type { Location, Path } from 'react-router-dom';
+import type { Location } from 'react-router-dom';
 
-export type BackgroundRouteState = {
-    backgroundLocation: Path;
-    /** Путь возврата после успешного входа через ProtectedRoute. */
-    authReturn?: Path;
-};
+import { getModalBackgroundRoute, type BackgroundRouteState } from '@shared/lib';
 
-const getLocationPath = (path: Path) => ({
-    pathname: path.pathname,
-    search: path.search,
-    hash: path.hash,
-});
-
-/** Возвращает страницу, поверх которой открыли модалку. */
-export const getModalBackgroundRoute = (location: Location<BackgroundRouteState>) => {
-    const backgroundLocation = location.state?.backgroundLocation;
-
-    return backgroundLocation ? getLocationPath(backgroundLocation) : '/';
-};
+export type { BackgroundRouteState };
+export { getModalBackgroundRoute };
 
 /**
  * Определяет путь, на который нужно вернуться после закрытия/успешного входа

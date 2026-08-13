@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from 'react';
+import {
+    useCallback,
+    useEffect,
+    useLayoutEffect,
+    useRef,
+    useState,
+    type KeyboardEvent,
+} from 'react';
 
 /** Каждая карточка помечена этим атрибутом — так навигация не зависит от хешей CSS Module. */
 const ITEM_SELECTOR = '[data-feed-item]';
@@ -6,20 +13,55 @@ const ITEM_SELECTOR = '[data-feed-item]';
 /** Небольшой зазор снизу, чтобы лента не упиралась в край окна. */
 const BOTTOM_GAP = 16;
 
+type TProductFeedPosition = {
+    /** Карточка, с которой открыть ленту, — например, сохранённая позиция. */
+    initialIndex?: number;
+    /**
+     * Ключ списка: при его смене лента считается другой и открывается
+     * сначала. Без него смена фильтра оставляла бы прокрутку от прежней
+     * выдачи, где карточек было больше.
+     */
+    positionKey?: string;
+    /** Вызывается при переходе на другую карточку — с её индексом. */
+    onActiveIndexChange?: (index: number) => void;
+};
+
+/** Смещения карточек внутри контейнера ленты — точки снапа. */
+const getItemOffsets = (container: HTMLElement) =>
+    Array.from(container.querySelectorAll<HTMLElement>(ITEM_SELECTOR)).map(
+        (item) => item.offsetTop - container.offsetTop,
+    );
+
+/** Индекс карточки, ближайшей к текущей прокрутке ленты. */
+const getActiveIndex = (offsets: number[], scrollTop: number) =>
+    offsets.reduce(
+        (closest, offset, index) =>
+            Math.abs(offset - scrollTop) < Math.abs(offsets[closest] - scrollTop) ? index : closest,
+        0,
+    );
+
 /**
- * Управляет навигацией по вертикальной ленте и состоянием «свёрнуто/раскрыто»
- * для описаний карточек.
+ * Управляет навигацией по вертикальной ленте, её позицией и состоянием
+ * «свёрнуто/раскрыто» для описаний карточек.
  *
  * Сам скролл и снап карточек по экрану делает CSS (`scroll-snap-type`) —
  * хук только следит, какая карточка сейчас активна, и переводит клавиатурные
  * события в переход к соседней карточке. Свайп пальцем тоже листает ленту
  * нативно, через обычный скролл контейнера: специальный pointer-обработчик
  * тут не нужен и не должен ничего "предлагать" или "пропускать" за пользователя.
+ *
+ * @param itemsCount Число карточек в ленте.
+ * @param position Позиция, с которой открыть ленту, и приёмник изменений.
  */
-export const useProductFeed = (itemsCount: number) => {
+export const useProductFeed = (itemsCount: number, position: TProductFeedPosition = {}) => {
+    const { initialIndex = 0, positionKey = '', onActiveIndexChange } = position;
     const containerRef = useRef<HTMLDivElement>(null);
     const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
     const [viewportHeight, setViewportHeight] = useState<number>();
+    /* Ключ списка, для которого позиция уже выставлена: пока лента не встала
+       на нужную карточку, её собственные события прокрутки не считаются
+       выбором пользователя и наружу не уходят. */
+    const restoredKeyRef = useRef<string>();
 
     /* Высота ленты считается от её собственного положения на странице:
        над ней живут шапка экрана и фильтр категорий, а общий контейнер
@@ -51,6 +93,70 @@ export const useProductFeed = (itemsCount: number) => {
         return () => window.removeEventListener('resize', updateHeight);
     }, [itemsCount]);
 
+    /* Возврат к сохранённой карточке — до первой отрисовки кадра: иначе
+       пользователь успевал бы увидеть начало ленты и прыжок от него.
+       Ждать приходится двух вещей — измеренной высоты вьюпорта (от неё
+       зависят точки снапа) и самих карточек, которые страница восстанавливает
+       из своего снимка. */
+    useLayoutEffect(() => {
+        const container = containerRef.current;
+        if (!container || viewportHeight === undefined) return;
+        if (restoredKeyRef.current === positionKey) return;
+
+        const offsets = getItemOffsets(container);
+        if (offsets.length === 0 || (initialIndex > 0 && offsets.length <= initialIndex)) return;
+
+        restoredKeyRef.current = positionKey;
+        container.scrollTo({
+            top: offsets[Math.min(initialIndex, offsets.length - 1)],
+            behavior: 'auto',
+        });
+    }, [initialIndex, itemsCount, positionKey, viewportHeight]);
+
+    /* Обработчик прокрутки живёт отдельно от отрисовки: активная карточка
+       нужна странице для снимка позиции, а перерисовывать ленту на каждое
+       движение пальца ради этого нельзя.
+
+       Число карточек в зависимостях — не ради самих карточек, а ради
+       контейнера: до первой загрузки лента показывает пустое состояние,
+       и вешать обработчик ещё не на что. */
+    useEffect(() => {
+        const container = containerRef.current;
+        if (!container || !onActiveIndexChange) return;
+
+        let frameId = 0;
+        let reportedIndex = -1;
+
+        const report = () => {
+            frameId = 0;
+
+            const index = getActiveIndex(getItemOffsets(container), container.scrollTop);
+            if (index !== reportedIndex) {
+                reportedIndex = index;
+                onActiveIndexChange(index);
+            }
+        };
+
+        const handleScroll = () => {
+            if (frameId || restoredKeyRef.current !== positionKey) return;
+
+            frameId = window.requestAnimationFrame(report);
+        };
+
+        container.addEventListener('scroll', handleScroll, { passive: true });
+        return () => {
+            container.removeEventListener('scroll', handleScroll);
+
+            /* Уход со страницы обычно и случается сразу после листания: если
+               последнее движение ещё ждёт своего кадра, позиция считается
+               здесь — иначе лента вернулась бы на карточку назад. */
+            if (frameId) {
+                window.cancelAnimationFrame(frameId);
+                report();
+            }
+        };
+    }, [itemsCount, onActiveIndexChange, positionKey]);
+
     /* Активная карточка вычисляется из текущего скролла, а не хранится
        отдельным состоянием: наблюдатель за видимостью обновлялся бы
        асинхронно, и два быстрых нажатия подряд листали бы на один шаг. */
@@ -58,19 +164,11 @@ export const useProductFeed = (itemsCount: number) => {
         const container = containerRef.current;
         if (!container) return;
 
-        const items = Array.from(container.querySelectorAll<HTMLElement>(ITEM_SELECTOR));
-        if (items.length === 0) return;
+        const offsets = getItemOffsets(container);
+        if (offsets.length === 0) return;
 
-        const offsets = items.map((item) => item.offsetTop - container.offsetTop);
-        const activeIndex = offsets.reduce(
-            (closest, offset, index) =>
-                Math.abs(offset - container.scrollTop) <
-                Math.abs(offsets[closest] - container.scrollTop)
-                    ? index
-                    : closest,
-            0,
-        );
-        const nextIndex = Math.max(0, Math.min(activeIndex + direction, items.length - 1));
+        const activeIndex = getActiveIndex(offsets, container.scrollTop);
+        const nextIndex = Math.max(0, Math.min(activeIndex + direction, offsets.length - 1));
 
         /* Переход мгновенный, как и снап при свайпе: плавная анимация здесь
            только растянула бы смену карточки и разошлась бы с тем, что

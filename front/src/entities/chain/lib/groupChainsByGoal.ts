@@ -1,3 +1,4 @@
+import { getChainGoalId } from './chainGoal';
 import type { TChain, TChainStatus } from '../types';
 
 /** Статусы, считающиеся терминальными — обмен завершён и больше не активен. */
@@ -54,12 +55,10 @@ export const groupChainsByGoal = (chains: TChain[], currentUserId: string): TCha
             continue;
         }
 
-        /* Категория опережает товар: у предложения внутри маршрута к категории
-           заполнены оба поля — конкретный товар нужен, чтобы обмен вообще мог
-           состояться, а категория говорит, куда идёт путь. Приняв товар за
-           цель, каждое предложение одного маршрута превращалось в отдельную
-           цель, и путь к категории рассыпался на одиночные обмены. */
-        const goalId = chain.exchange_goal_id ?? chain.to_category_id ?? chain.to_product_id;
+        /* Приняв товар назначения за цель, каждое предложение одного маршрута
+           превращалось в отдельную цель, и путь к категории рассыпался на
+           одиночные обмены, — порядок полей задан в {@link getChainGoalId}. */
+        const goalId = getChainGoalId(chain);
         if (!goalId) {
             continue;
         }

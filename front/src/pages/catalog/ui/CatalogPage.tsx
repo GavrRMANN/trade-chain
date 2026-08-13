@@ -6,14 +6,7 @@ import { Button } from '@shared/ui/button';
 import { PageHeader } from '@shared/ui/pageHeader';
 import { ViewModeToggle } from '@shared/ui/viewModeToggle';
 import { ProductFeed } from '@widgets/productFeed';
-import { OfferExchangeModal } from '@features/exchange';
-import {
-    formatProductCount,
-    useCatalog,
-    useCatalogViewMode,
-    useFeedOwners,
-    useFeedOffer,
-} from '../lib';
+import { formatProductCount, useCatalog, useCatalogViewMode, useFeedOwners } from '../lib';
 import { PageError } from '@shared/ui/pageError';
 
 import { ProductGrid } from './ProductGrid';
@@ -25,7 +18,6 @@ const VIEW_MODE_OPTIONS = [
 
 export const CatalogPage = () => {
     const { viewMode, setViewMode } = useCatalogViewMode();
-    const { offerProductId, currentCustomerId, openOffer, closeOffer } = useFeedOffer();
     /* Имя и рейтинг владельца видны только в ленте, поэтому в режиме сетки
        список участников не запрашивается. */
     const owners = useFeedOwners({ skip: viewMode !== 'feed' });
@@ -45,14 +37,16 @@ export const CatalogPage = () => {
         isCategoriesError,
         loadMoreRef,
         categoryNames,
+        filtersKey,
+        feedIndex,
+        saveFeedIndex,
         selectCategory,
         openProduct,
         openCreateProduct,
         openOwner,
         openRouteTo,
-        openExchangeRoom,
-        openCreateForTarget,
-    } = useCatalog();
+        openOffer,
+    } = useCatalog(viewMode);
 
     if (isCategoriesLoading) {
         return <Preloader message={'Загрузка...'} />;
@@ -122,6 +116,9 @@ export const CatalogPage = () => {
                             loadMoreRef={loadMoreRef}
                             categoryNames={categoryNames}
                             owners={owners}
+                            initialIndex={feedIndex}
+                            positionKey={filtersKey}
+                            onActiveIndexChange={saveFeedIndex}
                             onOpenProduct={openProduct}
                             onOpenOwner={openOwner}
                             onOfferExchange={openOffer}
@@ -182,20 +179,6 @@ export const CatalogPage = () => {
                 )}
             </div>
             )}
-
-            <OfferExchangeModal
-                isOpen={Boolean(offerProductId)}
-                onClose={closeOffer}
-                onSuccess={(chainId) => {
-                    closeOffer();
-                    openExchangeRoom(chainId);
-                }}
-                targetProductId={offerProductId ?? ''}
-                currentCustomerId={currentCustomerId}
-                onCreateFullProduct={() =>
-                    offerProductId ? openCreateForTarget(offerProductId) : openCreateProduct()
-                }
-            />
         </MainSection>
     );
 };

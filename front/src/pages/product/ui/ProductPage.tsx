@@ -1,10 +1,8 @@
-import { OfferExchangeModal } from '@features/exchange';
 import { WishlistEditor } from '@features/wishlist';
 import { Button } from '@shared/ui/button';
 import { ChainRow } from '@widgets/chainRow';
 import { ExchangeRow } from '@widgets/exchangeRow';
 import { MainSection } from '@shared/ui/mainSection';
-import { Modal } from '@shared/ui/modal';
 import { PageError } from '@shared/ui/pageError';
 import { PageHeader } from '@shared/ui/pageHeader';
 import { Preloader } from '@shared/ui/preloader';
@@ -32,7 +30,6 @@ export const ProductPage = () => {
         targetChain,
         isOwner,
         isAuthenticated,
-        currentUserId,
         isLoading,
         isError,
         status,
@@ -42,23 +39,12 @@ export const ProductPage = () => {
         ratingText,
         canOffer,
         needsOwnProductToOffer,
-        isOfferOpen,
         openOffer,
-        closeOffer,
-        onOfferSuccess,
         requestArchive,
-        cancelConfirm,
-        confirm,
-        confirmAction,
-        confirmText,
-        confirmLabel,
-        isActionLoading,
-        actionError,
         openProduct,
         openEditProduct,
         openExchanges,
         openIncomingOffers,
-        openCreateForTarget,
         openRoute,
         openExchangeRoom,
     } = useProductPage();
@@ -377,34 +363,6 @@ export const ProductPage = () => {
                     </aside>
                 </div>
             </article>
-
-            <OfferExchangeModal
-                isOpen={isOfferOpen && canOffer}
-                onClose={closeOffer}
-                onSuccess={onOfferSuccess}
-                targetProductId={product.product_id}
-                currentCustomerId={currentUserId}
-                onCreateFullProduct={openCreateForTarget}
-            />
-
-            <Modal title="Подтвердите действие" isOpen={confirmAction} onClose={cancelConfirm}>
-                <div className={Styles['product-page__confirm']}>
-                    <p>{confirmText}</p>
-                    {actionError && <p className={Styles['product-page__error']}>{actionError}</p>}
-                    <div className={Styles['product-page__confirm-actions']}>
-                        <Button
-                            loading={isActionLoading}
-                            disabled={isActionLoading}
-                            onClick={confirm}
-                        >
-                            {confirmLabel}
-                        </Button>
-                        <Button variant="text" onClick={cancelConfirm} disabled={isActionLoading}>
-                            Отмена
-                        </Button>
-                    </div>
-                </div>
-            </Modal>
         </MainSection>
     );
 };

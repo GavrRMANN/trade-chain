@@ -17,6 +17,15 @@ export default tseslint.config(
     js.configs.recommended,
     ...tseslint.configs.recommended,
     {
+        // Стенд mock-API — обычный Node-скрипт, а не код приложения: без
+        // объявленного окружения таймеры и process считаются необъявленными.
+        files: ['mock-api/**/*.js'],
+        languageOptions: {
+            ecmaVersion: 2022,
+            globals: globals.node,
+        },
+    },
+    {
         files: ['**/*.{ts,tsx}'],
         languageOptions: {
             ecmaVersion: 2022,

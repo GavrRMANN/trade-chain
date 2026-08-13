@@ -1,0 +1,23 @@
+.confirm {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.confirm p {
+    color: var(--neutral-primary);
+    font-size: var(--text-base-font-size);
+    line-height: var(--text-base-line-height);
+}
+
+.actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+}
+
+.error {
+    color: var(--accent-danger) !important;
+    font-size: var(--text-sm-font-size) !important;
+    line-height: var(--text-sm-line-height) !important;
+}

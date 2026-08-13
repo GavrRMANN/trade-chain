@@ -1,5 +1,3 @@
-/* global URL, console, process */
-
 // Mock-API, воспроизводящий контракты бэкенда trade-chain 1-в-1:
 // пути, методы, тела запросов/ответов, статусы и бизнес-логику FSM обмена
 // (back/internal/httpapi, back/internal/exchange, back/internal/service).
@@ -51,6 +49,10 @@ const server = createServer(async (request, response) => {
             return demoLogin(request, response);
         if (url.pathname === '/api/v1/auth/me' && request.method === 'GET')
             return currentUser(request, response);
+        if (url.pathname === '/api/v1/events' && request.method === 'GET')
+            return streamEvents(request, response);
+        if (url.pathname.startsWith('/api/v1/notifications'))
+            return handleNotifications(request, response, url);
 
         // exchange-offers/exchanges объявляются раньше общих префиксов, чтобы
         // специфичные пути не ушли в обработчики chains/products.
@@ -114,8 +116,15 @@ async function register(request, response) {
 // сам mock-API и существует ради демонстрации.
 async function demoLogin(request, response) {
     const body = await readJson(request);
+    /* Витрина `/demo` присылает идентификатор профиля из 013_demo_accounts.sql,
+       а mock хранит участников под своими читаемыми ключами — вход принимает
+       оба, иначе демонстрационные кнопки упирались бы в «Пользователь не
+       найден». */
     const customer = customers.find(
-        (item) => item.customer_id === body?.customer_id && item.is_active,
+        (item) =>
+            (item.customer_id === body?.customer_id ||
+                item.demo_customer_id === body?.customer_id) &&
+            item.is_active,
     );
     if (!customer) return sendError(response, 404, 'Пользователь не найден');
     return sendJson(response, 200, {
@@ -244,11 +253,32 @@ async function handleProducts(request, response, url) {
         return productRecommendations(request, response, parts[0]);
     }
 
+    /* mine и by-customer различаются архивом — так же, как на бэкенде:
+       GetOwnByCustomerID отдаёт владельцу весь его список вместе с архивом,
+       а GetByCustomerID (WHERE status != 'archived') — только то, что ещё
+       участвует в обменах. */
+    if (request.method === 'GET' && parts.length === 1 && parts[0] === 'mine') {
+        const user = requireUser(request);
+        if (!user) return sendError(response, 403, 'operation forbidden');
+        return sendJson(
+            response,
+            200,
+            products.filter((product) => product.customer_id === user.id),
+        );
+    }
+
     if (request.method === 'GET' && parts.length === 2 && parts[0] === 'by-customer') {
         const customerId = parts[1];
         const user = requireUser(request);
         if (!user || user.id !== customerId) return sendError(response, 403, 'operation forbidden');
-        return sendJson(response, 200, products.filter((product) => product.customer_id === customerId));
+        return sendJson(
+            response,
+            200,
+            products.filter(
+                (product) =>
+                    product.customer_id === customerId && product.status !== 'archived',
+            ),
+        );
     }
 
     if (parts.length === 2 && parts[1] === 'image') {
@@ -268,6 +298,23 @@ async function handleProducts(request, response, url) {
         return sendJson(response, 200, products[index]);
     }
 
+    // archive повторяет productHandler.delete: мягкое удаление владельцем,
+    // после которого товар выпадает из каталога и новых обменов.
+    if (parts.length === 2 && parts[1] === 'archive') {
+        if (request.method !== 'POST') return sendError(response, 405, 'Метод не поддерживается');
+        const index = products.findIndex(({ product_id: id }) => id === parts[0]);
+        if (index < 0 || products[index].status === 'archived')
+            return sendError(response, 404, 'Товар не найден');
+        const user = requireUser(request);
+        if (!user) return sendError(response, 403, 'operation forbidden');
+        if (products[index].customer_id !== user.id)
+            return sendError(response, 403, 'operation forbidden');
+        products[index].status = 'archived';
+        products[index].updated_at = new Date().toISOString();
+        response.writeHead(204);
+        return response.end();
+    }
+
     if (request.method === 'POST' && parts.length === 0) {
         const user = requireUser(request);
         if (!user) return sendError(response, 403, 'operation forbidden');
@@ -281,9 +328,13 @@ async function handleProducts(request, response, url) {
 
     if (parts.length !== 1) return sendError(response, 404, 'Товар не найден');
     const index = products.findIndex(({ product_id: id }) => id === parts[0]);
-    if (index < 0 || products[index].status === 'archived')
-        return sendError(response, 404, 'Товар не найден');
+    if (index < 0) return sendError(response, 404, 'Товар не найден');
+    /* Карточку архивного товара бэкенд отдаёт (productRepository.GetByID не
+       фильтрует по статусу) — на неё ведут ссылки из истории обменов, и фронт
+       показывает её отдельным архивным видом. Скрыт архив только из списков. */
     if (request.method === 'GET') return sendJson(response, 200, products[index]);
+    if (products[index].status === 'archived')
+        return sendError(response, 404, 'Товар не найден');
     if (request.method === 'PATCH') {
         const user = requireUser(request);
         if (!user) return sendError(response, 403, 'operation forbidden');
@@ -506,6 +557,7 @@ async function handleChains(request, response, url) {
         try {
             const chain = createChain(user.id, body);
             chains.push(chain);
+            publishChainEvent('exchange.offer.created', chain);
             return sendJson(response, 201, chain);
         } catch (error) {
             return sendChainError(response, error);
@@ -532,6 +584,12 @@ async function handleChains(request, response, url) {
         const error = applyAction(chains[index], action, user.id);
         if (error) return sendChainError(response, error);
         chains[index].updated_at = new Date().toISOString();
+        publishChainEvent(
+            chains[index].status === 'completed'
+                ? 'exchange.completed'
+                : 'exchange.chain.updated',
+            chains[index],
+        );
         response.writeHead(204);
         return response.end();
     }
@@ -544,6 +602,10 @@ async function handleChains(request, response, url) {
             return sendError(response, 400, 'Некорректное тело запроса');
         const error = confirmChain(chains[index], user.id, body.success, body.reason || '');
         if (error) return sendChainError(response, error);
+        publishChainEvent('exchange.confirmation.created', chains[index]);
+        if (chains[index].status === 'completed') {
+            publishChainEvent('exchange.completed', chains[index]);
+        }
         return sendJson(response, 200, chains[index]);
     }
 
@@ -571,11 +633,13 @@ async function handleChains(request, response, url) {
             created_at: new Date().toISOString(),
         };
         (chainMessages[chains[index].chain_id] ||= []).push(message);
+        publishChainEvent('exchange.message.created', chains[index]);
         return sendJson(response, 201, message);
     }
 
     if (request.method === 'DELETE' && parts.length === 1) {
-        chains.splice(index, 1);
+        const [removed] = chains.splice(index, 1);
+        publishChainEvent('exchange.chain.deleted', removed);
         response.writeHead(204);
         return response.end();
     }
@@ -633,6 +697,7 @@ async function handleExchangeOffers(request, response, url) {
         try {
             const chain = createOffer(user.id, body);
             chains.push(chain);
+            publishChainEvent('exchange.offer.created', chain);
             return sendJson(response, 201, {
                 id: chain.chain_id,
                 status: offerStatusOf(chain),
@@ -690,6 +755,10 @@ async function handleExchangeOffers(request, response, url) {
         const error = applyAction(chain, action, user.id);
         if (error) return sendChainError(response, error);
         chain.updated_at = new Date().toISOString();
+        publishChainEvent(
+            chain.status === 'completed' ? 'exchange.completed' : 'exchange.chain.updated',
+            chain,
+        );
         return sendJson(response, 200, offerResponse(chain, user.id));
     }
     return sendError(response, 404, 'Цепочка не найдена');
@@ -709,6 +778,10 @@ async function handleExchanges(request, response, url) {
         if (!chain) return sendError(response, 404, 'Цепочка не найдена');
         const error = confirmChain(chain, user.id, body.result === 'success', body.reason || '');
         if (error) return sendChainError(response, error);
+        publishChainEvent('exchange.confirmation.created', chain);
+        if (chain.status === 'completed') {
+            publishChainEvent('exchange.completed', chain);
+        }
         return sendJson(response, 200, {
             id: chain.chain_id,
             status: exchangeStatusOf(chain),
@@ -1185,6 +1258,123 @@ async function handleWishlists(request, response, url) {
     return sendError(response, 405, 'Метод не поддерживается');
 }
 
+// ===== Notifications =======================================================
+
+// Отметки прочтения: { [customer_id]: { `${chain_id}:${kind}`: NotificationRead } }.
+// Уведомления как таковые не хранятся — фронт собирает их из цепочек
+// (см. buildNotifications), с бэкенда приходят только отметки прочтения.
+const notificationReads = {};
+
+const NOTIFICATION_KINDS = new Set([
+    'incoming_offer',
+    'outgoing_pending',
+    'in_progress',
+    'finished',
+]);
+
+async function handleNotifications(request, response, url) {
+    const parts = getResourceParts(url.pathname, '/api/v1/notifications');
+    const user = requireUser(request);
+    if (!user) return sendError(response, 403, 'operation forbidden');
+
+    if (request.method === 'GET' && parts.length === 1 && parts[0] === 'read-statuses') {
+        return sendJson(response, 200, Object.values(notificationReads[user.id] || {}));
+    }
+
+    // read-all помечает прочитанными все события пользователя разом: фронт
+    // считает уведомление прочитанным по паре chain_id + kind, поэтому здесь
+    // перебираются те же виды, что вычисляет buildNotifications.
+    if (request.method === 'PUT' && parts.length === 1 && parts[0] === 'read-all') {
+        const readAt = new Date().toISOString();
+        const reads = (notificationReads[user.id] ||= {});
+        for (const chain of chains) {
+            if (!involves(chain, user.id)) continue;
+            for (const kind of NOTIFICATION_KINDS) {
+                reads[`${chain.chain_id}:${kind}`] = {
+                    chain_id: chain.chain_id,
+                    kind,
+                    read_at: readAt,
+                };
+            }
+        }
+        response.writeHead(204);
+        return response.end();
+    }
+
+    if (request.method === 'PUT' && parts.length === 2 && parts[1] === 'read') {
+        const body = await readJson(request);
+        const kind = body?.kind;
+        if (!NOTIFICATION_KINDS.has(kind))
+            return sendError(response, 400, 'Некорректное тело запроса');
+        const chain = chains.find(({ chain_id: id }) => id === parts[0]);
+        if (!chain) return sendError(response, 404, 'Цепочка не найдена');
+        if (!involves(chain, user.id))
+            return sendError(response, 403, 'пользователь не участвует в этом обмене');
+        (notificationReads[user.id] ||= {})[`${chain.chain_id}:${kind}`] = {
+            chain_id: chain.chain_id,
+            kind,
+            read_at: new Date().toISOString(),
+        };
+        response.writeHead(204);
+        return response.end();
+    }
+
+    return sendError(response, 404, 'Ресурс не найден');
+}
+
+// ===== Events (SSE) ========================================================
+
+// Подписчики потока событий: { [customer_id]: Set<ServerResponse> }.
+const eventSubscribers = new Map();
+const EVENT_HEARTBEAT_MS = 25_000;
+
+/** Держит SSE-поток открытым — повторяет eventsHandler.stream. */
+function streamEvents(request, response) {
+    const user = requireUser(request);
+    if (!user) return sendError(response, 401, 'missing authorization header');
+
+    response.writeHead(200, {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        Connection: 'keep-alive',
+        'X-Accel-Buffering': 'no',
+    });
+    response.write(': keepalive\n\n');
+
+    if (!eventSubscribers.has(user.id)) eventSubscribers.set(user.id, new Set());
+    eventSubscribers.get(user.id).add(response);
+
+    const heartbeat = setInterval(() => response.write(': keepalive\n\n'), EVENT_HEARTBEAT_MS);
+
+    request.on('close', () => {
+        clearInterval(heartbeat);
+        const subscribers = eventSubscribers.get(user.id);
+        subscribers?.delete(response);
+        if (subscribers && subscribers.size === 0) eventSubscribers.delete(user.id);
+    });
+}
+
+/**
+ * Рассылает событие обеим сторонам звена — как chainService.publish.
+ * @param type Тип события из events.Broker (`exchange.*`).
+ * @param chain Звено, которого касается событие.
+ */
+function publishChainEvent(type, chain) {
+    if (!chain) return;
+
+    const payload = `event: ${type}\ndata: ${JSON.stringify({
+        type,
+        chain_id: chain.chain_id,
+    })}\n\n`;
+    const recipients = new Set([chain.initiator_id, chain.recipient_id].filter(Boolean));
+
+    for (const customerId of recipients) {
+        for (const subscriber of eventSubscribers.get(customerId) || []) {
+            subscriber.write(payload);
+        }
+    }
+}
+
 // ===== Search ==============================================================
 
 function findChain(request, response, params) {
@@ -1369,6 +1559,8 @@ function publicCustomer(customer) {
     const result = { ...customer };
     delete result.password;
     delete result.is_active;
+    // Алиас демо-профиля — деталь стенда: в модели бэкенда его нет.
+    delete result.demo_customer_id;
     return result;
 }
 

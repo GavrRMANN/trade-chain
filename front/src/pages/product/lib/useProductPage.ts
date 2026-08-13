@@ -1,10 +1,9 @@
-import { useCallback, useReducer } from 'react';
+import { useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import { getDisplayName, useOpenModalRoute } from '@shared/lib';
 
 import { useProductPageData } from './useProductPageData';
-import { useProductActions } from './useProductActions';
 
 const statusLabels = {
     active: 'Активен',
@@ -13,18 +12,10 @@ const statusLabels = {
     archived: 'В архиве',
 } as const;
 
-type TOfferState = { isOpen: boolean };
-type TOfferAction = { type: 'open' } | { type: 'close' };
-
-const offerReducer = (state: TOfferState, action: TOfferAction): TOfferState => ({
-    isOpen: action.type === 'open',
-});
-
 export const useProductPage = () => {
     const { productId } = useParams<{ productId: string }>();
     const navigate = useNavigate();
     const openModalRoute = useOpenModalRoute();
-    const [offerState, dispatchOffer] = useReducer(offerReducer, { isOpen: false });
 
     const {
         product,
@@ -49,19 +40,7 @@ export const useProductPage = () => {
         isError,
     } = useProductPageData(productId);
 
-    const {
-        status: actionStatus,
-        requestArchive,
-        cancelConfirm,
-        confirm,
-        confirmAction,
-        confirmText,
-        confirmLabel,
-        isLoading: isActionLoading,
-        error: actionError,
-    } = useProductActions(product?.product_id);
-
-    const status: keyof typeof statusLabels = actionStatus ?? product?.status ?? 'active';
+    const status: keyof typeof statusLabels = product?.status ?? 'active';
     const sellerName = getDisplayName(customer?.full_name, customer?.email) || 'Email не указан';
     const hasRating = typeof averageRating === 'number' && averageRating > 0;
     const ratingText = hasRating
@@ -77,18 +56,19 @@ export const useProductPage = () => {
 
     const openOffer = useCallback(() => {
         if (!isAuthenticated) {
-            openModalRoute('auth');
+            openModalRoute({ name: 'auth' });
             return;
         }
-        if (status === 'active') dispatchOffer({ type: 'open' });
-    }, [isAuthenticated, status, openModalRoute]);
+        if (status === 'active' && productId) {
+            openModalRoute({ name: 'offerExchange', productId });
+        }
+    }, [isAuthenticated, openModalRoute, productId, status]);
 
-    const closeOffer = useCallback(() => dispatchOffer({ type: 'close' }), []);
-
-    const onOfferSuccess = useCallback(
-        (chainId: string) => navigate(`/exchanges/${chainId}`),
-        [navigate],
-    );
+    const requestArchive = useCallback(() => {
+        if (productId) {
+            openModalRoute({ name: 'archiveProduct', productId });
+        }
+    }, [openModalRoute, productId]);
 
     const openProduct = useCallback((id: string) => navigate(`/product/${id}`), [navigate]);
 
@@ -169,20 +149,9 @@ export const useProductPage = () => {
         ratingText,
         canOffer,
         needsOwnProductToOffer,
-        // offer-модалка
-        isOfferOpen: offerState.isOpen,
+        // модальные маршруты
         openOffer,
-        closeOffer,
-        onOfferSuccess,
-        // действия
         requestArchive,
-        cancelConfirm,
-        confirm,
-        confirmAction,
-        confirmText,
-        confirmLabel,
-        isActionLoading,
-        actionError,
         // навигация
         openProduct,
         openEditProduct,

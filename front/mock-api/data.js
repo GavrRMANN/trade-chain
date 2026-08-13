@@ -142,7 +142,11 @@ const products = [
         image: '',
         price: 2290,
         location: 'Псков',
-        status: 'active',
+        /* Владелец играет демо-роль «Новый пользователь»: сценарий проверяет
+           добавление вещи из карточки чужого товара, поэтому профиль должен
+           быть пустым. Товар архивируется, а не удаляется — так же поступает
+           013_demo_accounts.sql. */
+        status: 'archived',
         created_at: '2026-07-28T09:15:00Z',
         updated_at: '2026-07-28T09:15:00Z',
     },
@@ -183,9 +187,19 @@ const categories = [
 
 // is_active используется только как эмуляция soft-delete в mock; в канонической
 // модели бэкенда этого поля нет, и наружу оно не отдаётся (publicCustomer).
+//
+// demo_customer_id — идентификатор демонстрационного профиля из
+// `013_demo_accounts.sql`, под которым в аккаунт входит витрина `/demo`.
+// Он объявлен алиасом, а не заменяет читаемый customer_id: на mock-данные
+// ссылаются товары, цепочки и отзывы, и подмена ключей развалила бы их
+// связность. Роли розданы тем участникам, чьё состояние уже соответствует
+// сценарию, но mock не воспроизводит подготовку из миграции целиком —
+// полные сценарии живут на реальном бэкенде.
 const customers = [
     {
         customer_id: 'user-pskov-01',
+        // «В пути»: активная цепочка chain-pskov-01 ведёт к цели.
+        demo_customer_id: '5e96d7bb-c76c-5558-881e-1b132e49d342',
         email: 'alexey@example.com',
         full_name: 'Ковалёв Алексей Игоревич',
         password: 'password123',
@@ -195,6 +209,8 @@ const customers = [
     },
     {
         customer_id: 'user-pskov-02',
+        // «Получатель»: сторона, ожидающая ответа по chain-pskov-02.
+        demo_customer_id: '549fe311-ecdd-5f4e-9c1d-cea2d100e286',
         email: 'maria@example.com',
         full_name: 'Соколова Мария Андреевна',
         password: 'password123',
@@ -240,6 +256,8 @@ const customers = [
     },
     {
         customer_id: 'user-pskov-07',
+        // «Опытный участник»: завершённый chain-pskov-00 и отзывы по нему.
+        demo_customer_id: 'd3b90730-bf1f-5c12-95c7-b1ff3908167c',
         email: 'sergey@example.com',
         full_name: 'Новиков Сергей Дмитриевич',
         password: 'password123',
@@ -258,6 +276,8 @@ const customers = [
     },
     {
         customer_id: 'user-pskov-09',
+        // «Искатель»: активный товар есть, обменов нет — чистый старт поиска.
+        demo_customer_id: '1a9b30df-8e74-53f8-a55d-0c8a016995be',
         email: 'pavel@example.com',
         full_name: 'Титов Павел Романович',
         password: 'password123',
@@ -276,6 +296,8 @@ const customers = [
     },
     {
         customer_id: 'user-pskov-11',
+        // «Новый пользователь»: обменов нет, единственный товар в архиве.
+        demo_customer_id: '2db05252-81a6-5e50-b52f-57a19da8baa7',
         email: 'roman@example.com',
         full_name: 'Богданов Роман Алексеевич',
         password: 'password123',
@@ -307,6 +329,10 @@ const chains = [
         chain_id: 'chain-pskov-01',
         from_product_id: 'avito-gpu-rtx-3060',
         to_product_id: 'avito-game-ps5-spider-man',
+        // Обмен внутри маршрута: шаг пути к RTX 3070, а не самостоятельная
+        // сделка — на нём проверяется отметка о цепочке в комнате обмена.
+        exchange_goal_id: 'avito-gpu-rtx-3070',
+        route_step_id: 'avito-gpu-rtx-3060',
         initiator_id: 'user-pskov-01',
         recipient_id: 'user-pskov-03',
         status: 'active',

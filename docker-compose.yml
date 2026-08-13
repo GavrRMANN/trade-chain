@@ -58,7 +58,7 @@ services:
       DATABASE_URL: postgres://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@postgres:5432/${DB_NAME:-trade_chain}?sslmode=disable
       PORT: 8080
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required and must contain at least 32 characters}
-      CORS_ALLOWED_ORIGINS: http://localhost:3000,http://localhost:5173
+      CORS_ALLOWED_ORIGINS: http://localhost:3000,http://localhost:5173,http://localhost:5174
       # Вход выбором участника из списка — ход ради демонстрации: чтобы увидеть
       # обмен, нужны две стороны с товарами и историей, а пустой свежий аккаунт
       # не показывает ничего. Пароль при таком входе не спрашивается, поэтому

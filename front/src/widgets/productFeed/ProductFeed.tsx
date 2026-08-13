@@ -26,6 +26,12 @@ export type TProductFeedProps = {
     onBuildRoute: (productId: string) => void;
     /** Цель, под которую открыта лента, — показывается закреплённой плашкой. */
     goalTitle?: string;
+    /** Карточка, с которой открыть ленту: сохранённая позиция пользователя. */
+    initialIndex?: number;
+    /** Ключ выдачи: при его смене лента открывается сначала. */
+    positionKey?: string;
+    /** Сообщает наружу карточку, на которую перешёл пользователь. */
+    onActiveIndexChange?: (index: number) => void;
 };
 
 /**
@@ -47,9 +53,12 @@ export const ProductFeed = ({
     onOfferExchange,
     onBuildRoute,
     goalTitle,
+    initialIndex,
+    positionKey,
+    onActiveIndexChange,
 }: TProductFeedProps) => {
     const { containerRef, viewportHeight, handleKeyDown, expandedIds, toggleDescription } =
-        useProductFeed(products.length);
+        useProductFeed(products.length, { initialIndex, positionKey, onActiveIndexChange });
 
     if (products.length === 0 && !isFetching) {
         return (

@@ -9,6 +9,7 @@ import type { TProduct } from '@entities/product';
 import { useFindCandidatesQuery, useFindChainQuery } from '@entities/search';
 import { useGetCurrentUserQuery } from '@entities/user';
 import type { TRouteRecommendation } from '@features/routeRecommendations';
+import { useOpenModalRoute } from '@shared/lib';
 
 const OPEN_OFFER_STATUSES = new Set<TChain['status']>(['pending', 'active']);
 
@@ -20,6 +21,7 @@ type TRouteHistoryItem = {
 /** Управляет персональным маршрутом до цели и предложениями текущего этапа. */
 export const useRoute = () => {
     const navigate = useNavigate();
+    const openModalRoute = useOpenModalRoute();
     const [searchParams] = useSearchParams();
 
     const targetId = searchParams.get('target')?.trim() ?? '';
@@ -52,7 +54,6 @@ export const useRoute = () => {
     });
     const [createChain, { isLoading: isSubmitting }] = useCreateChainMutation();
 
-    const [directTarget, setDirectTarget] = useState<string>();
     const [selectedTargetIds, setSelectedTargetIds] = useState<string[]>([]);
     const [submitError, setSubmitError] = useState<string>();
     const [submitMessage, setSubmitMessage] = useState<string>();
@@ -357,39 +358,31 @@ export const useRoute = () => {
         (chainId: string) => navigate(`/exchanges/${chainId}`),
         [navigate],
     );
+    /* Предложение к цели уходит в адрес вместе с контекстом маршрута: иначе
+       после перезагрузки окна цепочка потеряла бы привязку к цели. */
     const openGoalOffer = useCallback(() => {
-        if (goalId) {
-            setDirectTarget(goalId);
+        if (!goalId) {
+            return;
         }
-    }, [goalId]);
-    const closeOffer = useCallback(() => setDirectTarget(undefined), []);
-    const handleOfferSuccess = useCallback(
-        (chainId?: string) => {
-            setDirectTarget(undefined);
-            navigate(chainId ? `/exchanges/${chainId}` : '/exchanges');
-        },
-        [navigate],
-    );
-    const goHome = useCallback(() => navigate('/'), [navigate]);
 
-    /* Предложение к цели прямо со страницы маршрута должно остаться внутри
-       этого же маршрута, а не уйти отдельной цепочкой. */
-    const routeContext = useMemo(
-        () => ({
-            ...(targetCategoryId ? {goalCategoryId: targetCategoryId} : {exchangeGoalId: goalId}),
+        openModalRoute({
+            name: 'offerExchange',
+            productId: goalId,
+            ...(targetCategoryId ? { goalCategoryId: targetCategoryId } : { exchangeGoalId: goalId }),
             routeStepId: currentProduct?.product_id,
             previousChainId: lastCompletedRouteStep?.chain_id,
             goalTitle: goalProduct?.title ?? targetCategoryName,
-        }),
-        [
-            currentProduct?.product_id,
-            goalId,
-            goalProduct?.title,
-            lastCompletedRouteStep?.chain_id,
-            targetCategoryId,
-            targetCategoryName,
-        ],
-    );
+        });
+    }, [
+        currentProduct?.product_id,
+        goalId,
+        goalProduct?.title,
+        lastCompletedRouteStep?.chain_id,
+        openModalRoute,
+        targetCategoryId,
+        targetCategoryName,
+    ]);
+    const goHome = useCallback(() => navigate('/'), [navigate]);
 
     const isLoading =
         routeQuery.isLoading ||
@@ -426,15 +419,11 @@ export const useRoute = () => {
         submitError,
         submitMessage,
         isSubmitting,
-        directTarget,
-        routeContext,
         toggleRecommendation,
         submitSelectedOffers,
         openProduct,
         openOffer,
         openGoalOffer,
-        closeOffer,
-        handleOfferSuccess,
         goHome,
     };
 };

@@ -17,6 +17,8 @@ import type { TProduct } from '@entities/product';
 import { useCreateReviewMutation } from '@entities/review';
 import { useGetCurrentUserQuery } from '@entities/user';
 
+import { useChainRoute } from './useChainRoute';
+
 const getErrorMessage = (error: unknown) => {
     if (typeof error === 'object' && error !== null && 'data' in error) {
         const data = error.data;
@@ -189,6 +191,10 @@ export const useExchangeRoom = () => {
 
     /* В комнате известны подтверждения, поэтому требование точнее, чем в
        списке обменов: видно, чьего именно подтверждения ещё ждут. */
+    /* Обмен может быть звеном пути к цели: тогда рядом со сделкой нужно
+       показать, к какой именно цепочке она относится. */
+    const chainRoute = useChainRoute({ chain, currentUserId });
+
     const requiredAction = chain
         ? getRequiredAction({
               chain,
@@ -202,6 +208,7 @@ export const useExchangeRoom = () => {
         currentUserId,
         isInitiator,
         requiredAction,
+        chainRoute,
         fromProduct,
         toProduct,
         messages: messagesQuery.data ?? [],

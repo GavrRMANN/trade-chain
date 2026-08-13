@@ -4,12 +4,9 @@ import {PageError} from '@shared/ui/pageError';
 import {PageHeader} from '@shared/ui/pageHeader';
 import {Preloader} from '@shared/ui/preloader';
 import {ExchangeRow} from '@widgets/exchangeRow';
-import {Modal} from '@shared/ui/modal';
 import {formatDate} from '@shared/lib';
-import {RouteBuilder} from '@features/routeBuilder';
 
 import Styles from './exchanges-page.module.css';
-import {ProductFilterModal} from './ProductFilterModal';
 import {RouteGroupCard} from './RouteGroupCard';
 import {useExchanges} from '../lib';
 import type {TExchangeRouteTab, TExchangeTab} from '../lib/useExchanges';
@@ -49,12 +46,10 @@ export const ExchangesPage = () => {
         setActiveRouteTab,
         activeView,
         setActiveView,
-        isBuilderOpen,
-        setIsBuilderOpen,
-        isProductFilterOpen,
-        setIsProductFilterOpen,
+        openRouteBuilder,
+        openProductFilter,
         productFilter,
-        setProductFilter,
+        resetProductFilter,
         filterableProducts,
         selectedFilterProduct,
         visibleRows,
@@ -115,7 +110,7 @@ export const ExchangesPage = () => {
                 }
                 actions={
                     activeView === 'routes' ? (
-                        <Button onClick={() => setIsBuilderOpen(true)}>Создать цепочку</Button>
+                        <Button onClick={openRouteBuilder}>Создать цепочку</Button>
                     ) : undefined
                 }
             />
@@ -158,8 +153,8 @@ export const ExchangesPage = () => {
                                         следующего обмена.
                                     </p>
                                 </div>
-                                {activeRouteTab === 'active' && !isBuilderOpen && (
-                                    <Button variant="secondary" onClick={() => setIsBuilderOpen(true)}>
+                                {activeRouteTab === 'active' && (
+                                    <Button variant="secondary" onClick={openRouteBuilder}>
                                         Построить первую
                                     </Button>
                                 )}
@@ -212,13 +207,13 @@ export const ExchangesPage = () => {
 
                         {isFilterableTab && (filterableProducts.length > 0 || productFilter) && (
                             <div className={Styles['exchanges-page__filter']}>
-                                <Button variant="secondary" onClick={() => setIsProductFilterOpen(true)}>
+                                <Button variant="secondary" onClick={openProductFilter}>
                                     {selectedFilterProduct
                                         ? `Товар: ${selectedFilterProduct.title}`
                                         : 'Фильтр по товару'}
                                 </Button>
                                 {productFilter && (
-                                    <Button variant="text" onClick={() => setProductFilter(null)}>
+                                    <Button variant="text" onClick={resetProductFilter}>
                                         Сбросить
                                     </Button>
                                 )}
@@ -244,27 +239,6 @@ export const ExchangesPage = () => {
                         )}
                     </>
                 )}
-
-                <Modal
-                    title="Создание цепочки"
-                    isOpen={isBuilderOpen}
-                    size="large"
-                    onClose={() => setIsBuilderOpen(false)}
-                >
-                    <RouteBuilder
-                        variant="modal"
-                        onCancel={() => setIsBuilderOpen(false)}
-                    />
-                </Modal>
-
-                <ProductFilterModal
-                    isOpen={isProductFilterOpen}
-                    onClose={() => setIsProductFilterOpen(false)}
-                    title={activeTab === 'incoming' ? 'Товар из входящих' : 'Товар из исходящих'}
-                    products={filterableProducts}
-                    selectedProductId={productFilter ?? undefined}
-                    onSelect={setProductFilter}
-                />
             </div>
         </MainSection>
     );

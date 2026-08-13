@@ -14,6 +14,7 @@ import { formatDate } from '@shared/lib';
 
 import StarSVG from '@shared/assets/icons/Star.svg?react';
 
+import { ChainRouteBanner } from './ChainRouteBanner';
 import Styles from './exchange-room.module.css';
 
 const STAR_VALUES = [1, 2, 3, 4, 5] as const;
@@ -29,6 +30,7 @@ export const ExchangeRoomPage = () => {
         isLoading,
         isError,
         requiredAction,
+        chainRoute,
         isPendingLike,
         isActive,
         isCompleted,
@@ -72,12 +74,20 @@ export const ExchangeRoomPage = () => {
                 meta={
                     <>
                         <ChainStatusBadge status={chain.status} />
+                        {/* Принадлежность к цепочке остаётся в закреплённой шапке:
+                            от неё зависит смысл сделки, а сам блок цепочки
+                            уезжает вверх при прокрутке. */}
+                        {chainRoute && (
+                            <span className={Styles['chain-route-chip']}>Часть цепочки</span>
+                        )}
                         <span>Создано: {formatDate(chain.created_at)}</span>
                     </>
                 }
             />
 
             <div className={Styles.page}>
+                {chainRoute && <ChainRouteBanner route={chainRoute} />}
+
                 <section className={Styles.products} aria-label="Товары обмена">
                     <div className={Styles.product}>
                         {fromProduct ? (

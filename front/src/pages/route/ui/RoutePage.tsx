@@ -1,4 +1,3 @@
-import { OfferExchangeModal } from '@features/exchange';
 import { RouteRecommendations } from '@features/routeRecommendations';
 import { Button } from '@shared/ui/button';
 import { MainSection } from '@shared/ui/mainSection';
@@ -20,7 +19,6 @@ export const RoutePage = () => {
         isLoading,
         isError,
         isEmpty,
-        currentCustomerId,
         sourceProducts,
         selectSource,
         currentProduct,
@@ -32,15 +30,11 @@ export const RoutePage = () => {
         submitError,
         submitMessage,
         isSubmitting,
-        directTarget,
-        routeContext,
         toggleRecommendation,
         submitSelectedOffers,
         openProduct,
         openOffer,
         openGoalOffer,
-        closeOffer,
-        handleOfferSuccess,
         goHome,
     } = useRoute();
 
@@ -321,15 +315,6 @@ export const RoutePage = () => {
                     </>
                 )}
             </div>
-
-            <OfferExchangeModal
-                isOpen={Boolean(directTarget)}
-                onClose={closeOffer}
-                onSuccess={handleOfferSuccess}
-                targetProductId={directTarget ?? ''}
-                currentCustomerId={currentCustomerId}
-                routeContext={routeContext}
-            />
         </MainSection>
     );
 };
