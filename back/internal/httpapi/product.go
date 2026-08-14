@@ -457,7 +457,7 @@ func (h productHandler) updateWishlist(w http.ResponseWriter, r *http.Request) {
 // @Success 200 {object} domain.Product
 // @Failure 400 {object} ErrorResponse
 // @Failure 500 {object} ErrorResponse
-// @Router /products/{productID}/images [post]
+// @Router /products/{productID}/image [post]
 func (h productHandler) uploadImage(w http.ResponseWriter, r *http.Request) {
 	// 1. Получаем ID пользователя из контекста (уже есть auth)
 	userID, ok := auth.UserIDFromContext(r.Context())

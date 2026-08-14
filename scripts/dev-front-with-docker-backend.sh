@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-API_URL="$(grep -m1 '^VITE_API_BASE_URL=' "$ROOT_DIR/front/.env.docker-api" | cut -d= -f2-)"
+API_URL="${VITE_API_BASE_URL:-http://localhost:8080}"
 
 cd "$ROOT_DIR"
 

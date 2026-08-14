@@ -1985,7 +1985,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/products/{productID}/images": {
+        "/products/{productID}/image": {
             "post": {
                 "description": "Upload an image for a specific product",
                 "consumes": [
@@ -3356,7 +3356,7 @@ const docTemplate = `{
 var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
 	Host:             "localhost:8080",
-	BasePath:         "/",
+	BasePath:         "/api/v1",
 	Schemes:          []string{},
 	Title:            "Trade Chain API",
 	Description:      "API для обмена товарами",

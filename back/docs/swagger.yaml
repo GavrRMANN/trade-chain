@@ -1,4 +1,4 @@
-basePath: /
+basePath: /api/v1
 definitions:
   domain.Category:
     properties:
@@ -1758,7 +1758,7 @@ paths:
       summary: Update product
       tags:
       - products
-  /products/{productID}/images:
+  /products/{productID}/image:
     post:
       consumes:
       - multipart/form-data
