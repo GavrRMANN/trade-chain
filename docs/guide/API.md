@@ -52,9 +52,8 @@
 
 ### `GET /api/v1/auth/me`
 
-Возвращает текущего пользователя (`Customer`). В штатном HTTP-потоке маршрут
-сейчас не подключён к `AuthMiddleware`; без user ID в контексте обработчик
-возвращает `403`.
+Возвращает текущего пользователя (`Customer`). Маршрут защищён
+`AuthMiddleware` и требует заголовок `Authorization: Bearer <token>`.
 
 ## Модель пользователя
 
@@ -145,22 +144,28 @@
 
 Все товары пользователя.
 
-В текущем роутере не подключены `DELETE /products/{id}`, архивирование,
-wishlist товара и рекомендации товара, хотя обработчики этих операций могут
-присутствовать в исходном коде.
+Дополнительные маршруты авторизованного владельца:
+
+| Метод  | Маршрут                                        | Назначение                         |
+| ------ | ---------------------------------------------- | ---------------------------------- |
+| `GET`  | `/api/v1/products/mine`                        | Собственные объявления             |
+| `POST` | `/api/v1/products/{productID}/image`           | Загрузка одного изображения        |
+| `POST` | `/api/v1/products/{productID}/archive`         | Архивирование объявления           |
+| `PUT`  | `/api/v1/products/{productID}/wishlist`        | Замена пожеланий к товару          |
+| `GET`  | `/api/v1/products/{productID}/recommendations` | Подходящие варианты прямого обмена |
 
 Статусы товара: `active`, `reserved`, `exchanged`, `archived`.
 
 ## Категории
 
-| Метод | Маршрут | Результат |
-| --- | --- | --- |
-| `GET` | `/api/v1/categories` | Список категорий |
-| `POST` | `/api/v1/categories` | Создание категории, `201` |
-| `GET` | `/api/v1/categories/{id}` | Категория по ID |
-| `PUT` | `/api/v1/categories/{id}` | Полное обновление категории |
-| `DELETE` | `/api/v1/categories/{id}` | Удаление, `204` |
-| `GET` | `/api/v1/categories/{id}/subcategories` | Дочерние категории |
+| Метод    | Маршрут                                 | Результат                   |
+| -------- | --------------------------------------- | --------------------------- |
+| `GET`    | `/api/v1/categories`                    | Список категорий            |
+| `POST`   | `/api/v1/categories`                    | Создание категории, `201`   |
+| `GET`    | `/api/v1/categories/{id}`               | Категория по ID             |
+| `PUT`    | `/api/v1/categories/{id}`               | Полное обновление категории |
+| `DELETE` | `/api/v1/categories/{id}`               | Удаление, `204`             |
+| `GET`    | `/api/v1/categories/{id}/subcategories` | Дочерние категории          |
 
 Модель категории:
 
@@ -176,15 +181,15 @@ wishlist товара и рекомендации товара, хотя обр�
 
 ## Wishlist
 
-| Метод | Маршрут | Результат |
-| --- | --- | --- |
-| `POST` | `/api/v1/wishlists` | Создание wishlist, `201` |
-| `GET` | `/api/v1/wishlists/{id}` | Wishlist по ID |
-| `DELETE` | `/api/v1/wishlists/{id}` | Удаление, `204` |
-| `GET` | `/api/v1/wishlists/by-product/{productID}` | Wishlist товара |
-| `GET` | `/api/v1/wishlists/{id}/options` | Категории-желания |
-| `POST` | `/api/v1/wishlists/{id}/options` | Добавление категории, `204` |
-| `DELETE` | `/api/v1/wishlists/{id}/options/{categoryID}` | Удаление категории, `204` |
+| Метод    | Маршрут                                       | Результат                   |
+| -------- | --------------------------------------------- | --------------------------- |
+| `POST`   | `/api/v1/wishlists`                           | Создание wishlist, `201`    |
+| `GET`    | `/api/v1/wishlists/{id}`                      | Wishlist по ID              |
+| `DELETE` | `/api/v1/wishlists/{id}`                      | Удаление, `204`             |
+| `GET`    | `/api/v1/wishlists/by-product/{productID}`    | Wishlist товара             |
+| `GET`    | `/api/v1/wishlists/{id}/options`              | Категории-желания           |
+| `POST`   | `/api/v1/wishlists/{id}/options`              | Добавление категории, `204` |
+| `DELETE` | `/api/v1/wishlists/{id}/options/{categoryID}` | Удаление категории, `204`   |
 
 Создание wishlist принимает `product_id` и `name`:
 
@@ -210,18 +215,18 @@ wishlist товара и рекомендации товара, хотя обр�
 `/exchange-offers` и `/exchanges` (см. ниже), которые говорят на языке
 предложений. Отдельных ресурсов `exchange-goals` и `conversations` пока нет.
 
-| Метод | Маршрут | Результат |
-| --- | --- | --- |
-| `POST` | `/api/v1/chains` | Создание цепочки, `201` |
-| `GET` | `/api/v1/chains/my` | Цепочки текущего пользователя |
-| `GET` | `/api/v1/chains/{id}` | Цепочка по ID |
-| `GET` | `/api/v1/chains/{id}/full` | Все связанные звенья |
-| `GET` | `/api/v1/chains/by-product/{productID}` | Цепочки товара |
-| `PATCH` | `/api/v1/chains/{id}/status` | Изменение статуса, `204` |
-| `POST` | `/api/v1/chains/{id}/confirm` | Подтверждение результата |
-| `DELETE` | `/api/v1/chains/{id}` | Удаление, `204` |
-| `GET` | `/api/v1/chains/{id}/messages` | Сообщения цепочки |
-| `POST` | `/api/v1/chains/{id}/messages` | Новое сообщение, `201` |
+| Метод    | Маршрут                                 | Результат                     |
+| -------- | --------------------------------------- | ----------------------------- |
+| `POST`   | `/api/v1/chains`                        | Создание цепочки, `201`       |
+| `GET`    | `/api/v1/chains/my`                     | Цепочки текущего пользователя |
+| `GET`    | `/api/v1/chains/{id}`                   | Цепочка по ID                 |
+| `GET`    | `/api/v1/chains/{id}/full`              | Все связанные звенья          |
+| `GET`    | `/api/v1/chains/by-product/{productID}` | Цепочки товара                |
+| `PATCH`  | `/api/v1/chains/{id}/status`            | Изменение статуса, `204`      |
+| `POST`   | `/api/v1/chains/{id}/confirm`           | Подтверждение результата      |
+| `DELETE` | `/api/v1/chains/{id}`                   | Удаление, `204`               |
+| `GET`    | `/api/v1/chains/{id}/messages`          | Сообщения цепочки             |
+| `POST`   | `/api/v1/chains/{id}/messages`          | Новое сообщение, `201`        |
 
 Модель `Chain`:
 
@@ -278,15 +283,15 @@ wishlist товара и рекомендации товара, хотя обр�
 
 Вся группа закрыта `AuthMiddleware`: без заголовка `Authorization` ответ `401`.
 
-| Метод | Маршрут | Результат |
-| --- | --- | --- |
-| `POST` | `/api/v1/exchange-offers` | Отправить предложение, `201` |
-| `GET` | `/api/v1/exchange-offers?role=&status=` | Входящие и исходящие |
-| `GET` | `/api/v1/exchange-offers/{offerID}` | Детали, чат и состояние |
-| `POST` | `/api/v1/exchange-offers/{offerID}/accept` | Принять |
-| `POST` | `/api/v1/exchange-offers/{offerID}/decline` | Отклонить |
-| `POST` | `/api/v1/exchange-offers/{offerID}/cancel` | Отозвать своё |
-| `POST` | `/api/v1/exchanges/{exchangeID}/confirm` | Подтвердить результат |
+| Метод  | Маршрут                                     | Результат                    |
+| ------ | ------------------------------------------- | ---------------------------- |
+| `POST` | `/api/v1/exchange-offers`                   | Отправить предложение, `201` |
+| `GET`  | `/api/v1/exchange-offers?role=&status=`     | Входящие и исходящие         |
+| `GET`  | `/api/v1/exchange-offers/{offerID}`         | Детали, чат и состояние      |
+| `POST` | `/api/v1/exchange-offers/{offerID}/accept`  | Принять                      |
+| `POST` | `/api/v1/exchange-offers/{offerID}/decline` | Отклонить                    |
+| `POST` | `/api/v1/exchange-offers/{offerID}/cancel`  | Отозвать своё                |
+| `POST` | `/api/v1/exchanges/{exchangeID}/confirm`    | Подтвердить результат        |
 
 `POST /api/v1/exchange-offers`:
 
@@ -326,15 +331,15 @@ wishlist товара и рекомендации товара, хотя обр�
 
 Статусы предложения и обмена — это разные взгляды на статус звена:
 
-| `chain.status` | `offer.status` | `exchange.status` |
-| --- | --- | --- |
-| `pending` | `pending` | — |
-| `active` | `accepted` | `awaiting_initiator` / `awaiting_recipient` |
-| `completed` | `completed` | `completed` |
-| `failed` | `failed` | `failed` |
-| `rejected`, `countered` | `declined` | — |
-| `cancelled` | `cancelled` | — |
-| `expired` | `expired` | — |
+| `chain.status`          | `offer.status` | `exchange.status`                           |
+| ----------------------- | -------------- | ------------------------------------------- |
+| `pending`               | `pending`      | —                                           |
+| `active`                | `accepted`     | `awaiting_initiator` / `awaiting_recipient` |
+| `completed`             | `completed`    | `completed`                                 |
+| `failed`                | `failed`       | `failed`                                    |
+| `rejected`, `countered` | `declined`     | —                                           |
+| `cancelled`             | `cancelled`    | —                                           |
+| `expired`               | `expired`      | —                                           |
 
 Два отличия от плана API. Первое: `offer.status` умеет `failed` — обмен по
 принятому предложению может не состояться, и прятать это под `completed`
@@ -377,12 +382,13 @@ wishlist товара и рекомендации товара, хотя обр�
 }
 ```
 
-`goal_id` возвращается тем же, что был указан при создании предложения:
-целей и маршрутов в схеме пока нет, поэтому пересчитывать нечего.
+`exchange_goal_id` и `route_step_id` возвращаются теми же, что были указаны
+при создании предложения. Они связывают сделку с общей целью и текущим шагом
+маршрута пользователя.
 
 Чего в этой части ещё нет: заголовок `Idempotency-Key` не поддерживается —
-от дублей защищает уникальный индекс; товары после обмена не переходят
-в статус `exchanged`, а меняют владельцев, как и раньше.
+от дублей защищает уникальный индекс. После успешного подтверждения товары
+меняют владельцев и получают статус `exchanged`.
 
 ## Поиск цепочки
 
@@ -404,15 +410,34 @@ wishlist товара и рекомендации товара, хотя обр�
 }
 ```
 
+### `GET /api/v1/search/candidates`
+
+Подбирает следующий обмен для товара текущего пользователя. Требует JWT.
+
+- `product_id` — обязательный ID стартового товара;
+- `limit` — максимальное число кандидатов, по умолчанию `8`;
+- `direct=true` — вернуть только прямые совпадения по wishlist, без добора из каталога.
+
+## Уведомления и realtime
+
+Все маршруты требуют JWT:
+
+| Метод | Маршрут                                | Назначение                                    |
+| ----- | -------------------------------------- | --------------------------------------------- |
+| `GET` | `/api/v1/events`                       | SSE-подписка на сообщения и изменения обменов |
+| `GET` | `/api/v1/notifications/read-statuses`  | Состояния прочтения                           |
+| `PUT` | `/api/v1/notifications/{chainID}/read` | Отметить событие обмена прочитанным           |
+| `PUT` | `/api/v1/notifications/read-all`       | Отметить все события прочитанными             |
+
 ## Отзывы
 
-| Метод | Маршрут | Результат |
-| --- | --- | --- |
-| `POST` | `/api/v1/reviews` | Создание отзыва, `201` |
-| `GET` | `/api/v1/reviews/{id}` | Отзыв по ID |
-| `DELETE` | `/api/v1/reviews/{id}` | Удаление, `204` |
-| `GET` | `/api/v1/reviews/by-customer/{customerID}` | Отзывы пользователя |
-| `GET` | `/api/v1/reviews/by-customer/{customerID}/rating` | Средний рейтинг |
+| Метод    | Маршрут                                           | Результат              |
+| -------- | ------------------------------------------------- | ---------------------- |
+| `POST`   | `/api/v1/reviews`                                 | Создание отзыва, `201` |
+| `GET`    | `/api/v1/reviews/{id}`                            | Отзыв по ID            |
+| `DELETE` | `/api/v1/reviews/{id}`                            | Удаление, `204`        |
+| `GET`    | `/api/v1/reviews/by-customer/{customerID}`        | Отзывы пользователя    |
+| `GET`    | `/api/v1/reviews/by-customer/{customerID}/rating` | Средний рейтинг        |
 
 Создание отзыва:
 
@@ -440,12 +465,12 @@ wishlist товара и рекомендации товара, хотя обр�
 
 Основные соответствия:
 
-| HTTP | Сообщение сервиса |
-| --- | --- |
-| `400` | `invalid input` |
-| `403` | `operation forbidden` |
-| `404` | `resource not found` |
-| `409` | `resource conflict` |
+| HTTP  | Сообщение сервиса                            |
+| ----- | -------------------------------------------- |
+| `400` | `invalid input`                              |
+| `403` | `operation forbidden`                        |
+| `404` | `resource not found`                         |
+| `409` | `resource conflict`                          |
 | `500` | `internal error` или текст внутренней ошибки |
 
 Ошибки отсутствующего или некорректного JWT формируются middleware напрямую
@@ -453,10 +478,8 @@ wishlist товара и рекомендации товара, хотя обр�
 
 ## Текущее подключение JWT
 
-`AuthMiddleware` явно установлен на `POST /products`,
-`PATCH /products/{productID}` и на всю группу `/exchange-offers` и
-`/exchanges`. Остальные обработчики, которым нужен user ID, проверяют контекст
-самостоятельно, однако общий middleware в роутере пока закомментирован —
-без него они отвечают `403`. Для полного включения авторизации нужно
-подключить `r.Use(auth.AuthMiddleware)` к защищённой группе в `router.go`
-и убрать дублирующие локальные установки middleware.
+`AuthMiddleware` установлен на маршруты текущей сессии, изменения товаров,
+цепочки и предложения обмена, поиск персонального маршрута, уведомления и
+SSE-подписку. Публичными остаются каталог, категории и чтение общедоступных
+профилей. Если защищённый маршрут вызван без корректного Bearer JWT, API
+возвращает `401`.
