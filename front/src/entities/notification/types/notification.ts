@@ -1,4 +1,4 @@
-import type {TChainStatus} from '@entities/chain';
+import type { TChainStatus } from '@entities/chain';
 
 /**
  * Тип события уведомления. Определяется ролью текущего пользователя

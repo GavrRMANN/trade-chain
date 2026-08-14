@@ -1,10 +1,10 @@
-import type {TCategory} from '@entities/category';
-import type {TWishlist} from '@entities/wishlist';
-import {Selector} from '@shared/ui/selector';
-import {Button} from '@shared/ui/button';
+import type { TCategory } from '@entities/category';
+import type { TWishlist } from '@entities/wishlist';
+import { Selector } from '@shared/ui/selector';
+import { Button } from '@shared/ui/button';
 
 import Styles from './wishlist-editor.module.css';
-import {useWishlistEditor} from './useWishlistEditor';
+import { useWishlistEditor } from './useWishlistEditor';
 
 type TWishlistEditorProps = {
     productId: string;
@@ -13,7 +13,12 @@ type TWishlistEditorProps = {
     options: TCategory[];
 };
 
-export const WishlistEditor = ({productId, productTitle, wishlist, options}: TWishlistEditorProps) => {
+export const WishlistEditor = ({
+    productId,
+    productTitle,
+    wishlist,
+    options,
+}: TWishlistEditorProps) => {
     const {
         isEditing,
         isLoading,
@@ -27,7 +32,7 @@ export const WishlistEditor = ({productId, productTitle, wishlist, options}: TWi
         handleRemove,
         toggleEditing,
         startEditing,
-    } = useWishlistEditor({productId, productTitle, wishlist, options});
+    } = useWishlistEditor({ productId, productTitle, wishlist, options });
 
     return (
         <div className={Styles.editor}>
@@ -42,7 +47,10 @@ export const WishlistEditor = ({productId, productTitle, wishlist, options}: TWi
             {options.length > 0 ? (
                 <div className={Styles['editor__tags']}>
                     {options.map((option) => (
-                        <span key={option.category_id} className={`${Styles['editor__tag']} ${!isEditing ? Styles['editor__tag--readonly'] : ''}`}>
+                        <span
+                            key={option.category_id}
+                            className={`${Styles['editor__tag']} ${!isEditing ? Styles['editor__tag--readonly'] : ''}`}
+                        >
                             {option.name}
                             {isEditing && (
                                 <button
@@ -55,7 +63,11 @@ export const WishlistEditor = ({productId, productTitle, wishlist, options}: TWi
                                     ✕
                                 </button>
                             )}
-                            {!isEditing && <span aria-hidden="true" className={Styles['editor__tag-close']}>×</span>}
+                            {!isEditing && (
+                                <span aria-hidden="true" className={Styles['editor__tag-close']}>
+                                    ×
+                                </span>
+                            )}
                         </span>
                     ))}
                 </div>

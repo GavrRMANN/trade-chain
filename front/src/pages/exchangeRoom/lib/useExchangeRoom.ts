@@ -43,7 +43,7 @@ type TRoomState = {
     rating: number;
     comment: string;
 };
-type TRoomAction = {type: 'update'; payload: Partial<TRoomState>};
+type TRoomAction = { type: 'update'; payload: Partial<TRoomState> };
 const roomReducer = (state: TRoomState, action: TRoomAction): TRoomState => ({
     ...state,
     ...action.payload,
@@ -76,10 +76,12 @@ export const useExchangeRoom = () => {
         rating: 0,
         comment: '',
     });
-    const {messageDraft, statusError, messageError, reviewError, isReviewSent, rating, comment} = state;
-    const setMessageDraft = (value: string) => dispatch({type: 'update', payload: {messageDraft: value}});
-    const setRating = (value: number) => dispatch({type: 'update', payload: {rating: value}});
-    const setComment = (value: string) => dispatch({type: 'update', payload: {comment: value}});
+    const { messageDraft, statusError, messageError, reviewError, isReviewSent, rating, comment } =
+        state;
+    const setMessageDraft = (value: string) =>
+        dispatch({ type: 'update', payload: { messageDraft: value } });
+    const setRating = (value: number) => dispatch({ type: 'update', payload: { rating: value } });
+    const setComment = (value: string) => dispatch({ type: 'update', payload: { comment: value } });
 
     const chain = chainQuery.data;
     const currentUserId = currentUserQuery.data?.customer_id;
@@ -99,11 +101,10 @@ export const useExchangeRoom = () => {
     const isClosed = Boolean(chain && FINAL_CHAIN_STATUSES.has(chain.status));
     const hasConfirmedSuccessfulOutcome = Boolean(
         currentUserId &&
-            chainDetailsQuery.data?.confirmations.some(
-                (confirmation) =>
-                    confirmation.customer_id === currentUserId &&
-                    confirmation.result === 'success',
-            ),
+        chainDetailsQuery.data?.confirmations.some(
+            (confirmation) =>
+                confirmation.customer_id === currentUserId && confirmation.result === 'success',
+        ),
     );
     const isWaitingForOtherConfirmation = isActive && hasConfirmedSuccessfulOutcome;
 
@@ -124,18 +125,17 @@ export const useExchangeRoom = () => {
     }, [fromProductQuery.data, productsQuery.data, toProductQuery.data]);
 
     const fromProduct = chain ? productsById.get(chain.from_product_id) : undefined;
-    const toProduct = chain && chain.to_product_id
-        ? productsById.get(chain.to_product_id)
-        : undefined;
+    const toProduct =
+        chain && chain.to_product_id ? productsById.get(chain.to_product_id) : undefined;
 
     const handleChangeStatus = useCallback(
         async (status: TUpdateChainStatus) => {
             if (!chainId) return;
-            dispatch({type: 'update', payload: {statusError: undefined}});
+            dispatch({ type: 'update', payload: { statusError: undefined } });
             try {
                 await updateChainStatus({ id: chainId, body: { status } }).unwrap();
             } catch (error) {
-                dispatch({type: 'update', payload: {statusError: getErrorMessage(error)}});
+                dispatch({ type: 'update', payload: { statusError: getErrorMessage(error) } });
             }
         },
         [chainId, updateChainStatus],
@@ -144,11 +144,11 @@ export const useExchangeRoom = () => {
     const handleConfirm = useCallback(
         async (success: boolean) => {
             if (!chainId) return;
-            dispatch({type: 'update', payload: {statusError: undefined}});
+            dispatch({ type: 'update', payload: { statusError: undefined } });
             try {
                 await confirmChain({ id: chainId, body: { success } }).unwrap();
             } catch (error) {
-                dispatch({type: 'update', payload: {statusError: getErrorMessage(error)}});
+                dispatch({ type: 'update', payload: { statusError: getErrorMessage(error) } });
             }
         },
         [chainId, confirmChain],
@@ -158,27 +158,27 @@ export const useExchangeRoom = () => {
         if (!chainId) return;
         const body = messageDraft.trim();
         if (!body) return;
-        dispatch({type: 'update', payload: {messageError: undefined}});
+        dispatch({ type: 'update', payload: { messageError: undefined } });
         try {
             await sendChainMessage({ id: chainId, body: { body } }).unwrap();
             setMessageDraft('');
         } catch (error) {
-            dispatch({type: 'update', payload: {messageError: getErrorMessage(error)}});
+            dispatch({ type: 'update', payload: { messageError: getErrorMessage(error) } });
         }
     }, [chainId, messageDraft, sendChainMessage]);
 
     const handleSendReview = useCallback(async () => {
         if (!chainId || rating < 1) return;
-        dispatch({type: 'update', payload: {reviewError: undefined}});
+        dispatch({ type: 'update', payload: { reviewError: undefined } });
         try {
             await createReview({
                 chain_id: chainId,
                 rating,
                 comment: comment.trim() || undefined,
             }).unwrap();
-            dispatch({type: 'update', payload: {isReviewSent: true}});
+            dispatch({ type: 'update', payload: { isReviewSent: true } });
         } catch (error) {
-            dispatch({type: 'update', payload: {reviewError: getErrorMessage(error)}});
+            dispatch({ type: 'update', payload: { reviewError: getErrorMessage(error) } });
         }
     }, [chainId, rating, comment, createReview]);
 

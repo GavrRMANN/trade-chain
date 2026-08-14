@@ -7,7 +7,7 @@ type TUseModalParams = {
 };
 
 /** Управляет фокусом и событиями открытого модального окна. */
-export const useModal = ({isOpen, onOpen, onClose}: TUseModalParams) => {
+export const useModal = ({ isOpen, onOpen, onClose }: TUseModalParams) => {
     const overlayRef = useRef<HTMLDivElement>(null);
     const modalRoot = document.getElementById('modal-root');
 
@@ -39,5 +39,5 @@ export const useModal = ({isOpen, onOpen, onClose}: TUseModalParams) => {
         }
     };
 
-    return {modalRoot, overlayRef, handleOverlayClick};
+    return { modalRoot, overlayRef, handleOverlayClick };
 };

@@ -2,9 +2,9 @@ import { Button } from '@shared/ui/button';
 import { ProductImage } from '@entities/product';
 import { TargetProductPicker } from '@entities/product';
 
-import {useRouteBuilder} from '../lib/useRouteBuilder';
+import { useRouteBuilder } from '../lib/useRouteBuilder';
 import Styles from './route-builder.module.css';
-import {useMobileRouteStep} from './useMobileRouteStep';
+import { useMobileRouteStep } from './useMobileRouteStep';
 
 type TRouteBuilderProps = {
     onCancel?: () => void;
@@ -12,7 +12,7 @@ type TRouteBuilderProps = {
 };
 
 export const RouteBuilder = ({ onCancel, variant = 'card' }: TRouteBuilderProps) => {
-    const {mobileStep, goToNextStep, goToPreviousStep} = useMobileRouteStep();
+    const { mobileStep, goToNextStep, goToPreviousStep } = useMobileRouteStep();
     const {
         sourceProducts,
         products,
@@ -41,9 +41,7 @@ export const RouteBuilder = ({ onCancel, variant = 'card' }: TRouteBuilderProps)
                 <div>
                     <span className={Styles.builder__eyebrow}>
                         <span className={Styles.builder__desktopEyebrow}>Новая цепочка</span>
-                        <span className={Styles.builder__mobileEyebrow}>
-                            Шаг {mobileStep} из 2
-                        </span>
+                        <span className={Styles.builder__mobileEyebrow}>Шаг {mobileStep} из 2</span>
                     </span>
                     <h2 id="route-builder-title">Постройте путь к нужной вещи</h2>
                     <p>Выберите, с чего начинаете и к какой цели хотите прийти.</p>
@@ -102,7 +100,9 @@ export const RouteBuilder = ({ onCancel, variant = 'card' }: TRouteBuilderProps)
                                         <strong>{product.title}</strong>
                                         <small>{sourceProductMeta.get(product.product_id)}</small>
                                     </span>
-                                    <span className={Styles.builder__check} aria-hidden="true">✓</span>
+                                    <span className={Styles.builder__check} aria-hidden="true">
+                                        ✓
+                                    </span>
                                 </button>
                             ))}
                         </div>

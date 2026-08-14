@@ -1,13 +1,13 @@
-import {FormEvent, useEffect, useMemo, useReducer} from 'react';
+import { FormEvent, useEffect, useMemo, useReducer } from 'react';
 
-import {buildChainPayload, useCreateChainMutation} from '@entities/chain';
-import type {TRouteContext} from '@entities/chain';
-import {useGetCategoriesQuery} from '@entities/category';
-import {useGetProductsByCustomerQuery} from '@entities/product';
-import type {TProduct} from '@entities/product';
-import {parseApiError} from '@shared/api';
+import { buildChainPayload, useCreateChainMutation } from '@entities/chain';
+import type { TRouteContext } from '@entities/chain';
+import { useGetCategoriesQuery } from '@entities/category';
+import { useGetProductsByCustomerQuery } from '@entities/product';
+import type { TProduct } from '@entities/product';
+import { parseApiError } from '@shared/api';
 
-import {useMyGoals} from '../lib';
+import { useMyGoals } from '../lib';
 
 /** Значение выбора «куда засчитать обмен», когда маршрут не выбран. */
 export const STANDALONE_GOAL_VALUE = 'standalone';
@@ -35,12 +35,12 @@ type TFormState = {
     requestError?: string;
 };
 type TFormAction =
-    | {type: 'setProduct'; value: string}
-    | {type: 'setMessage'; value: string}
-    | {type: 'setGoal'; value: string}
-    | {type: 'setError'; value?: string}
-    | {type: 'toggleQuickForm'; value: boolean}
-    | {type: 'reset'};
+    | { type: 'setProduct'; value: string }
+    | { type: 'setMessage'; value: string }
+    | { type: 'setGoal'; value: string }
+    | { type: 'setError'; value?: string }
+    | { type: 'toggleQuickForm'; value: boolean }
+    | { type: 'reset' };
 
 const initialState: TFormState = {
     selectedProductId: '',
@@ -51,12 +51,18 @@ const initialState: TFormState = {
 
 const formReducer = (state: TFormState, action: TFormAction): TFormState => {
     switch (action.type) {
-        case 'setProduct': return {...state, selectedProductId: action.value};
-        case 'setMessage': return {...state, message: action.value};
-        case 'setGoal': return {...state, selectedGoalId: action.value, requestError: undefined};
-        case 'setError': return {...state, requestError: action.value};
-        case 'toggleQuickForm': return {...state, isQuickFormOpen: action.value};
-        case 'reset': return initialState;
+        case 'setProduct':
+            return { ...state, selectedProductId: action.value };
+        case 'setMessage':
+            return { ...state, message: action.value };
+        case 'setGoal':
+            return { ...state, selectedGoalId: action.value, requestError: undefined };
+        case 'setError':
+            return { ...state, requestError: action.value };
+        case 'toggleQuickForm':
+            return { ...state, isQuickFormOpen: action.value };
+        case 'reset':
+            return initialState;
     }
 };
 
@@ -69,7 +75,7 @@ export const useOfferExchangeForm = ({
     onClose,
 }: TOfferExchangeFormParams) => {
     const [
-        {selectedProductId, message, selectedGoalId, isQuickFormOpen, requestError},
+        { selectedProductId, message, selectedGoalId, isQuickFormOpen, requestError },
         dispatch,
     ] = useReducer(formReducer, initialState);
 
@@ -78,22 +84,23 @@ export const useOfferExchangeForm = ({
         isLoading,
         isFetching,
         refetch: refetchProducts,
-    } = useGetProductsByCustomerQuery(
-        currentCustomerId ?? '',
-        {skip: !currentCustomerId},
-    );
-    const [createChain, {isLoading: isCreating}] = useCreateChainMutation();
+    } = useGetProductsByCustomerQuery(currentCustomerId ?? '', { skip: !currentCustomerId });
+    const [createChain, { isLoading: isCreating }] = useCreateChainMutation();
     // Список маршрутов нужен только когда пользователь выбирает привязку сам:
     // с готовым контекстом извне выбор уже сделан за него.
-    const {goals, isLoading: isGoalsLoading} = useMyGoals({skip: !isOpen || Boolean(routeContext)});
+    const { goals, isLoading: isGoalsLoading } = useMyGoals({
+        skip: !isOpen || Boolean(routeContext),
+    });
     // Категории нужны только короткой форме добавления вещи.
-    const {data: categories = []} = useGetCategoriesQuery(undefined, {skip: !isOpen});
-    const availableProducts = (myProductsData ?? []).filter((product) => product.status === 'active');
+    const { data: categories = [] } = useGetCategoriesQuery(undefined, { skip: !isOpen });
+    const availableProducts = (myProductsData ?? []).filter(
+        (product) => product.status === 'active',
+    );
     const isProductsLoading = isLoading || isFetching;
 
     useEffect(() => {
         if (isOpen) {
-            dispatch({type: 'reset'});
+            dispatch({ type: 'reset' });
             if (currentCustomerId) {
                 void refetchProducts();
             }
@@ -112,14 +119,15 @@ export const useOfferExchangeForm = ({
     const effectiveRouteContext = routeContext ?? selectedGoal?.routeContext;
 
     const canSubmit =
-        availableProducts.some((product) => product.product_id === selectedProductId) && !isCreating;
+        availableProducts.some((product) => product.product_id === selectedProductId) &&
+        !isCreating;
 
     const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
-        dispatch({type: 'setError'});
+        dispatch({ type: 'setError' });
 
         if (!availableProducts.some((product) => product.product_id === selectedProductId)) {
-            dispatch({type: 'setError', value: 'Выберите товар для обмена'});
+            dispatch({ type: 'setError', value: 'Выберите товар для обмена' });
             return;
         }
 
@@ -136,7 +144,13 @@ export const useOfferExchangeForm = ({
             onSuccess?.(created.chain_id);
             onClose();
         } catch (error) {
-            dispatch({type: 'setError', value: parseApiError(error, 'Не удалось отправить предложение. Попробуйте ещё раз.')});
+            dispatch({
+                type: 'setError',
+                value: parseApiError(
+                    error,
+                    'Не удалось отправить предложение. Попробуйте ещё раз.',
+                ),
+            });
         }
     };
 
@@ -146,8 +160,8 @@ export const useOfferExchangeForm = ({
      * ради которого он и заполнял форму.
      */
     const handleQuickProductCreated = async (product: TProduct) => {
-        dispatch({type: 'toggleQuickForm', value: false});
-        dispatch({type: 'setProduct', value: product.product_id});
+        dispatch({ type: 'toggleQuickForm', value: false });
+        dispatch({ type: 'setProduct', value: product.product_id });
         await refetchProducts();
     };
 
@@ -157,8 +171,8 @@ export const useOfferExchangeForm = ({
         isCreating,
         categories,
         isQuickFormOpen,
-        openQuickForm: () => dispatch({type: 'toggleQuickForm', value: true}),
-        closeQuickForm: () => dispatch({type: 'toggleQuickForm', value: false}),
+        openQuickForm: () => dispatch({ type: 'toggleQuickForm', value: true }),
+        closeQuickForm: () => dispatch({ type: 'toggleQuickForm', value: false }),
         handleQuickProductCreated,
         selectedProductId,
         message,
@@ -171,9 +185,9 @@ export const useOfferExchangeForm = ({
         boundGoalTitle: routeContext?.goalTitle ?? selectedGoal?.goalTitle,
         /** Привязка пришла извне и не редактируется в форме. */
         isGoalLocked: Boolean(routeContext),
-        setSelectedProductId: (value: string) => dispatch({type: 'setProduct', value}),
-        setMessage: (value: string) => dispatch({type: 'setMessage', value}),
-        setSelectedGoalId: (value: string) => dispatch({type: 'setGoal', value}),
+        setSelectedProductId: (value: string) => dispatch({ type: 'setProduct', value }),
+        setMessage: (value: string) => dispatch({ type: 'setMessage', value }),
+        setSelectedGoalId: (value: string) => dispatch({ type: 'setGoal', value }),
         handleSubmit,
     };
 };

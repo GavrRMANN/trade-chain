@@ -11,7 +11,10 @@ export class AuthPage extends BasePage {
     private readonly switchModeButton: Locator = this.page.getByRole('button', {
         name: /Создать аккаунт|Уже есть аккаунт\? Войти/,
     });
-    private readonly loginSubmitButton: Locator = this.page.getByRole('button', { name: 'Войти', exact: true });
+    private readonly loginSubmitButton: Locator = this.page.getByRole('button', {
+        name: 'Войти',
+        exact: true,
+    });
     private readonly registerSubmitButton: Locator = this.page.getByRole('button', {
         name: 'Зарегистрироваться',
     });
@@ -22,7 +25,9 @@ export class AuthPage extends BasePage {
     }
 
     async switchToRegisterMode(): Promise<void> {
-        const isAlreadyRegisterMode = await this.registerSubmitButton.isVisible().catch(() => false);
+        const isAlreadyRegisterMode = await this.registerSubmitButton
+            .isVisible()
+            .catch(() => false);
         if (!isAlreadyRegisterMode) {
             await this.switchModeButton.click();
             await this.confirmPasswordInput.waitFor({ state: 'visible' });

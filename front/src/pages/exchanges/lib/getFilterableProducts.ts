@@ -1,6 +1,6 @@
-import type {TProduct} from '@entities/product';
+import type { TProduct } from '@entities/product';
 
-import type {TExchangeRow} from './useExchangeRows';
+import type { TExchangeRow } from './useExchangeRows';
 
 /**
  * Товары, по которым имеет смысл фильтровать вкладку обменов.
@@ -17,7 +17,7 @@ import type {TExchangeRow} from './useExchangeRows';
  */
 export const getFilterableProducts = (
     tab: string,
-    rows: {incoming: TExchangeRow[]; outgoing: TExchangeRow[]},
+    rows: { incoming: TExchangeRow[]; outgoing: TExchangeRow[] },
 ): TProduct[] => {
     const source = tab === 'incoming' ? rows.incoming : tab === 'outgoing' ? rows.outgoing : [];
     const byId = new Map<string, TProduct>();

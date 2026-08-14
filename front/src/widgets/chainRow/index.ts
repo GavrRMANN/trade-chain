@@ -1,2 +1,2 @@
-export {ChainRow} from './ChainRow';
-export type {TChainNode} from './ChainRow';
+export { ChainRow } from './ChainRow';
+export type { TChainNode } from './ChainRow';

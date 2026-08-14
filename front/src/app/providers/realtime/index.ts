@@ -1,1 +1,1 @@
-export {RealtimeProvider} from './RealtimeProvider';
+export { RealtimeProvider } from './RealtimeProvider';

@@ -33,6 +33,6 @@ describe('getBackgroundRoute', () => {
             },
         } as never);
 
-        expect(route).toEqual({pathname: '/', search: '', hash: ''});
+        expect(route).toEqual({ pathname: '/', search: '', hash: '' });
     });
 });

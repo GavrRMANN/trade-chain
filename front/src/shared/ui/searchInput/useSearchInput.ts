@@ -25,13 +25,17 @@ export const useSearchInput = ({
         ControlStyles.text,
         disabled && Styles['input--disabled'],
         error?.showError && Styles['input--error'],
-    ].filter(Boolean).join(' ');
+    ]
+        .filter(Boolean)
+        .join(' ');
     const buttonClasses = [
         Styles.btn,
         ControlStyles.text,
         (disabled || loading) && Styles['btn--disabled'],
         error?.showError && Styles['btn--error'],
-    ].filter(Boolean).join(' ');
+    ]
+        .filter(Boolean)
+        .join(' ');
     const handleChange = (event: ChangeEvent<HTMLInputElement>) => onChange?.(event.target.value);
     const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();

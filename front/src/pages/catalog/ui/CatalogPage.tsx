@@ -127,57 +127,59 @@ export const CatalogPage = () => {
                     )}
                 </>
             ) : (
-            <div className={Styles['catalog-page']}>
-                {(isLoading || (isFetching && products.length === 0)) && (
-                    <div className={Styles['catalog-state']}>
-                        <Preloader />
-                    </div>
-                )}
+                <div className={Styles['catalog-page']}>
+                    {(isLoading || (isFetching && products.length === 0)) && (
+                        <div className={Styles['catalog-state']}>
+                            <Preloader />
+                        </div>
+                    )}
 
-                {!isLoading && isError && products.length === 0 && (
-                    <p className={Styles['catalog-state']}>Не удалось загрузить товары</p>
-                )}
+                    {!isLoading && isError && products.length === 0 && (
+                        <p className={Styles['catalog-state']}>Не удалось загрузить товары</p>
+                    )}
 
-                {/* Блок «Вам подойдёт» появляется, только когда обмен возможен
+                    {/* Блок «Вам подойдёт» появляется, только когда обмен возможен
                     напрямую: пустой заголовок обещал бы то, чего в ленте нет. */}
-                {!isLoading && matchedProducts.length > 0 && (
-                    <section className={Styles.section}>
-                        <h2 className={Styles['section-title']}>Вам подойдёт</h2>
-                        <p className={Styles['section-subtitle']}>
-                            Владельцам этих вещей подходит что-то из вашего профиля — обмен возможен
-                            напрямую
+                    {!isLoading && matchedProducts.length > 0 && (
+                        <section className={Styles.section}>
+                            <h2 className={Styles['section-title']}>Вам подойдёт</h2>
+                            <p className={Styles['section-subtitle']}>
+                                Владельцам этих вещей подходит что-то из вашего профиля — обмен
+                                возможен напрямую
+                            </p>
+                            <ProductGrid products={matchedProducts} onOpen={openProduct} />
+                        </section>
+                    )}
+
+                    {!isLoading && restProducts.length > 0 && (
+                        <section className={Styles.section}>
+                            {matchedProducts.length > 0 && (
+                                <h2 className={Styles['section-title']}>Остальное в обороте</h2>
+                            )}
+                            <ProductGrid products={restProducts} onOpen={openProduct} />
+                        </section>
+                    )}
+
+                    {!isLoading && !isFetching && !isError && products.length === 0 && (
+                        <div className={Styles.emptyState}>
+                            <h2>В этой категории пока ничего нет</h2>
+                            <p>Но вы можете добавить сюда первый товар.</p>
+                            <Button onClick={openCreateProduct}>Добавить товар</Button>
+                        </div>
+                    )}
+
+                    {products.length > 0 && hasMore && (
+                        <div ref={loadMoreRef} className={Styles['catalog-state']}>
+                            {isFetching && <Preloader />}
+                        </div>
+                    )}
+
+                    {!isLoading && isError && products.length > 0 && (
+                        <p className={Styles['catalog-state']}>
+                            Не удалось загрузить следующие товары
                         </p>
-                        <ProductGrid products={matchedProducts} onOpen={openProduct} />
-                    </section>
-                )}
-
-                {!isLoading && restProducts.length > 0 && (
-                    <section className={Styles.section}>
-                        {matchedProducts.length > 0 && (
-                            <h2 className={Styles['section-title']}>Остальное в обороте</h2>
-                        )}
-                        <ProductGrid products={restProducts} onOpen={openProduct} />
-                    </section>
-                )}
-
-                {!isLoading && !isFetching && !isError && products.length === 0 && (
-                    <div className={Styles.emptyState}>
-                        <h2>В этой категории пока ничего нет</h2>
-                        <p>Но вы можете добавить сюда первый товар.</p>
-                        <Button onClick={openCreateProduct}>Добавить товар</Button>
-                    </div>
-                )}
-
-                {products.length > 0 && hasMore && (
-                    <div ref={loadMoreRef} className={Styles['catalog-state']}>
-                        {isFetching && <Preloader />}
-                    </div>
-                )}
-
-                {!isLoading && isError && products.length > 0 && (
-                    <p className={Styles['catalog-state']}>Не удалось загрузить следующие товары</p>
-                )}
-            </div>
+                    )}
+                </div>
             )}
         </MainSection>
     );

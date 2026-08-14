@@ -6,7 +6,9 @@
     border: 1px solid var(--bg-shadows);
     border-radius: var(--radius-md);
     background: var(--bg-secondary);
-    transition: border-color var(--animation-fast), box-shadow var(--animation-fast);
+    transition:
+        border-color var(--animation-fast),
+        box-shadow var(--animation-fast);
 }
 
 .exchange-row[role='button'] {

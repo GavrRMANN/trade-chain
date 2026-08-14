@@ -24,8 +24,7 @@ export const orderChainForRoute = (
     }
 
     const isGoalFirst =
-        chain[0].product_id === targetId ||
-        chain[chain.length - 1].product_id === sourceId;
+        chain[0].product_id === targetId || chain[chain.length - 1].product_id === sourceId;
 
     return isGoalFirst ? chain.reverse() : chain;
 };

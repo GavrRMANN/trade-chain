@@ -43,7 +43,9 @@ export const chainApi = createApi({
         }),
         getChainsByProduct: builder.query<TChain[], string>({
             query: (productId) => `/chains/by-product/${productId}`,
-            providesTags: (_result, _error, productId) => [{ type: 'Chain', id: `product-${productId}` }],
+            providesTags: (_result, _error, productId) => [
+                { type: 'Chain', id: `product-${productId}` },
+            ],
         }),
         updateChainStatus: builder.mutation<void, { id: string; body: TUpdateChainStatusRequest }>({
             query: ({ id, body }) => ({ url: `/chains/${id}/status`, method: 'PATCH', body }),

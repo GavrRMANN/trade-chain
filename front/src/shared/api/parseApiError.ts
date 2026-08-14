@@ -5,10 +5,18 @@
  * формату ответов нашего бэкенда. Если извлечь не удаётся — возвращает
  * `fallback`.
  */
-export const parseApiError = (error: unknown, fallback = 'Не удалось выполнить запрос. Попробуйте ещё раз.'): string => {
+export const parseApiError = (
+    error: unknown,
+    fallback = 'Не удалось выполнить запрос. Попробуйте ещё раз.',
+): string => {
     if (typeof error === 'object' && error !== null && 'data' in error) {
         const data = error.data;
-        if (typeof data === 'object' && data !== null && 'error' in data && typeof data.error === 'string') {
+        if (
+            typeof data === 'object' &&
+            data !== null &&
+            'error' in data &&
+            typeof data.error === 'string'
+        ) {
             return data.error;
         }
     }

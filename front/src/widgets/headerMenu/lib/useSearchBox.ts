@@ -1,4 +1,4 @@
-import {useCallback, useEffect, useReducer, useRef, type RefObject} from 'react';
+import { useCallback, useEffect, useReducer, useRef, type RefObject } from 'react';
 
 type TUseSearchBoxProps = {
     setValue: (value: string) => void;
@@ -26,14 +26,14 @@ const searchBoxReducer = (state: TSearchBoxState, action: TSearchBoxAction): TSe
     isOpen: action.value,
 });
 
-export const useSearchBox = ({setValue}: TUseSearchBoxProps): TUseSearchBoxReturn => {
-    const [{isOpen}, dispatch] = useReducer(searchBoxReducer, {isOpen: false});
+export const useSearchBox = ({ setValue }: TUseSearchBoxProps): TUseSearchBoxReturn => {
+    const [{ isOpen }, dispatch] = useReducer(searchBoxReducer, { isOpen: false });
     const containerRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         const handlePointerDown = (event: PointerEvent) => {
             if (!containerRef.current?.contains(event.target as Node)) {
-                dispatch({type: 'setOpen', value: false});
+                dispatch({ type: 'setOpen', value: false });
             }
         };
 
@@ -42,11 +42,11 @@ export const useSearchBox = ({setValue}: TUseSearchBoxProps): TUseSearchBoxRetur
         return () => document.removeEventListener('pointerdown', handlePointerDown);
     }, []);
 
-    const openSuggestions = useCallback(() => dispatch({type: 'setOpen', value: true}), []);
-    const closeSuggestions = useCallback(() => dispatch({type: 'setOpen', value: false}), []);
+    const openSuggestions = useCallback(() => dispatch({ type: 'setOpen', value: true }), []);
+    const closeSuggestions = useCallback(() => dispatch({ type: 'setOpen', value: false }), []);
     const clearSearch = useCallback(() => {
         setValue('');
-        dispatch({type: 'setOpen', value: false});
+        dispatch({ type: 'setOpen', value: false });
     }, [setValue]);
 
     return {

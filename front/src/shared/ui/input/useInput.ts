@@ -19,7 +19,9 @@ export const useInput = ({
         ControlStyles.text,
         (disabled || loading) && Styles['input--disabled'],
         error?.showError && Styles['input--error'],
-    ].filter(Boolean).join(' ');
+    ]
+        .filter(Boolean)
+        .join(' ');
 
     const handleChange = (event: ChangeEvent<HTMLInputElement>) => onChange?.(event.target.value);
 

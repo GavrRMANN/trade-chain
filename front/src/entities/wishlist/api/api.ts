@@ -3,11 +3,7 @@ import { createApi } from '@reduxjs/toolkit/query/react';
 import { apiBaseQuery } from '@shared/api';
 import type { TCategory } from '@entities/category';
 import { productApi } from '@entities/product';
-import type {
-    TCreateWishlistRequest,
-    TWishlist,
-    TWishlistOptionRequest,
-} from '../types';
+import type { TCreateWishlistRequest, TWishlist, TWishlistOptionRequest } from '../types';
 
 /**
  * Сбрасывает кэш товаров после правки списка желаний.
@@ -39,17 +35,17 @@ export const wishlistApi = createApi({
     endpoints: (builder) => ({
         createWishlist: builder.mutation<TWishlist, TCreateWishlistRequest>({
             query: (body) => ({ url: '/wishlists', method: 'POST', body }),
-            invalidatesTags: (_result, _error, body) => [{type: 'Wishlist', id: body.product_id}],
-            onQueryStarted: (_arg, {dispatch, queryFulfilled}) =>
+            invalidatesTags: (_result, _error, body) => [{ type: 'Wishlist', id: body.product_id }],
+            onQueryStarted: (_arg, { dispatch, queryFulfilled }) =>
                 invalidateProductsAfter(queryFulfilled, dispatch),
         }),
         getWishlist: builder.query<TWishlist, string>({
             query: (id) => `/wishlists/${id}`,
-            providesTags: (_result, _error, id) => [{type: 'Wishlist', id}],
+            providesTags: (_result, _error, id) => [{ type: 'Wishlist', id }],
         }),
         getWishlistByProduct: builder.query<TWishlist, string>({
             query: (productId) => `/wishlists/by-product/${productId}`,
-            providesTags: (_result, _error, productId) => [{type: 'Wishlist', id: productId}],
+            providesTags: (_result, _error, productId) => [{ type: 'Wishlist', id: productId }],
         }),
         deleteWishlist: builder.mutation<void, string>({
             query: (id) => ({ url: `/wishlists/${id}`, method: 'DELETE' }),
@@ -57,19 +53,19 @@ export const wishlistApi = createApi({
                товару, а удаление знает только собственный идентификатор. */
             invalidatesTags: (_result, _error, id) => [
                 'Wishlist',
-                {type: 'WishlistOptions' as const, id},
+                { type: 'WishlistOptions' as const, id },
             ],
-            onQueryStarted: (_arg, {dispatch, queryFulfilled}) =>
+            onQueryStarted: (_arg, { dispatch, queryFulfilled }) =>
                 invalidateProductsAfter(queryFulfilled, dispatch),
         }),
         getWishlistOptions: builder.query<TCategory[], string>({
             query: (id) => `/wishlists/${id}/options`,
-            providesTags: (_result, _error, id) => [{type: 'WishlistOptions', id}],
+            providesTags: (_result, _error, id) => [{ type: 'WishlistOptions', id }],
         }),
         addWishlistOption: builder.mutation<void, { id: string; body: TWishlistOptionRequest }>({
             query: ({ id, body }) => ({ url: `/wishlists/${id}/options`, method: 'POST', body }),
-            invalidatesTags: (_result, _error, {id}) => [{type: 'WishlistOptions', id}],
-            onQueryStarted: (_arg, {dispatch, queryFulfilled}) =>
+            invalidatesTags: (_result, _error, { id }) => [{ type: 'WishlistOptions', id }],
+            onQueryStarted: (_arg, { dispatch, queryFulfilled }) =>
                 invalidateProductsAfter(queryFulfilled, dispatch),
         }),
         removeWishlistOption: builder.mutation<void, { id: string; categoryId: string }>({
@@ -77,8 +73,8 @@ export const wishlistApi = createApi({
                 url: `/wishlists/${id}/options/${categoryId}`,
                 method: 'DELETE',
             }),
-            invalidatesTags: (_result, _error, {id}) => [{type: 'WishlistOptions', id}],
-            onQueryStarted: (_arg, {dispatch, queryFulfilled}) =>
+            invalidatesTags: (_result, _error, { id }) => [{ type: 'WishlistOptions', id }],
+            onQueryStarted: (_arg, { dispatch, queryFulfilled }) =>
                 invalidateProductsAfter(queryFulfilled, dispatch),
         }),
     }),

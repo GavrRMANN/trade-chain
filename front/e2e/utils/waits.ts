@@ -10,10 +10,15 @@ const MODAL_TIMEOUT = 10_000;
 const NAVIGATION_TIMEOUT = 15_000;
 
 /** Ждёт открытия модалки (route-модалки монтируются асинхронно) и возвращает её локатор. */
-export const waitForModalOpen = async (page: Page, titleText: string | RegExp): Promise<Locator> => {
+export const waitForModalOpen = async (
+    page: Page,
+    titleText: string | RegExp,
+): Promise<Locator> => {
     const dialog = page.getByRole('dialog');
     await expect(dialog).toBeVisible({ timeout: MODAL_TIMEOUT });
-    await expect(dialog.getByRole('heading', { name: titleText })).toBeVisible({ timeout: MODAL_TIMEOUT });
+    await expect(dialog.getByRole('heading', { name: titleText })).toBeVisible({
+        timeout: MODAL_TIMEOUT,
+    });
     return dialog;
 };
 
@@ -24,7 +29,9 @@ export const waitForModalClosed = async (page: Page): Promise<void> => {
 
 /** Ждёт, пока URL перестанет содержать указанный фрагмент пути (переход после успешного действия). */
 export const waitForUrlToLeave = async (page: Page, pathFragment: string): Promise<void> => {
-    await page.waitForURL((url) => !url.pathname.includes(pathFragment), { timeout: NAVIGATION_TIMEOUT });
+    await page.waitForURL((url) => !url.pathname.includes(pathFragment), {
+        timeout: NAVIGATION_TIMEOUT,
+    });
 };
 
 /** Ждёт, пока URL начнёт соответствовать шаблону (переход на целевую страницу после действия). */

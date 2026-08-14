@@ -54,7 +54,10 @@ const OFFER_FORMS: TPluralForms = ['предложение', 'предложен
  * текущего пользователя, и вести туда с чужой цели значило бы показать не
  * тот маршрут.
  */
-export const useChainRoute = ({ chain, currentUserId }: TUseChainRouteParams): TChainRoute | undefined => {
+export const useChainRoute = ({
+    chain,
+    currentUserId,
+}: TUseChainRouteParams): TChainRoute | undefined => {
     const navigate = useNavigate();
 
     const isOwnRoute = Boolean(chain && currentUserId && chain.initiator_id === currentUserId);
@@ -74,9 +77,7 @@ export const useChainRoute = ({ chain, currentUserId }: TUseChainRouteParams): T
     const group = useMemo(
         () =>
             goalId && isOwnRoute && currentUserId
-                ? groupChainsByGoal(chains, currentUserId).find(
-                      (item) => item.goalId === goalId,
-                  )
+                ? groupChainsByGoal(chains, currentUserId).find((item) => item.goalId === goalId)
                 : undefined,
         [chains, currentUserId, goalId, isOwnRoute],
     );
@@ -110,7 +111,8 @@ export const useChainRoute = ({ chain, currentUserId }: TUseChainRouteParams): T
                 goalId,
                 // Маршрут мог уйти вперёд, поэтому продолжается он с текущего
                 // этапа группы, а не с товара этой конкретной сделки.
-                sourceProductId: group?.sourceProductId ?? chain.route_step_id ?? chain.from_product_id,
+                sourceProductId:
+                    group?.sourceProductId ?? chain.route_step_id ?? chain.from_product_id,
                 goalCategoryId: group?.goalCategoryId ?? chain.to_category_id,
             }),
         );

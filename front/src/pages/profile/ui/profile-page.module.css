@@ -1,5 +1,33 @@
-.guestCard { width: min(100% - 48px, 720px); margin: var(--space-20) auto; padding: var(--space-9); display: flex; align-items: center; gap: var(--space-6); border-radius: var(--radius-lg); background: var(--bg-neutral); color: var(--neutral-primary); }
-.guestCard h2 { margin: 0 0 var(--space-2-5); font-size: var(--h2-font-size); }
-.guestCard p { margin: 0 0 var(--space-5); color: var(--neutral-secondary); }
-.state { padding: var(--space-14) var(--space-6); text-align: center; color: var(--neutral-secondary); }
-@media (max-width: 600px) { .guestCard { width: 100%; margin: var(--space-8) 0; padding: var(--space-6); flex-direction: column; text-align: center; } }
+.guestCard {
+    width: min(100% - 48px, 720px);
+    margin: var(--space-20) auto;
+    padding: var(--space-9);
+    display: flex;
+    align-items: center;
+    gap: var(--space-6);
+    border-radius: var(--radius-lg);
+    background: var(--bg-neutral);
+    color: var(--neutral-primary);
+}
+.guestCard h2 {
+    margin: 0 0 var(--space-2-5);
+    font-size: var(--h2-font-size);
+}
+.guestCard p {
+    margin: 0 0 var(--space-5);
+    color: var(--neutral-secondary);
+}
+.state {
+    padding: var(--space-14) var(--space-6);
+    text-align: center;
+    color: var(--neutral-secondary);
+}
+@media (max-width: 600px) {
+    .guestCard {
+        width: 100%;
+        margin: var(--space-8) 0;
+        padding: var(--space-6);
+        flex-direction: column;
+        text-align: center;
+    }
+}

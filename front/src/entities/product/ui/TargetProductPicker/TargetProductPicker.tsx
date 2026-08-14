@@ -128,13 +128,17 @@ export const TargetProductPicker = ({
                         <button
                             type="button"
                             className={`${Styles.picker__category} ${
-                                selectedCategoryId === categoryId ? Styles['picker__category--selected'] : ''
+                                selectedCategoryId === categoryId
+                                    ? Styles['picker__category--selected']
+                                    : ''
                             }`}
                             aria-pressed={selectedCategoryId === categoryId}
                             disabled={disabled}
                             onClick={selectCategoryAsGoal}
                         >
-                            <span className={Styles.picker__categoryIcon} aria-hidden="true">🏷</span>
+                            <span className={Styles.picker__categoryIcon} aria-hidden="true">
+                                🏷
+                            </span>
                             <span className={Styles.picker__categoryBody}>
                                 <strong>
                                     Хочу из категории:{' '}

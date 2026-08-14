@@ -1,5 +1,10 @@
 import { expect, test } from '../fixtures/testFixtures';
-import { KNOWN_CATEGORY, OFFER_DEFAULTS, PRODUCT_DEFAULTS, REVIEW_DEFAULTS } from '../fixtures/testData';
+import {
+    KNOWN_CATEGORY,
+    OFFER_DEFAULTS,
+    PRODUCT_DEFAULTS,
+    REVIEW_DEFAULTS,
+} from '../fixtures/testData';
 import { ExchangeRoomPage } from '../pages/ExchangeRoomPage';
 import { generateProductTitle } from '../utils/testHelpers';
 

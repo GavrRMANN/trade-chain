@@ -1,26 +1,26 @@
-import {Button} from '@shared/ui/button';
-import {MainSection} from '@shared/ui/mainSection';
-import {PageError} from '@shared/ui/pageError';
-import {PageHeader} from '@shared/ui/pageHeader';
-import {Preloader} from '@shared/ui/preloader';
-import {ExchangeRow} from '@widgets/exchangeRow';
-import {formatDate} from '@shared/lib';
+import { Button } from '@shared/ui/button';
+import { MainSection } from '@shared/ui/mainSection';
+import { PageError } from '@shared/ui/pageError';
+import { PageHeader } from '@shared/ui/pageHeader';
+import { Preloader } from '@shared/ui/preloader';
+import { ExchangeRow } from '@widgets/exchangeRow';
+import { formatDate } from '@shared/lib';
 
 import Styles from './exchanges-page.module.css';
-import {RouteGroupCard} from './RouteGroupCard';
-import {useExchanges} from '../lib';
-import type {TExchangeRouteTab, TExchangeTab} from '../lib/useExchanges';
+import { RouteGroupCard } from './RouteGroupCard';
+import { useExchanges } from '../lib';
+import type { TExchangeRouteTab, TExchangeTab } from '../lib/useExchanges';
 
-const TABS: {id: TExchangeTab; label: string}[] = [
-    {id: 'active', label: 'Активные'},
-    {id: 'incoming', label: 'Входящие'},
-    {id: 'outgoing', label: 'Исходящие'},
-    {id: 'completed', label: 'Завершённые'},
+const TABS: { id: TExchangeTab; label: string }[] = [
+    { id: 'active', label: 'Активные' },
+    { id: 'incoming', label: 'Входящие' },
+    { id: 'outgoing', label: 'Исходящие' },
+    { id: 'completed', label: 'Завершённые' },
 ];
 
-const ROUTE_TABS: {id: TExchangeRouteTab; label: string}[] = [
-    {id: 'active', label: 'Активные'},
-    {id: 'completed', label: 'Завершённые'},
+const ROUTE_TABS: { id: TExchangeRouteTab; label: string }[] = [
+    { id: 'active', label: 'Активные' },
+    { id: 'completed', label: 'Завершённые' },
 ];
 
 const EMPTY_TEXT: Record<TExchangeTab, string> = {
@@ -135,7 +135,8 @@ export const ExchangesPage = () => {
                                     ariaLabel={tab.label}
                                     className={formatClasses(
                                         Styles['exchanges-page__tab'],
-                                        activeRouteTab === tab.id && Styles['exchanges-page__tab--active'],
+                                        activeRouteTab === tab.id &&
+                                            Styles['exchanges-page__tab--active'],
                                     )}
                                 >
                                     {tab.label}
@@ -175,11 +176,13 @@ export const ExchangesPage = () => {
                                         updatedAt={group.updatedAt}
                                         formatActiveOffers={formatActiveOffers}
                                         formatDate={formatDate}
-                                        onOpen={() => openRoute(
-                                            group.goalId,
-                                            group.sourceProductId,
-                                            group.goalCategoryId,
-                                        )}
+                                        onOpen={() =>
+                                            openRoute(
+                                                group.goalId,
+                                                group.sourceProductId,
+                                                group.goalCategoryId,
+                                            )
+                                        }
                                     />
                                 ))}
                             </div>
@@ -197,7 +200,8 @@ export const ExchangesPage = () => {
                                     ariaLabel={tab.label}
                                     className={formatClasses(
                                         Styles['exchanges-page__tab'],
-                                        activeTab === tab.id && Styles['exchanges-page__tab--active'],
+                                        activeTab === tab.id &&
+                                            Styles['exchanges-page__tab--active'],
                                     )}
                                 >
                                     {tab.label}

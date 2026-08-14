@@ -9,7 +9,7 @@ import { reviewApi } from '@/entities/review';
 import { searchApi } from '@/entities/search';
 import { userSlice, userApi } from '@/entities/user';
 import { wishlistApi } from '@/entities/wishlist';
-import {notificationApi} from '@/entities/notification/api';
+import { notificationApi } from '@/entities/notification/api';
 import { rtkQueryCacheMiddleware } from './middleware';
 
 export const store = configureStore({
@@ -26,19 +26,18 @@ export const store = configureStore({
         [notificationApi.reducerPath]: notificationApi.reducer,
     },
     middleware: (getDefaultMiddleware) =>
-        getDefaultMiddleware()
-            .concat(
-                rtkQueryCacheMiddleware,
-                userApi.middleware,
-                productApi.middleware,
-                categoryApi.middleware,
-                chainApi.middleware,
-                customerApi.middleware,
-                reviewApi.middleware,
-                searchApi.middleware,
-                wishlistApi.middleware,
-                notificationApi.middleware,
-            ),
+        getDefaultMiddleware().concat(
+            rtkQueryCacheMiddleware,
+            userApi.middleware,
+            productApi.middleware,
+            categoryApi.middleware,
+            chainApi.middleware,
+            customerApi.middleware,
+            reviewApi.middleware,
+            searchApi.middleware,
+            wishlistApi.middleware,
+            notificationApi.middleware,
+        ),
 });
 
 setupListeners(store.dispatch);

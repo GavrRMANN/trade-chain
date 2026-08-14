@@ -1,21 +1,21 @@
-import {notification} from 'antd';
-import {useEffect, useRef, type PropsWithChildren} from 'react';
+import { notification } from 'antd';
+import { useEffect, useRef, type PropsWithChildren } from 'react';
 
-import {useNotificationsFeed} from '@entities/notification';
-import type {TSseEvent} from '@shared/api';
+import { useNotificationsFeed } from '@entities/notification';
+import type { TSseEvent } from '@shared/api';
 
-import {useRealtime} from './useRealtime';
+import { useRealtime } from './useRealtime';
 
-export const RealtimeProvider = ({children}: PropsWithChildren) => {
-    const [api, contextHolder] = notification.useNotification({top: 74});
-    const {isAuthenticated, notifications, isLoading, isFetching} = useNotificationsFeed();
+export const RealtimeProvider = ({ children }: PropsWithChildren) => {
+    const [api, contextHolder] = notification.useNotification({ top: 74 });
+    const { isAuthenticated, notifications, isLoading, isFetching } = useNotificationsFeed();
     const initializedRef = useRef(false);
     const previousIdsRef = useRef<Set<string>>(new Set());
 
     useRealtime((event: TSseEvent) => {
         if (
-            event.type === 'exchange.message.created'
-            && window.location.pathname !== `/exchanges/${event.chain_id}`
+            event.type === 'exchange.message.created' &&
+            window.location.pathname !== `/exchanges/${event.chain_id}`
         ) {
             api.open({
                 key: `message:${event.chain_id}`,

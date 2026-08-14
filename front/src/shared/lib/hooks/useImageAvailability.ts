@@ -5,7 +5,10 @@ import { checkImageUrl } from '@shared/lib/helpers';
 /** Проверяет доступность изображения и обновляет состояние при смене ссылки. */
 export const useImageAvailability = (src?: string) => {
     const [state, dispatch] = useReducer(
-        (currentState: { isImageAvailable: boolean }, action: { type: 'reset' | 'setAvailability'; value?: boolean }) => {
+        (
+            currentState: { isImageAvailable: boolean },
+            action: { type: 'reset' | 'setAvailability'; value?: boolean },
+        ) => {
             if (action.type === 'reset') {
                 return { ...currentState, isImageAvailable: false };
             }
@@ -38,5 +41,8 @@ export const useImageAvailability = (src?: string) => {
         };
     }, [src]);
 
-    return { isImageAvailable: state.isImageAvailable, markImageUnavailable: () => dispatch({ type: 'reset' }) };
+    return {
+        isImageAvailable: state.isImageAvailable,
+        markImageUnavailable: () => dispatch({ type: 'reset' }),
+    };
 };

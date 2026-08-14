@@ -38,9 +38,10 @@
 
     background: var(--bg-secondary);
 
-    transition: border-color var(--animation-normal) ease-in,
-                background var(--animation-normal) ease-in,
-                box-shadow var(--animation-normal) ease-in;
+    transition:
+        border-color var(--animation-normal) ease-in,
+        background var(--animation-normal) ease-in,
+        box-shadow var(--animation-normal) ease-in;
 }
 
 .chain-node--clickable {

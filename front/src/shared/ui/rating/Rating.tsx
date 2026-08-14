@@ -1,7 +1,7 @@
 import StarSVG from '../../assets/icons/Star.svg?react';
 
 import Styles from './Rating.module.css';
-import {useRating} from './useRating';
+import { useRating } from './useRating';
 
 type TRatingProps = {
     value: number;
@@ -9,8 +9,13 @@ type TRatingProps = {
     tone?: 'success' | 'rating';
 };
 
-export const Rating = ({value, className, tone = 'success'}: TRatingProps) => {
-    const {stars, roundedValue, maxValue, className: ratingClassName} = useRating({value, tone, className});
+export const Rating = ({ value, className, tone = 'success' }: TRatingProps) => {
+    const {
+        stars,
+        roundedValue,
+        maxValue,
+        className: ratingClassName,
+    } = useRating({ value, tone, className });
 
     return (
         <div className={ratingClassName} role="img" aria-label={`Рейтинг ${value} из ${maxValue}`}>

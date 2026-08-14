@@ -1,6 +1,12 @@
 import Styles from './Button.module.css';
 
-export const useButton = ({variant, active, loading, icon, className}: {
+export const useButton = ({
+    variant,
+    active,
+    loading,
+    icon,
+    className,
+}: {
     variant: 'primary' | 'secondary' | 'text' | 'default';
     active: boolean;
     loading: boolean;
@@ -14,5 +20,7 @@ export const useButton = ({variant, active, loading, icon, className}: {
         active && Styles['button--active'],
         loading && Styles['button--loading'],
         icon && Styles['button--icon'],
-    ].filter(Boolean).join(' '),
+    ]
+        .filter(Boolean)
+        .join(' '),
 });

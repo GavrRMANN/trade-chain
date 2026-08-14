@@ -33,10 +33,10 @@ type TSearchState = {
 };
 
 type TSearchAction =
-    | {type: 'setValue'; value: string}
-    | {type: 'setProductSuggestions'; suggestions: TSearchSuggestion[]}
-    | {type: 'showDefaultSuggestions'; value: boolean}
-    | {type: 'selectSuggestion'; suggestion: TSearchSuggestion};
+    | { type: 'setValue'; value: string }
+    | { type: 'setProductSuggestions'; suggestions: TSearchSuggestion[] }
+    | { type: 'showDefaultSuggestions'; value: boolean }
+    | { type: 'selectSuggestion'; suggestion: TSearchSuggestion };
 
 const searchReducer = (state: TSearchState, action: TSearchAction): TSearchState => {
     switch (action.type) {
@@ -48,9 +48,9 @@ const searchReducer = (state: TSearchState, action: TSearchAction): TSearchState
                 showDefaultSuggestions: false,
             };
         case 'setProductSuggestions':
-            return {...state, productSuggestions: action.suggestions};
+            return { ...state, productSuggestions: action.suggestions };
         case 'showDefaultSuggestions':
-            return {...state, showDefaultSuggestions: action.value};
+            return { ...state, showDefaultSuggestions: action.value };
         case 'selectSuggestion':
             return {
                 ...state,
@@ -60,25 +60,21 @@ const searchReducer = (state: TSearchState, action: TSearchAction): TSearchState
     }
 };
 
-export const useSearch = ({
-                              initialValue,
-                          }: TUseSearchProps): TUseSearchReturn => {
+export const useSearch = ({ initialValue }: TUseSearchProps): TUseSearchReturn => {
     const navigate = useNavigate();
-    const [{value, selectedSuggestion, productSuggestions, showDefaultSuggestions}, dispatch] = useReducer(
-        searchReducer,
-        {
+    const [{ value, selectedSuggestion, productSuggestions, showDefaultSuggestions }, dispatch] =
+        useReducer(searchReducer, {
             value: initialValue,
             selectedSuggestion: null,
             productSuggestions: [],
             showDefaultSuggestions: false,
-        },
-    );
+        });
     const [searchProducts, { isFetching, isError }] = useLazyGetProductsQuery();
-    const {data: categories = []} = useGetCategoriesQuery();
+    const { data: categories = [] } = useGetCategoriesQuery();
     const activeRequest = useRef<ReturnType<typeof searchProducts> | null>(null);
 
     const setSearchValue = useCallback((nextValue: string) => {
-        dispatch({type: 'setValue', value: nextValue});
+        dispatch({ type: 'setValue', value: nextValue });
     }, []);
 
     useEffect(() => {
@@ -87,29 +83,33 @@ export const useSearch = ({
         activeRequest.current?.abort();
 
         if ((query.length < 1 && !showDefaultSuggestions) || selectedSuggestion) {
-            dispatch({type: 'setProductSuggestions', suggestions: []});
+            dispatch({ type: 'setProductSuggestions', suggestions: [] });
             return;
         }
 
         const timeoutId = window.setTimeout(() => {
             const request = searchProducts({
-                ...(query ? {q: query} : {}),
+                ...(query ? { q: query } : {}),
                 offset: 0,
                 limit: 8,
             });
             activeRequest.current = request;
 
-            void request.unwrap()
+            void request
+                .unwrap()
                 .then((products) => {
-                    dispatch({type: 'setProductSuggestions', suggestions: products.map((product) => ({
-                        id: product.product_id,
-                        label: product.title,
-                        type: 'product' as const,
-                        categoryId: product.category_id,
-                    }))});
+                    dispatch({
+                        type: 'setProductSuggestions',
+                        suggestions: products.map((product) => ({
+                            id: product.product_id,
+                            label: product.title,
+                            type: 'product' as const,
+                            categoryId: product.category_id,
+                        })),
+                    });
                 })
                 .catch(() => {
-                    dispatch({type: 'setProductSuggestions', suggestions: []});
+                    dispatch({ type: 'setProductSuggestions', suggestions: [] });
                 });
         }, 300);
 
@@ -125,12 +125,12 @@ export const useSearch = ({
         activeRequest.current?.abort();
 
         if (!query) {
-            dispatch({type: 'showDefaultSuggestions', value: true});
+            dispatch({ type: 'showDefaultSuggestions', value: true });
             navigate('/');
             return;
         }
 
-        dispatch({type: 'showDefaultSuggestions', value: false});
+        dispatch({ type: 'showDefaultSuggestions', value: false });
 
         if (selectedSuggestion?.type === 'category' && selectedSuggestion.categoryId) {
             navigate(`/?category_id=${encodeURIComponent(selectedSuggestion.categoryId)}`);
@@ -140,21 +140,27 @@ export const useSearch = ({
         navigate(`/?q=${encodeURIComponent(query)}`);
     }, [navigate, selectedSuggestion, value]);
 
-    const selectSuggestion = useCallback((suggestion: TSearchSuggestion) => {
-        activeRequest.current?.abort();
-        dispatch({type: 'selectSuggestion', suggestion});
+    const selectSuggestion = useCallback(
+        (suggestion: TSearchSuggestion) => {
+            activeRequest.current?.abort();
+            dispatch({ type: 'selectSuggestion', suggestion });
 
-        if (suggestion.type === 'category' && suggestion.categoryId) {
-            navigate(`/?category_id=${encodeURIComponent(suggestion.categoryId)}`);
-            return;
-        }
+            if (suggestion.type === 'category' && suggestion.categoryId) {
+                navigate(`/?category_id=${encodeURIComponent(suggestion.categoryId)}`);
+                return;
+            }
 
-        navigate(`/?q=${encodeURIComponent(suggestion.label)}`);
-    }, [navigate]);
+            navigate(`/?q=${encodeURIComponent(suggestion.label)}`);
+        },
+        [navigate],
+    );
 
-    useEffect(() => () => {
-        activeRequest.current?.abort();
-    }, []);
+    useEffect(
+        () => () => {
+            activeRequest.current?.abort();
+        },
+        [],
+    );
 
     return {
         value,
@@ -164,7 +170,11 @@ export const useSearch = ({
         isError,
         suggestions: [
             ...categories
-                .filter((category) => category.name.toLocaleLowerCase('ru-RU').includes(value.trim().toLocaleLowerCase('ru-RU')))
+                .filter((category) =>
+                    category.name
+                        .toLocaleLowerCase('ru-RU')
+                        .includes(value.trim().toLocaleLowerCase('ru-RU')),
+                )
                 .map((category) => ({
                     id: category.category_id,
                     label: category.name,

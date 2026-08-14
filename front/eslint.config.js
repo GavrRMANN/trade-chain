@@ -6,13 +6,7 @@ import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
     {
-        ignores: [
-            'dist',
-            'storybook-static',
-            'node_modules',
-            'commitlint.config.cjs',
-            '.husky',
-        ],
+        ignores: ['dist', 'storybook-static', 'node_modules', 'commitlint.config.cjs', '.husky'],
     },
     js.configs.recommended,
     ...tseslint.configs.recommended,
@@ -26,7 +20,10 @@ export default tseslint.config(
         },
     },
     {
-        files: ['**/*.{ts,tsx}'],
+        // React-правила применяются только к коду приложения. В Playwright
+        // fixtures второй аргумент колбэка по контракту называется `use`, но
+        // это не React Hook и проверять его react-hooks/rules-of-hooks нельзя.
+        files: ['src/**/*.{ts,tsx}'],
         languageOptions: {
             ecmaVersion: 2022,
             globals: globals.browser,

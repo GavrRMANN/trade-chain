@@ -19,9 +19,12 @@ export const useTextarea = ({
         ControlStyles.text,
         (disabled || loading) && Styles['textarea--disabled'],
         error?.showError && Styles['textarea--error'],
-    ].filter(Boolean).join(' ');
+    ]
+        .filter(Boolean)
+        .join(' ');
 
-    const handleChange = (event: ChangeEvent<HTMLTextAreaElement>) => onChange?.(event.target.value);
+    const handleChange = (event: ChangeEvent<HTMLTextAreaElement>) =>
+        onChange?.(event.target.value);
 
     return { textareaClasses, handleChange };
 };

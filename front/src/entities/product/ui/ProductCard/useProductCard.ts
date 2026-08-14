@@ -13,17 +13,19 @@ export const useProductCard = ({
     variant: 'vertical' | 'horizontal';
     onClick?: () => void;
 }) => {
-    const {isImageAvailable} = useImageAvailability(image);
+    const { isImageAvailable } = useImageAvailability(image);
     const className = [
         Styles['product-card'],
         Styles[`product-card--${variant}`],
         onClick && Styles['product-card--clickable'],
-    ].filter(Boolean).join(' ');
+    ]
+        .filter(Boolean)
+        .join(' ');
     const handleKeyDown = (event: KeyboardEvent<HTMLElement>) => {
         if (event.key === 'Enter') {
             onClick?.();
         }
     };
 
-    return {isImageAvailable, className, handleKeyDown};
+    return { isImageAvailable, className, handleKeyDown };
 };

@@ -6,7 +6,7 @@ import { Button } from '../button';
 
 import XMarkSVG from '../../assets/icons/X-mark.svg?react';
 import { Transition } from 'react-transition-group';
-import {useModal} from './useModal';
+import { useModal } from './useModal';
 
 type TModalProps = {
     title?: string;
@@ -20,7 +20,7 @@ type TModalProps = {
 
 export const Modal = forwardRef<HTMLDivElement, TModalProps>(
     ({ title = '', isOpen, size = 'default', onOpen, onClose, children, footer }, ref) => {
-        const {modalRoot, overlayRef, handleOverlayClick} = useModal({isOpen, onOpen, onClose});
+        const { modalRoot, overlayRef, handleOverlayClick } = useModal({ isOpen, onOpen, onClose });
 
         if (!modalRoot) {
             return null;

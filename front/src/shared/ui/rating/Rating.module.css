@@ -11,7 +11,9 @@
     color: var(--border-strong);
     fill: transparent;
 
-    transition: color var(--animation-normal), fill var(--animation-normal);
+    transition:
+        color var(--animation-normal),
+        fill var(--animation-normal);
 }
 
 .rating__star--filled {

@@ -1,14 +1,14 @@
-import type {TCategory} from '@entities/category';
+import type { TCategory } from '@entities/category';
 
 import Styles from './CategoryPicker.module.css';
-import {useCategoryPicker} from './useCategoryPicker';
+import { useCategoryPicker } from './useCategoryPicker';
 
 type TCategoryPickerProps = {
     categories: TCategory[];
     value: string;
     onChange: (value: string) => void;
     disabled?: boolean;
-    error?: {showError: boolean; errorMessage: string};
+    error?: { showError: boolean; errorMessage: string };
 };
 
 export const CategoryPicker = ({
@@ -19,8 +19,17 @@ export const CategoryPicker = ({
     error,
 }: TCategoryPickerProps) => {
     const {
-        expandedParent, search, setSearch, roots, children, searchResults, selectedPath,
-        expandedParentName, isSearching, handleExpand, handleSelect,
+        expandedParent,
+        search,
+        setSearch,
+        roots,
+        children,
+        searchResults,
+        selectedPath,
+        expandedParentName,
+        isSearching,
+        handleExpand,
+        handleSelect,
         expandedParentCategory,
     } = useCategoryPicker(categories, value, disabled, onChange);
 
@@ -47,7 +56,8 @@ export const CategoryPicker = ({
                                     type="button"
                                     className={[
                                         Styles['picker__item'],
-                                        category.category_id === value && Styles['picker__item--active'],
+                                        category.category_id === value &&
+                                            Styles['picker__item--active'],
                                     ]
                                         .filter(Boolean)
                                         .join(' ')}
@@ -64,7 +74,9 @@ export const CategoryPicker = ({
                 <div className={Styles['picker__grid']}>
                     <div className={Styles['picker__column']}>
                         <p className={Styles['picker__column-title']}>Категория</p>
-                        {roots.length === 0 && <p className={Styles['picker__empty']}>Категорий нет</p>}
+                        {roots.length === 0 && (
+                            <p className={Styles['picker__empty']}>Категорий нет</p>
+                        )}
                         <ul className={Styles['picker__list']}>
                             {roots.map((root) => (
                                 <li key={root.category_id}>
@@ -72,8 +84,10 @@ export const CategoryPicker = ({
                                         type="button"
                                         className={[
                                             Styles['picker__item'],
-                                            root.category_id === value && Styles['picker__item--active'],
-                                            root.category_id === expandedParent && Styles['picker__item--opened'],
+                                            root.category_id === value &&
+                                                Styles['picker__item--active'],
+                                            root.category_id === expandedParent &&
+                                                Styles['picker__item--opened'],
                                         ]
                                             .filter(Boolean)
                                             .join(' ')}
@@ -82,7 +96,10 @@ export const CategoryPicker = ({
                                     >
                                         <span>{root.name}</span>
                                         {root.category_id === value && (
-                                            <span className={Styles['picker__check']} aria-hidden="true">
+                                            <span
+                                                className={Styles['picker__check']}
+                                                aria-hidden="true"
+                                            >
                                                 ✓
                                             </span>
                                         )}
@@ -93,9 +110,7 @@ export const CategoryPicker = ({
                     </div>
 
                     <div className={Styles['picker__column']}>
-                        <p className={Styles['picker__column-title']}>
-                            {expandedParentName}
-                        </p>
+                        <p className={Styles['picker__column-title']}>{expandedParentName}</p>
                         {!expandedParent && (
                             <p className={Styles['picker__hint']}>Выберите категорию слева</p>
                         )}
@@ -109,7 +124,9 @@ export const CategoryPicker = ({
                                     .filter(Boolean)
                                     .join(' ')}
                                 disabled={disabled}
-                                onClick={() => expandedParentCategory && handleSelect(expandedParentCategory)}
+                                onClick={() =>
+                                    expandedParentCategory && handleSelect(expandedParentCategory)
+                                }
                             >
                                 Использовать эту категорию
                             </button>
@@ -122,16 +139,20 @@ export const CategoryPicker = ({
                                             type="button"
                                             className={[
                                                 Styles['picker__item'],
-                                                child.category_id === value && Styles['picker__item--active'],
+                                                child.category_id === value &&
+                                                    Styles['picker__item--active'],
                                             ]
                                                 .filter(Boolean)
-                                            .join(' ')}
+                                                .join(' ')}
                                             disabled={disabled}
                                             onClick={() => handleSelect(child)}
                                         >
                                             <span>{child.name}</span>
                                             {child.category_id === value && (
-                                                <span className={Styles['picker__check']} aria-hidden="true">
+                                                <span
+                                                    className={Styles['picker__check']}
+                                                    aria-hidden="true"
+                                                >
                                                     ✓
                                                 </span>
                                             )}
@@ -147,15 +168,22 @@ export const CategoryPicker = ({
             {selectedPath.length > 0 && (
                 <div className={Styles['picker__breadcrumb']} aria-label="Выбранная категория">
                     {selectedPath.map((category, index) => (
-                        <span key={category.category_id} className={Styles['picker__breadcrumb-item']}>
+                        <span
+                            key={category.category_id}
+                            className={Styles['picker__breadcrumb-item']}
+                        >
                             {category.name}
-                            {index < selectedPath.length - 1 && <span className={Styles['picker__sep']}>/</span>}
+                            {index < selectedPath.length - 1 && (
+                                <span className={Styles['picker__sep']}>/</span>
+                            )}
                         </span>
                     ))}
                 </div>
             )}
 
-            {error?.showError && <p className={Styles['picker__error-text']}>{error.errorMessage}</p>}
+            {error?.showError && (
+                <p className={Styles['picker__error-text']}>{error.errorMessage}</p>
+            )}
         </div>
     );
 };

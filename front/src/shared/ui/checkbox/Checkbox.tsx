@@ -1,8 +1,8 @@
-import {forwardRef} from "react";
+import { forwardRef } from 'react';
 
-import {Label} from "../label";
-import {useCheckbox} from './useCheckbox';
-import type {TFormError} from '@shared/lib/form';
+import { Label } from '../label';
+import { useCheckbox } from './useCheckbox';
+import type { TFormError } from '@shared/lib/form';
 
 type TCheckboxProps = {
     name?: string;
@@ -13,18 +13,18 @@ type TCheckboxProps = {
     onChange?: (value: boolean) => void;
 };
 
-export const Checkbox = forwardRef<HTMLInputElement, TCheckboxProps>(({
-                                                                          name,
-                                                                          label,
-                                                                          disabled = false,
-                                                                          error,
-                                                                          checked,
-                                                                          onChange
-                                                                      }, ref) => {
-        const {checkboxClasses, handleChange} = useCheckbox({error, onChange});
+export const Checkbox = forwardRef<HTMLInputElement, TCheckboxProps>(
+    ({ name, label, disabled = false, error, checked, onChange }, ref) => {
+        const { checkboxClasses, handleChange } = useCheckbox({ error, onChange });
 
         return (
-            <Label label={label} error={error} disabled={disabled} role={'checkbox'} aria-checked={checked}>
+            <Label
+                label={label}
+                error={error}
+                disabled={disabled}
+                role={'checkbox'}
+                aria-checked={checked}
+            >
                 <input
                     ref={ref}
                     type="checkbox"
@@ -37,7 +37,7 @@ export const Checkbox = forwardRef<HTMLInputElement, TCheckboxProps>(({
                 />
             </Label>
         );
-    }
+    },
 );
 
-Checkbox.displayName = "Checkbox";
+Checkbox.displayName = 'Checkbox';

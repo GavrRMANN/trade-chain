@@ -1,7 +1,7 @@
-import {type KeyboardEvent} from 'react';
+import { type KeyboardEvent } from 'react';
 
-import type {TProduct} from '@entities/product';
-import {ProductImage} from '@entities/product';
+import type { TProduct } from '@entities/product';
+import { ProductImage } from '@entities/product';
 
 import Styles from './ChainRow.module.css';
 
@@ -18,27 +18,26 @@ type TChainRowProps = {
     className?: string;
 };
 
-export const ChainRow = ({nodes, onNodeClick, className}: TChainRowProps) => {
+export const ChainRow = ({ nodes, onNodeClick, className }: TChainRowProps) => {
     if (nodes.length === 0) {
         return null;
     }
 
-    const rowClasses = [
-        Styles['chain-row'],
-        className,
-    ].filter(Boolean).join(' ');
+    const rowClasses = [Styles['chain-row'], className].filter(Boolean).join(' ');
 
     return (
         <div className={rowClasses}>
             {nodes.map((node, index) => {
-                const {product, isCurrent, isGoal, isDone} = node;
+                const { product, isCurrent, isGoal, isDone } = node;
 
                 const nodeClasses = [
                     Styles['chain-node'],
                     isCurrent && Styles['chain-node--current'],
                     isDone && Styles['chain-node--done'],
                     onNodeClick && Styles['chain-node--clickable'],
-                ].filter(Boolean).join(' ');
+                ]
+                    .filter(Boolean)
+                    .join(' ');
 
                 const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
                     if (!onNodeClick) {
@@ -56,7 +55,9 @@ export const ChainRow = ({nodes, onNodeClick, className}: TChainRowProps) => {
                             className={nodeClasses}
                             role={onNodeClick ? 'button' : undefined}
                             tabIndex={onNodeClick ? 0 : undefined}
-                            onClick={onNodeClick ? () => onNodeClick(product.product_id) : undefined}
+                            onClick={
+                                onNodeClick ? () => onNodeClick(product.product_id) : undefined
+                            }
                             onKeyDown={onNodeClick ? handleKeyDown : undefined}
                         >
                             <div className={Styles['chain-node__media']}>
@@ -72,10 +73,14 @@ export const ChainRow = ({nodes, onNodeClick, className}: TChainRowProps) => {
                             {(isCurrent || isGoal) && (
                                 <div className={Styles['chain-node__status-row']}>
                                     {isCurrent && (
-                                        <span className={Styles['chain-node__tag']}>Текущий шаг</span>
+                                        <span className={Styles['chain-node__tag']}>
+                                            Текущий шаг
+                                        </span>
                                     )}
                                     {isGoal && (
-                                        <span className={`${Styles['chain-node__tag']} ${Styles['chain-node__tag--goal']}`}>
+                                        <span
+                                            className={`${Styles['chain-node__tag']} ${Styles['chain-node__tag--goal']}`}
+                                        >
                                             Цель
                                         </span>
                                     )}
@@ -84,7 +89,9 @@ export const ChainRow = ({nodes, onNodeClick, className}: TChainRowProps) => {
                         </div>
 
                         {index < nodes.length - 1 && (
-                            <span className={Styles['chain-separator']} aria-hidden="true">→</span>
+                            <span className={Styles['chain-separator']} aria-hidden="true">
+                                →
+                            </span>
                         )}
                     </div>
                 );

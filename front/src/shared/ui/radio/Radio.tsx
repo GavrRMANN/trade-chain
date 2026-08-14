@@ -1,8 +1,8 @@
-import {forwardRef} from "react";
+import { forwardRef } from 'react';
 
-import {Label} from "../label";
-import {useRadio} from './useRadio';
-import type {TFormError} from '@shared/lib/form';
+import { Label } from '../label';
+import { useRadio } from './useRadio';
+import type { TFormError } from '@shared/lib/form';
 
 type TRadioProps = {
     name?: string;
@@ -13,15 +13,9 @@ type TRadioProps = {
     onChange?: (value: boolean) => void;
 };
 
-export const Radio = forwardRef<HTMLInputElement, TRadioProps>(({
-                                                                    name,
-                                                                    label,
-                                                                    disabled = false,
-                                                                    error,
-                                                                    checked,
-                                                                    onChange
-                                                                }, ref) => {
-        const {radioClasses, handleChange} = useRadio({error, onChange});
+export const Radio = forwardRef<HTMLInputElement, TRadioProps>(
+    ({ name, label, disabled = false, error, checked, onChange }, ref) => {
+        const { radioClasses, handleChange } = useRadio({ error, onChange });
 
         return (
             <Label
@@ -44,7 +38,7 @@ export const Radio = forwardRef<HTMLInputElement, TRadioProps>(({
                 />
             </Label>
         );
-    }
+    },
 );
 
-Radio.displayName = "Radio";
+Radio.displayName = 'Radio';

@@ -17,15 +17,15 @@ export const userApi = createApi({
     refetchOnMountOrArgChange: true,
     endpoints: (builder) => ({
         loginUser: builder.mutation<TAuthResponse, TLoginPayload>({
-            query: (body) => ({url: '/auth/login', method: 'POST', body}),
+            query: (body) => ({ url: '/auth/login', method: 'POST', body }),
             invalidatesTags: ['CurrentUser'],
         }),
         registerUser: builder.mutation<TAuthResponse, TRegisterPayload>({
-            query: (body) => ({url: '/auth/register', method: 'POST', body}),
+            query: (body) => ({ url: '/auth/register', method: 'POST', body }),
             invalidatesTags: ['CurrentUser'],
         }),
         demoLoginUser: builder.mutation<TAuthResponse, TDemoLoginPayload>({
-            query: (body) => ({url: '/auth/demo-login', method: 'POST', body}),
+            query: (body) => ({ url: '/auth/demo-login', method: 'POST', body }),
             invalidatesTags: ['CurrentUser'],
         }),
         getCurrentUser: builder.query<TUser, void>({

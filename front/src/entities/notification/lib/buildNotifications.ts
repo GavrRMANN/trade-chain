@@ -1,8 +1,8 @@
-import {FINAL_CHAIN_STATUSES} from '@entities/chain';
-import type {TChain} from '@entities/chain';
-import type {TProduct} from '@entities/product';
-import {assertNever} from '@shared/lib';
-import type {TNotification, TNotificationKind} from '../types';
+import { FINAL_CHAIN_STATUSES } from '@entities/chain';
+import type { TChain } from '@entities/chain';
+import type { TProduct } from '@entities/product';
+import { assertNever } from '@shared/lib';
+import type { TNotification, TNotificationKind } from '../types';
 
 /**
  * По сделке и роли текущего пользователя определяет тип события.
@@ -28,8 +28,7 @@ const resolveKind = (chain: TChain, currentUserId: string): TNotificationKind | 
 };
 
 /** Человекочитаемое название товара или заглушка, если он недоступен. */
-const productLabel = (product?: TProduct): string =>
-    product ? product.title : 'Товар недоступен';
+const productLabel = (product?: TProduct): string => (product ? product.title : 'Товар недоступен');
 
 /**
  * Превращает сделки пользователя в ленту уведомлений.

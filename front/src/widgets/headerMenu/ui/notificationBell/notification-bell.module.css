@@ -20,7 +20,9 @@
     text-decoration: none;
 
     cursor: pointer;
-    transition: color var(--animation-normal) ease-in, background-color var(--animation-normal) ease-in;
+    transition:
+        color var(--animation-normal) ease-in,
+        background-color var(--animation-normal) ease-in;
 }
 
 .notification-bell:hover {

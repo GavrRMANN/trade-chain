@@ -124,7 +124,9 @@
     background: var(--bg-primary);
 
     cursor: pointer;
-    transition: border-color var(--animation-normal), background-color var(--animation-normal);
+    transition:
+        border-color var(--animation-normal),
+        background-color var(--animation-normal);
 }
 
 .form__image-dropzone:hover:not(:disabled) {

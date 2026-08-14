@@ -74,7 +74,8 @@ export const useTargetProductPicker = ({
 
         return products
             .filter((product) => {
-                const matchesCategory = !state.categoryId || product.category_id === state.categoryId;
+                const matchesCategory =
+                    !state.categoryId || product.category_id === state.categoryId;
                 const matchesSearch =
                     !normalizedSearch ||
                     product.title.toLocaleLowerCase('ru').includes(normalizedSearch);

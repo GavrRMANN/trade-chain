@@ -1,1 +1,1 @@
-export {ProfileSidebar} from './ProfileSidebar';
+export { ProfileSidebar } from './ProfileSidebar';

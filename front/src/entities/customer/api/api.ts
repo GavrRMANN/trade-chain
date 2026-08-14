@@ -61,11 +61,17 @@ export const customerApi = createApi({
             query: () => '/customers/me/recommendations',
             providesTags: [{ type: 'CustomerRecommendations', id: MY_RECOMMENDATIONS_TAG_ID }],
         }),
-        addMyRecommendations: builder.mutation<TCustomerRecommendation[], TUpdateCustomerRecommendationsRequest>({
+        addMyRecommendations: builder.mutation<
+            TCustomerRecommendation[],
+            TUpdateCustomerRecommendationsRequest
+        >({
             query: (body) => ({ url: '/customers/me/recommendations', method: 'POST', body }),
             invalidatesTags: [{ type: 'CustomerRecommendations', id: MY_RECOMMENDATIONS_TAG_ID }],
         }),
-        replaceMyRecommendations: builder.mutation<TCustomerRecommendation[], TUpdateCustomerRecommendationsRequest>({
+        replaceMyRecommendations: builder.mutation<
+            TCustomerRecommendation[],
+            TUpdateCustomerRecommendationsRequest
+        >({
             query: (body) => ({ url: '/customers/me/recommendations', method: 'PATCH', body }),
             invalidatesTags: [{ type: 'CustomerRecommendations', id: MY_RECOMMENDATIONS_TAG_ID }],
         }),

@@ -6,9 +6,9 @@ import { UserPicker } from './UserPicker';
 
 type TAuthMethod = 'password' | 'participant';
 
-const METHODS: {value: TAuthMethod; label: string}[] = [
-    {value: 'password', label: 'Почта и пароль'},
-    {value: 'participant', label: 'Выбрать участника'},
+const METHODS: { value: TAuthMethod; label: string }[] = [
+    { value: 'password', label: 'Почта и пароль' },
+    { value: 'participant', label: 'Выбрать участника' },
 ];
 
 /**
@@ -25,7 +25,7 @@ export const AuthForm = () => {
     return (
         <div className={Styles.auth}>
             <div className={Styles.methods} role="tablist" aria-label="Способ входа">
-                {METHODS.map(({value, label}) => (
+                {METHODS.map(({ value, label }) => (
                     <button
                         key={value}
                         type="button"

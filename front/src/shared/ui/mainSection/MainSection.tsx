@@ -7,10 +7,9 @@ type TMainSectionProps = {
 };
 
 export const MainSection = ({ children, fill = false }: TMainSectionProps) => {
-    const className = [
-        Styles.mainSection,
-        fill && Styles['mainSection--fill'],
-    ].filter(Boolean).join(' ');
+    const className = [Styles.mainSection, fill && Styles['mainSection--fill']]
+        .filter(Boolean)
+        .join(' ');
 
     return <section className={className}>{children}</section>;
 };

@@ -1,11 +1,11 @@
-import {useNavigate, useSearchParams} from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
-import {Button} from '@shared/ui/button';
-import {Modal} from '@shared/ui/modal';
-import {ProductPickerGrid} from '@shared/ui/productPicker';
-import {useCloseModalRoute} from '@shared/lib';
+import { Button } from '@shared/ui/button';
+import { Modal } from '@shared/ui/modal';
+import { ProductPickerGrid } from '@shared/ui/productPicker';
+import { useCloseModalRoute } from '@shared/lib';
 
-import {getFilterableProducts, isExchangeTab, useExchangeRows} from '../lib';
+import { getFilterableProducts, isExchangeTab, useExchangeRows } from '../lib';
 import Styles from './product-filter-modal.module.css';
 
 /**
@@ -24,8 +24,8 @@ export const ProductFilterRoute = () => {
     const selectedProductId = searchParams.get('product') ?? undefined;
 
     const closeModal = useCloseModalRoute(`/exchanges?${searchParams.toString()}`);
-    const {incoming, outgoing} = useExchangeRows();
-    const products = getFilterableProducts(activeTab, {incoming, outgoing});
+    const { incoming, outgoing } = useExchangeRows();
+    const products = getFilterableProducts(activeTab, { incoming, outgoing });
 
     /* Выбор — это и есть закрытие: страница обменов держит фильтр в query,
        поэтому возвращаемся на неё уже с новым значением. */
@@ -38,7 +38,7 @@ export const ProductFilterRoute = () => {
             params.delete('product');
         }
 
-        navigate(`/exchanges?${params.toString()}`, {replace: true});
+        navigate(`/exchanges?${params.toString()}`, { replace: true });
     };
 
     return (

@@ -13,7 +13,7 @@ export type TCategory = {
     created_at: string;
     /** Дата последнего обновления категории в ISO 8601. */
     updated_at: string;
-}
+};
 
 export type TCreateCategoryRequest = {
     /** Название новой категории. */

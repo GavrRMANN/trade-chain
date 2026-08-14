@@ -29,7 +29,9 @@
 
     cursor: pointer;
 
-    transition: color var(--animation-normal), background-color var(--animation-normal);
+    transition:
+        color var(--animation-normal),
+        background-color var(--animation-normal);
 }
 
 .white-box:hover {

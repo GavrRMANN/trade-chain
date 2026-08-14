@@ -21,11 +21,15 @@ export const reviewApi = createApi({
         }),
         getReviewsByCustomer: builder.query<TReview[], string>({
             query: (customerId) => `/reviews/by-customer/${customerId}`,
-            providesTags: (_result, _error, customerId) => [{ type: 'Review', id: `customer-${customerId}` }],
+            providesTags: (_result, _error, customerId) => [
+                { type: 'Review', id: `customer-${customerId}` },
+            ],
         }),
         getCustomerRating: builder.query<TCustomerRatingResponse, string>({
             query: (customerId) => `/reviews/by-customer/${customerId}/rating`,
-            providesTags: (_result, _error, customerId) => [{ type: 'Review', id: `customer-${customerId}` }],
+            providesTags: (_result, _error, customerId) => [
+                { type: 'Review', id: `customer-${customerId}` },
+            ],
         }),
         deleteReview: builder.mutation<void, string>({
             query: (id) => ({ url: `/reviews/${id}`, method: 'DELETE' }),

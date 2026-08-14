@@ -1,15 +1,15 @@
-import {MainSection} from '@shared/ui/mainSection';
-import {Preloader} from '@shared/ui/preloader';
-import {PageError} from '@shared/ui/pageError';
-import {PageHeader} from '@shared/ui/pageHeader';
-import {Button} from '@shared/ui/button';
+import { MainSection } from '@shared/ui/mainSection';
+import { Preloader } from '@shared/ui/preloader';
+import { PageError } from '@shared/ui/pageError';
+import { PageHeader } from '@shared/ui/pageHeader';
+import { Button } from '@shared/ui/button';
 
-import {ProductForm} from '@features/productForm';
+import { ProductForm } from '@features/productForm';
 import Styles from './create-product-page.module.css';
-import {useCreateProductPage} from '../lib';
+import { useCreateProductPage } from '../lib';
 
 export const CreateProductPage = () => {
-    const {form, title, goBack} = useCreateProductPage();
+    const { form, title, goBack } = useCreateProductPage();
 
     if (form.isCategoriesError) {
         return <PageError message="Не удалось загрузить категории. Обновите страницу." />;
@@ -23,7 +23,7 @@ export const CreateProductPage = () => {
         return (
             <MainSection>
                 <PageHeader title={title} />
-                <section className={Styles["page__guest-card"]}>
+                <section className={Styles['page__guest-card']}>
                     <h2>Это не ваше объявление</h2>
                     <p>Редактировать объявление может только его автор.</p>
                     <Button onClick={goBack}>Вернуться назад</Button>

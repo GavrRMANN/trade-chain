@@ -32,7 +32,9 @@ export class OfferModal extends BasePage {
         await waitForUrlToMatch(this.page, /\/exchanges\/[^/?]+/);
         const match = /\/exchanges\/([^/?]+)/.exec(this.page.url());
         if (!match) {
-            throw new Error('Не удалось получить id цепочки обмена из URL после отправки предложения');
+            throw new Error(
+                'Не удалось получить id цепочки обмена из URL после отправки предложения',
+            );
         }
         return match[1];
     }

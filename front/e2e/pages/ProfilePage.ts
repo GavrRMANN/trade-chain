@@ -9,7 +9,9 @@ export class ProfilePage extends BasePage {
     private readonly heading: Locator = this.page.locator('h1').first();
     private readonly statsBlock: Locator = this.page.locator('[aria-label="Статистика профиля"]');
     private readonly logoutButton: Locator = this.page.getByRole('button', { name: 'Выйти' });
-    private readonly addProductButton: Locator = this.page.getByRole('button', { name: 'Добавить товар' });
+    private readonly addProductButton: Locator = this.page.getByRole('button', {
+        name: 'Добавить товар',
+    });
 
     async openOwn(): Promise<void> {
         await this.goto('/profile');

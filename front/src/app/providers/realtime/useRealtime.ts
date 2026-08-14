@@ -1,11 +1,11 @@
-import {useEffect, useRef} from 'react';
+import { useEffect, useRef } from 'react';
 
-import {chainApi} from '@entities/chain';
-import {notificationApi} from '@entities/notification/api';
-import {productApi} from '@entities/product';
-import {logout, selectAuthToken} from '@entities/user';
-import {subscribeToEvents, type TSseEvent} from '@shared/api';
-import {useAppDispatch, useAppSelector} from '@app/redux';
+import { chainApi } from '@entities/chain';
+import { notificationApi } from '@entities/notification/api';
+import { productApi } from '@entities/product';
+import { logout, selectAuthToken } from '@entities/user';
+import { subscribeToEvents, type TSseEvent } from '@shared/api';
+import { useAppDispatch, useAppSelector } from '@app/redux';
 
 const RECONNECT_DELAY = 2_000;
 
@@ -19,7 +19,7 @@ const RECONNECT_DELAY = 2_000;
  */
 const invalidateByEvent = (event: TSseEvent, dispatch: ReturnType<typeof useAppDispatch>) => {
     if (event.type === 'exchange.message.created') {
-        dispatch(chainApi.util.invalidateTags([{type: 'ChainMessages', id: event.chain_id}]));
+        dispatch(chainApi.util.invalidateTags([{ type: 'ChainMessages', id: event.chain_id }]));
         dispatch(notificationApi.util.invalidateTags(['Notification']));
         return;
     }
@@ -27,11 +27,13 @@ const invalidateByEvent = (event: TSseEvent, dispatch: ReturnType<typeof useAppD
     /* Появление и закрытие звена меняют состав сразу нескольких списков —
        общего, по цели и по товару, — поэтому тег сбрасывается целиком.
        События жизненного цикла редки, в отличие от переписки. */
-    dispatch(chainApi.util.invalidateTags([
-        'Chain',
-        {type: 'Chain', id: event.chain_id},
-        {type: 'ChainDetails', id: event.chain_id},
-    ]));
+    dispatch(
+        chainApi.util.invalidateTags([
+            'Chain',
+            { type: 'Chain', id: event.chain_id },
+            { type: 'ChainDetails', id: event.chain_id },
+        ]),
+    );
     dispatch(notificationApi.util.invalidateTags(['Notification']));
 
     // Состоявшийся обмен меняет владельцев и статусы карточек, поэтому здесь

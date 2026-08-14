@@ -1,1 +1,1 @@
-export {ProfileProductRow} from './ui/ProfileProductRow';
+export { ProfileProductRow } from './ui/ProfileProductRow';

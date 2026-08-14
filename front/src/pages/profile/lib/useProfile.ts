@@ -1,15 +1,15 @@
-import {useCallback, useMemo, useReducer} from 'react';
-import {useNavigate} from 'react-router-dom';
+import { useCallback, useMemo, useReducer } from 'react';
+import { useNavigate } from 'react-router-dom';
 
-import {useGetMyProductsQuery, useGetProductsByCustomerQuery} from '@entities/product';
-import type {TProduct} from '@entities/product';
-import {useGetCustomerRatingQuery, useGetReviewsByCustomerQuery} from '@entities/review';
-import type {TReview} from '@entities/review';
-import {useGetMyChainsQuery} from '@entities/chain';
-import type {TChain} from '@entities/chain';
-import {useGetProductsQuery} from '@entities/product';
-import type {TUser} from '@entities/user';
-import {getDisplayName} from '@shared/lib';
+import { useGetMyProductsQuery, useGetProductsByCustomerQuery } from '@entities/product';
+import type { TProduct } from '@entities/product';
+import { useGetCustomerRatingQuery, useGetReviewsByCustomerQuery } from '@entities/review';
+import type { TReview } from '@entities/review';
+import { useGetMyChainsQuery } from '@entities/chain';
+import type { TChain } from '@entities/chain';
+import { useGetProductsQuery } from '@entities/product';
+import type { TUser } from '@entities/user';
+import { getDisplayName } from '@shared/lib';
 
 export type TProfileTab = 'products' | 'archive' | 'exchanges' | 'reviews';
 
@@ -36,10 +36,10 @@ export const useProfile = (user?: TUser, isOwner = false) => {
         skip: !customerId || !isOwner,
         refetchOnMountOrArgChange: true,
     });
-    const ratingQuery = useGetCustomerRatingQuery(customerId, {skip: !customerId});
-    const reviewsQuery = useGetReviewsByCustomerQuery(customerId, {skip: !customerId});
-    const chainsQuery = useGetMyChainsQuery(undefined, {skip: !customerId || !isOwner});
-    const allProductsQuery = useGetProductsQuery({limit: 100}, {skip: !customerId || !isOwner});
+    const ratingQuery = useGetCustomerRatingQuery(customerId, { skip: !customerId });
+    const reviewsQuery = useGetReviewsByCustomerQuery(customerId, { skip: !customerId });
+    const chainsQuery = useGetMyChainsQuery(undefined, { skip: !customerId || !isOwner });
+    const allProductsQuery = useGetProductsQuery({ limit: 100 }, { skip: !customerId || !isOwner });
 
     const receivedProducts = useMemo(
         () => (isOwner ? ownProductsQuery.data : productsQuery.data) ?? [],
@@ -48,11 +48,11 @@ export const useProfile = (user?: TUser, isOwner = false) => {
     const reviews = useMemo<TReview[]>(() => reviewsQuery.data ?? [], [reviewsQuery.data]);
 
     const products = useMemo(
-        () => receivedProducts.filter(({status}) => status !== 'archived'),
+        () => receivedProducts.filter(({ status }) => status !== 'archived'),
         [receivedProducts],
     );
     const archivedProducts = useMemo(
-        () => receivedProducts.filter(({status}) => status === 'archived'),
+        () => receivedProducts.filter(({ status }) => status === 'archived'),
         [receivedProducts],
     );
 

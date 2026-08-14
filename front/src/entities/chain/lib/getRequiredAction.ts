@@ -1,6 +1,6 @@
-import {assertNever} from '@shared/lib';
+import { assertNever } from '@shared/lib';
 
-import type {TChain, TChainConfirmation} from '../types';
+import type { TChain, TChainConfirmation } from '../types';
 
 /** Кто должен сделать следующий шаг. */
 export type TRequiredActor = 'you' | 'partner';
@@ -55,7 +55,10 @@ export const getRequiredAction = ({
            отвечает «обмен уже завершён». */
         case 'countered':
             return isInitiator
-                ? { text: 'Вам предложили другие условия — они пришли отдельным обменом', actor: 'you' }
+                ? {
+                      text: 'Вам предложили другие условия — они пришли отдельным обменом',
+                      actor: 'you',
+                  }
                 : { text: 'Предложение закрыто встречным', actor: 'you' };
 
         case 'active':

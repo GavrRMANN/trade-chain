@@ -1,8 +1,8 @@
-import {forwardRef} from "react";
-import {Label} from "../label";
-import Styles from "./Switcher.module.css";
-import {useSwitcher} from './useSwitcher';
-import type {TFormError} from '@shared/lib/form';
+import { forwardRef } from 'react';
+import { Label } from '../label';
+import Styles from './Switcher.module.css';
+import { useSwitcher } from './useSwitcher';
+import type { TFormError } from '@shared/lib/form';
 
 type TSwitcherProps = {
     name?: string;
@@ -13,18 +13,18 @@ type TSwitcherProps = {
     onChange?: (value: boolean) => void;
 };
 
-export const Switcher = forwardRef<HTMLInputElement, TSwitcherProps>(({
-                                                                          name,
-                                                                          label,
-                                                                          disabled = false,
-                                                                          error,
-                                                                          checked,
-                                                                          onChange
-                                                                      }, ref) => {
-        const {switcherClasses, handleChange} = useSwitcher({error, onChange});
+export const Switcher = forwardRef<HTMLInputElement, TSwitcherProps>(
+    ({ name, label, disabled = false, error, checked, onChange }, ref) => {
+        const { switcherClasses, handleChange } = useSwitcher({ error, onChange });
 
         return (
-            <Label label={label} error={error} disabled={disabled} role={'checkbox'} aria-checked={checked}>
+            <Label
+                label={label}
+                error={error}
+                disabled={disabled}
+                role={'checkbox'}
+                aria-checked={checked}
+            >
                 <input
                     ref={ref}
                     type="checkbox"
@@ -38,7 +38,7 @@ export const Switcher = forwardRef<HTMLInputElement, TSwitcherProps>(({
                 <span className={Styles['track']}></span>
             </Label>
         );
-    }
+    },
 );
 
 Switcher.displayName = 'Switcher';

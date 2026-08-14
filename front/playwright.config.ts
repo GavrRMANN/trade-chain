@@ -12,10 +12,7 @@ export default defineConfig({
     fullyParallel: true,
     forbidOnly: Boolean(process.env.CI),
     retries: process.env.CI ? 1 : 0,
-    reporter: [
-        ['html', { outputFolder: 'playwright-report', open: 'never' }],
-        ['list'],
-    ],
+    reporter: [['html', { outputFolder: 'playwright-report', open: 'never' }], ['list']],
     outputDir: 'test-results',
     timeout: 30_000,
     expect: {

@@ -1,6 +1,6 @@
-import {useMemo, useReducer} from 'react';
+import { useMemo, useReducer } from 'react';
 
-import type {TCategory} from '@entities/category';
+import type { TCategory } from '@entities/category';
 
 export const useCategoryPicker = (
     categories: TCategory[],
@@ -8,12 +8,15 @@ export const useCategoryPicker = (
     disabled: boolean,
     onChange: (value: string) => void,
 ) => {
-    const [{expandedParent, search}, dispatch] = useReducer(
-        (state: {expandedParent: string | null; search: string}, action: {type: 'expand' | 'search'; value: string | null}) =>
+    const [{ expandedParent, search }, dispatch] = useReducer(
+        (
+            state: { expandedParent: string | null; search: string },
+            action: { type: 'expand' | 'search'; value: string | null },
+        ) =>
             action.type === 'expand'
-                ? {...state, expandedParent: action.value as string | null}
-                : {...state, search: action.value as string},
-        {expandedParent: null, search: ''},
+                ? { ...state, expandedParent: action.value as string | null }
+                : { ...state, search: action.value as string },
+        { expandedParent: null, search: '' },
     );
     const roots = useMemo(() => categories.filter((category) => !category.parent_id), [categories]);
     const children = useMemo(
@@ -22,7 +25,9 @@ export const useCategoryPicker = (
     );
     const searchResults = useMemo(() => {
         const query = search.trim().toLowerCase();
-        return query ? categories.filter((category) => category.name.toLowerCase().includes(query)) : [];
+        return query
+            ? categories.filter((category) => category.name.toLowerCase().includes(query))
+            : [];
     }, [categories, search]);
     const selectedPath = useMemo(() => {
         const path: TCategory[] = [];
@@ -38,26 +43,28 @@ export const useCategoryPicker = (
         return path;
     }, [categories, value]);
     const expandedParentName = expandedParent
-        ? categories.find((category) => category.category_id === expandedParent)?.name ?? 'Подкатегории'
+        ? (categories.find((category) => category.category_id === expandedParent)?.name ??
+          'Подкатегории')
         : 'Подкатегория';
     const expandedParentCategory = expandedParent
         ? categories.find((category) => category.category_id === expandedParent)
         : undefined;
 
     const handleExpand = (parentId: string) => {
-        if (!disabled) dispatch({type: 'expand', value: expandedParent === parentId ? null : parentId});
+        if (!disabled)
+            dispatch({ type: 'expand', value: expandedParent === parentId ? null : parentId });
     };
     const handleSelect = (category: TCategory) => {
         if (disabled) return;
         onChange(category.category_id);
-        dispatch({type: 'expand', value: null});
-        dispatch({type: 'search', value: ''});
+        dispatch({ type: 'expand', value: null });
+        dispatch({ type: 'search', value: '' });
     };
 
     return {
         expandedParent,
         search,
-        setSearch: (value: string) => dispatch({type: 'search', value}),
+        setSearch: (value: string) => dispatch({ type: 'search', value }),
         roots,
         children,
         searchResults,

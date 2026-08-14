@@ -1,13 +1,13 @@
-import {isAnyOf, isRejectedWithValue, type Middleware} from '@reduxjs/toolkit';
-import {categoryApi} from '@/entities/category';
-import {chainApi} from '@/entities/chain';
-import {customerApi} from '@/entities/customer';
-import {productApi} from '@/entities/product';
-import {reviewApi} from '@/entities/review';
-import {searchApi} from '@/entities/search';
-import {logout, setCredentials, userApi} from '@/entities/user';
-import {wishlistApi} from '@/entities/wishlist';
-import {notificationApi} from '@/entities/notification/api';
+import { isAnyOf, isRejectedWithValue, type Middleware } from '@reduxjs/toolkit';
+import { categoryApi } from '@/entities/category';
+import { chainApi } from '@/entities/chain';
+import { customerApi } from '@/entities/customer';
+import { productApi } from '@/entities/product';
+import { reviewApi } from '@/entities/review';
+import { searchApi } from '@/entities/search';
+import { logout, setCredentials, userApi } from '@/entities/user';
+import { wishlistApi } from '@/entities/wishlist';
+import { notificationApi } from '@/entities/notification/api';
 
 const apiSlices = [
     userApi,
@@ -37,27 +37,26 @@ const apiSlices = [
  * Тип `unknown` для state/dispatch используется намеренно, чтобы не тянуть
  * циклический импорт типов из store.ts.
  */
-export const rtkQueryCacheMiddleware: Middleware =
-    (api) => (next) => (action) => {
-        if (isAnyOf(setCredentials, logout)(action)) {
-            for (const apiSlice of apiSlices) {
-                api.dispatch(apiSlice.util.resetApiState());
-            }
+export const rtkQueryCacheMiddleware: Middleware = (api) => (next) => (action) => {
+    if (isAnyOf(setCredentials, logout)(action)) {
+        for (const apiSlice of apiSlices) {
+            api.dispatch(apiSlice.util.resetApiState());
         }
+    }
 
-        if (isRejectedWithValue(action)) {
-            const status = (action.payload as {status?: number} | undefined)?.status;
+    if (isRejectedWithValue(action)) {
+        const status = (action.payload as { status?: number } | undefined)?.status;
 
-            if (status === 401) {
-                api.dispatch(logout() as never);
-            }
+        if (status === 401) {
+            api.dispatch(logout() as never);
         }
+    }
 
-        const result = next(action);
+    const result = next(action);
 
-        if (chainApi.endpoints.confirmChain.matchFulfilled(action)) {
-            api.dispatch(productApi.util.invalidateTags(['Product']));
-        }
+    if (chainApi.endpoints.confirmChain.matchFulfilled(action)) {
+        api.dispatch(productApi.util.invalidateTags(['Product']));
+    }
 
-        return result;
-    };
+    return result;
+};

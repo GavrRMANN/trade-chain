@@ -10,7 +10,11 @@ type TProductPickerGridProps = {
 };
 
 /** Список товаров пользователя в виде выбираемых карточек. */
-export const ProductPickerGrid = ({ products, selectedProductId, onSelect }: TProductPickerGridProps) => (
+export const ProductPickerGrid = ({
+    products,
+    selectedProductId,
+    onSelect,
+}: TProductPickerGridProps) => (
     <div className={Styles.grid}>
         {products.map((product) => (
             <button
