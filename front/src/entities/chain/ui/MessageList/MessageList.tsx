@@ -1,5 +1,5 @@
-import {formatDate} from '@shared/lib';
-import type {TChainMessage} from '../../types/chain';
+import { formatDate } from '@shared/lib';
+import type { TChainMessage } from '../../types/chain';
 
 import Styles from './MessageList.module.css';
 
@@ -9,11 +9,8 @@ type TMessageListProps = {
     className?: string;
 };
 
-export const MessageList = ({messages, currentCustomerId, className}: TMessageListProps) => {
-    const listClasses = [
-        Styles['message-list'],
-        className,
-    ].filter(Boolean).join(' ');
+export const MessageList = ({ messages, currentCustomerId, className }: TMessageListProps) => {
+    const listClasses = [Styles['message-list'], className].filter(Boolean).join(' ');
 
     if (messages.length === 0) {
         return (
@@ -31,12 +28,18 @@ export const MessageList = ({messages, currentCustomerId, className}: TMessageLi
                 const itemClasses = [
                     Styles['message-item'],
                     isOwn ? Styles['message-item--own'] : Styles['message-item--incoming'],
-                ].filter(Boolean).join(' ');
+                ]
+                    .filter(Boolean)
+                    .join(' ');
 
                 const bubbleClasses = [
                     Styles['message-item__bubble'],
-                    isOwn ? Styles['message-item__bubble--own'] : Styles['message-item__bubble--incoming'],
-                ].filter(Boolean).join(' ');
+                    isOwn
+                        ? Styles['message-item__bubble--own']
+                        : Styles['message-item__bubble--incoming'],
+                ]
+                    .filter(Boolean)
+                    .join(' ');
 
                 return (
                     <li className={itemClasses} key={message.message_id}>

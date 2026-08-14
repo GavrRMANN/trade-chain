@@ -1,6 +1,6 @@
-import {useReducer} from 'react';
+import { useReducer } from 'react';
 
-import {useArchiveProductMutation} from '@entities/product';
+import { useArchiveProductMutation } from '@entities/product';
 
 const getErrorMessage = (error: unknown) => {
     if (typeof error === 'object' && error !== null && 'data' in error) {
@@ -17,11 +17,11 @@ const getErrorMessage = (error: unknown) => {
     return 'Не удалось выполнить действие. Попробуйте ещё раз.';
 };
 
-type TState = {error?: string};
-type TAction = {type: 'start'} | {type: 'error'; error: string};
+type TState = { error?: string };
+type TAction = { type: 'start' } | { type: 'error'; error: string };
 
 const reducer = (state: TState, action: TAction): TState =>
-    action.type === 'start' ? {} : {...state, error: action.error};
+    action.type === 'start' ? {} : { ...state, error: action.error };
 
 /**
  * Архивирование товара владельцем.
@@ -34,18 +34,18 @@ const reducer = (state: TState, action: TAction): TState =>
  * @param onSuccess Вызывается после успешного архивирования.
  */
 export const useArchiveProduct = (productId: string, onSuccess: () => void) => {
-    const [archiveProduct, {isLoading}] = useArchiveProductMutation();
+    const [archiveProduct, { isLoading }] = useArchiveProductMutation();
     const [state, dispatch] = useReducer(reducer, {});
 
     const confirm = async () => {
         if (!productId) return;
 
-        dispatch({type: 'start'});
+        dispatch({ type: 'start' });
         try {
             await archiveProduct(productId).unwrap();
             onSuccess();
         } catch (mutationError) {
-            dispatch({type: 'error', error: getErrorMessage(mutationError)});
+            dispatch({ type: 'error', error: getErrorMessage(mutationError) });
         }
     };
 

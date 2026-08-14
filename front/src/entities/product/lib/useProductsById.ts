@@ -1,7 +1,7 @@
-import {useEffect, useMemo, useRef, useState} from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
-import {useLazyGetProductQuery} from '../api';
-import type {TProduct} from '../types';
+import { useLazyGetProductQuery } from '../api';
+import type { TProduct } from '../types';
 
 /** Сервер ответил 404 — товара точно не существует, а не временная ошибка сети. */
 const isNotFoundError = (error: unknown): boolean =>
@@ -24,7 +24,9 @@ export const useProductsById = (
     // Сетевой сбой или таймаут в этот список не попадает: иначе временная ошибка
     // на старте страницы навсегда клеймила бы существующий товар «недоступным».
     const missingProductIds = useRef(new Set<string>());
-    const productIdsKey = [...new Set(productIds.filter((id): id is string => Boolean(id)))].sort().join(',');
+    const productIdsKey = [...new Set(productIds.filter((id): id is string => Boolean(id)))]
+        .sort()
+        .join(',');
 
     const productsById = useMemo(() => {
         const map = new Map<string, TProduct>();
@@ -40,7 +42,12 @@ export const useProductsById = (
     useEffect(() => {
         const idsToLoad = productIdsKey
             .split(',')
-            .filter((productId) => productId && !productsById.has(productId) && !missingProductIds.current.has(productId));
+            .filter(
+                (productId) =>
+                    productId &&
+                    !productsById.has(productId) &&
+                    !missingProductIds.current.has(productId),
+            );
 
         if (idsToLoad.length === 0) {
             return;
@@ -63,7 +70,9 @@ export const useProductsById = (
             if (isCancelled) {
                 return;
             }
-            const foundProducts = products.filter((product): product is TProduct => Boolean(product));
+            const foundProducts = products.filter((product): product is TProduct =>
+                Boolean(product),
+            );
             if (foundProducts.length > 0) {
                 setLoadedProducts((current) => [...current, ...foundProducts]);
             }

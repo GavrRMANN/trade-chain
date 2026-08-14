@@ -15,15 +15,15 @@ const makeChain = (chain: Partial<TChain>): TChain => ({
 
 describe('getChainGoalId', () => {
     it('берёт цель маршрута раньше товара назначения', () => {
-        expect(
-            getChainGoalId(makeChain({ exchange_goal_id: 'goal', to_product_id: 'step' })),
-        ).toBe('goal');
+        expect(getChainGoalId(makeChain({ exchange_goal_id: 'goal', to_product_id: 'step' }))).toBe(
+            'goal',
+        );
     });
 
     it('берёт цель-категорию, когда путь ведёт к категории', () => {
-        expect(getChainGoalId(makeChain({ to_category_id: 'category', to_product_id: 'step' }))).toBe(
-            'category',
-        );
+        expect(
+            getChainGoalId(makeChain({ to_category_id: 'category', to_product_id: 'step' })),
+        ).toBe('category');
     });
 
     it('для прямого предложения целью остаётся его товар назначения', () => {

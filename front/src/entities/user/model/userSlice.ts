@@ -79,9 +79,5 @@ export const {
     clearUserProfileData,
 } = userSlice.actions;
 
-export const {
-    selectorUserIsInit,
-    selectorUserData,
-    selectAuthToken,
-    selectIsAuthenticated,
-} = userSlice.selectors;
+export const { selectorUserIsInit, selectorUserData, selectAuthToken, selectIsAuthenticated } =
+    userSlice.selectors;

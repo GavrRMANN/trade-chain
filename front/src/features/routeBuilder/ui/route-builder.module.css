@@ -8,7 +8,11 @@
     border-radius: var(--radius-lg);
 
     background:
-        radial-gradient(circle at 92% 0%, color-mix(in srgb, var(--accent-primary) 13%, transparent), transparent 34%),
+        radial-gradient(
+            circle at 92% 0%,
+            color-mix(in srgb, var(--accent-primary) 13%, transparent),
+            transparent 34%
+        ),
         var(--bg-secondary);
 }
 
@@ -218,7 +222,10 @@
     color: var(--neutral-primary);
     text-align: left;
     cursor: pointer;
-    transition: border-color var(--animation-fast), box-shadow var(--animation-fast), transform var(--animation-fast);
+    transition:
+        border-color var(--animation-fast),
+        box-shadow var(--animation-fast),
+        transform var(--animation-fast);
 }
 
 .builder__product:hover,

@@ -16,7 +16,9 @@
 
     resize: vertical;
 
-    transition: border-color var(--animation-normal), background-color var(--animation-normal);
+    transition:
+        border-color var(--animation-normal),
+        background-color var(--animation-normal);
 }
 
 .textarea:not(.textarea--disabled):hover {

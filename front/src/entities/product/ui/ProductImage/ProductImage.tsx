@@ -4,7 +4,7 @@ import Styles from './product-image.module.css';
 type TProductImageProps = { src?: string; alt: string; title: string };
 
 export const ProductImage = ({ src, alt, title }: TProductImageProps) => {
-    const {isImageAvailable, markImageUnavailable} = useImageAvailability(src);
+    const { isImageAvailable, markImageUnavailable } = useImageAvailability(src);
 
     return (
         <div className={Styles.image}>

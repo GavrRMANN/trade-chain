@@ -4,7 +4,7 @@ import { ChainStatusBadge } from '@entities/chain';
 
 import type { TRouteRecommendation } from './RouteRecommendations';
 import Styles from './route-recommendations.module.css';
-import {useRecommendationCard} from './useRecommendationCard';
+import { useRecommendationCard } from './useRecommendationCard';
 
 type TRecommendationCardProps = {
     item: TRouteRecommendation;
@@ -23,11 +23,8 @@ export const RecommendationCard = ({
     onOpenProduct,
     onOpenOffer,
 }: TRecommendationCardProps) => {
-    const {product, offer, isBestMatch, classes, priceLabel, locationLabel} = useRecommendationCard(
-        item,
-        selected,
-        compact,
-    );
+    const { product, offer, isBestMatch, classes, priceLabel, locationLabel } =
+        useRecommendationCard(item, selected, compact);
 
     return (
         <article className={classes}>
@@ -41,7 +38,9 @@ export const RecommendationCard = ({
                 {/* Отличает вещь найденного маршрута от остальных вариантов:
                     те подобраны лишь по прямому обмену с текущей вещью, и
                     путь к цели через них не посчитан. */}
-                {isBestMatch && <span className={Styles.recommendation__badge}>Лучший вариант</span>}
+                {isBestMatch && (
+                    <span className={Styles.recommendation__badge}>Лучший вариант</span>
+                )}
                 {/* Отметка о выборе живёт на превью, а переключает его кнопка
                     внизу карточки: галочка рядом с названием повторяла то же
                     действие и отбирала у него половину строки. */}
@@ -59,9 +58,7 @@ export const RecommendationCard = ({
                 </div>
 
                 <div className={Styles.recommendation__facts}>
-                    <strong>
-                        {priceLabel}
-                    </strong>
+                    <strong>{priceLabel}</strong>
                     <span>{locationLabel}</span>
                 </div>
 

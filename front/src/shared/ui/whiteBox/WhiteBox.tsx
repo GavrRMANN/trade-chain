@@ -1,5 +1,5 @@
 import Styles from './WhiteBox.module.css';
-import {useWhiteBox} from './useWhiteBox';
+import { useWhiteBox } from './useWhiteBox';
 
 type TWhiteBoxProps = {
     title: string;
@@ -8,10 +8,10 @@ type TWhiteBoxProps = {
     img?: string;
     disabled?: boolean;
     onClick?: () => void;
-}
+};
 
-export const WhiteBox = ({title, active, icon, img, disabled, onClick}: TWhiteBoxProps) => {
-    const {className} = useWhiteBox({active, image: img ?? icon, disabled});
+export const WhiteBox = ({ title, active, icon, img, disabled, onClick }: TWhiteBoxProps) => {
+    const { className } = useWhiteBox({ active, image: img ?? icon, disabled });
 
     return (
         <button
@@ -21,14 +21,14 @@ export const WhiteBox = ({title, active, icon, img, disabled, onClick}: TWhiteBo
             aria-pressed={active}
             onClick={onClick}
         >
-            <h4 className={Styles.title}>
-                {title}
-            </h4>
-            {
-                icon
-                    ? <span className={Styles.icon} aria-hidden="true">{icon}</span>
-                    : img && <img className={Styles.img} src={img} alt="" aria-hidden="true"/>
-            }
+            <h4 className={Styles.title}>{title}</h4>
+            {icon ? (
+                <span className={Styles.icon} aria-hidden="true">
+                    {icon}
+                </span>
+            ) : (
+                img && <img className={Styles.img} src={img} alt="" aria-hidden="true" />
+            )}
         </button>
-    )
+    );
 };

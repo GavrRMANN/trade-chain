@@ -16,11 +16,7 @@ export const AuthenticatedProfile = ({
 
     return (
         <MainSection>
-            <ProfileContent
-                user={user}
-                isOwner={isOwner}
-                viewModel={{...profile, onLogout}}
-            />
+            <ProfileContent user={user} isOwner={isOwner} viewModel={{ ...profile, onLogout }} />
         </MainSection>
     );
 };

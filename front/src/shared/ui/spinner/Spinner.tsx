@@ -1,4 +1,4 @@
-import {useSpinner} from './useSpinner';
+import { useSpinner } from './useSpinner';
 
 type TSpinnerSize = 'sm' | 'md' | 'lg';
 
@@ -14,17 +14,11 @@ type TSpinnerProps = {
  * @returns Компонент индикатора загрузки.
  */
 export const Spinner = ({
-                            size = 'md',
-                            className,
-                            'aria-label': ariaLabel = 'Загрузка',
-                        }: TSpinnerProps) => {
-    const {className: spinnerClassName} = useSpinner({size, className});
+    size = 'md',
+    className,
+    'aria-label': ariaLabel = 'Загрузка',
+}: TSpinnerProps) => {
+    const { className: spinnerClassName } = useSpinner({ size, className });
 
-    return (
-        <span
-            className={spinnerClassName}
-            role="status"
-            aria-label={ariaLabel}
-        />
-    );
+    return <span className={spinnerClassName} role="status" aria-label={ariaLabel} />;
 };

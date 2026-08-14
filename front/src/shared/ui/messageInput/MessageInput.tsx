@@ -1,7 +1,7 @@
-import {Button} from '@shared/ui/button';
+import { Button } from '@shared/ui/button';
 
 import Styles from './MessageInput.module.css';
-import {useMessageInput} from './useMessageInput';
+import { useMessageInput } from './useMessageInput';
 
 type TMessageInputProps = {
     value: string;
@@ -22,8 +22,13 @@ export const MessageInput = ({
     placeholder,
     className,
 }: TMessageInputProps) => {
-    const {canSend, formClasses, handleChange, handleSubmit, handleKeyDown} = useMessageInput({
-        value, disabled, loading, className, onChange, onSend,
+    const { canSend, formClasses, handleChange, handleSubmit, handleKeyDown } = useMessageInput({
+        value,
+        disabled,
+        loading,
+        className,
+        onChange,
+        onSend,
     });
 
     return (

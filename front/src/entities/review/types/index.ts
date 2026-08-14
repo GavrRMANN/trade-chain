@@ -1,5 +1,1 @@
-export type {
-    TCreateReviewRequest,
-    TCustomerRatingResponse,
-    TReview,
-} from './review';
+export type { TCreateReviewRequest, TCustomerRatingResponse, TReview } from './review';

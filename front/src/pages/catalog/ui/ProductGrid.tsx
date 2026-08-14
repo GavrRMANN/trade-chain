@@ -1,5 +1,5 @@
-import {ProductCard} from '@entities/product';
-import type {TProduct} from '@entities/product';
+import { ProductCard } from '@entities/product';
+import type { TProduct } from '@entities/product';
 
 import Styles from './catalog-page.module.css';
 
@@ -8,7 +8,7 @@ type TProductGridProps = {
     onOpen: (productId: string) => void;
 };
 
-export const ProductGrid = ({products, onOpen}: TProductGridProps) => (
+export const ProductGrid = ({ products, onOpen }: TProductGridProps) => (
     <div className={Styles.grid}>
         {products.map((product) => (
             <ProductCard

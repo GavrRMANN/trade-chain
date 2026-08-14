@@ -1,9 +1,9 @@
-import {Modal} from '@shared/ui/modal';
-import {MainSection} from '@shared/ui/mainSection';
-import {PageHeader} from '@shared/ui/pageHeader';
-import {Button} from '@shared/ui/button';
-import {useCloseModalRoute, useIsMobile} from '@shared/lib';
-import {RouteBuilder} from '@features/routeBuilder';
+import { Modal } from '@shared/ui/modal';
+import { MainSection } from '@shared/ui/mainSection';
+import { PageHeader } from '@shared/ui/pageHeader';
+import { Button } from '@shared/ui/button';
+import { useCloseModalRoute, useIsMobile } from '@shared/lib';
+import { RouteBuilder } from '@features/routeBuilder';
 
 /** Создание цепочки обменов как маршрут `/exchanges/new`. */
 export const RouteBuilderRoute = () => {

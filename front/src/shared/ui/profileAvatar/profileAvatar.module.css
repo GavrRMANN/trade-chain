@@ -5,7 +5,9 @@
     background: var(--surface-muted);
     border: 1px solid transparent;
 
-    transition: border-color var(--animation-normal), color var(--animation-normal);
+    transition:
+        border-color var(--animation-normal),
+        color var(--animation-normal);
 }
 
 .profileAvatar__img svg {

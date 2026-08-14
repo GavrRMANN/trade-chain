@@ -1,6 +1,6 @@
 import { ProfileAvatar } from '@shared/ui/profileAvatar';
 import { Button } from '@shared/ui/button';
-import {Rating} from '@shared/ui/rating';
+import { Rating } from '@shared/ui/rating';
 import Styles from './profileSidebar.module.css';
 
 type TProfileSidebarProps = {
@@ -15,16 +15,19 @@ type TProfileSidebarProps = {
 };
 
 const formatRegistrationDate = (date: string): string =>
-    new Intl.DateTimeFormat('ru-RU', {day: 'numeric', month: 'long', year: 'numeric'}).format(new Date(date));
+    new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' }).format(
+        new Date(date),
+    );
 
 const formatReviewsCount = (count: number): string => {
     const lastTwo = count % 100;
     const last = count % 10;
-    const word = lastTwo >= 11 && lastTwo <= 14
-        ? 'отзывов'
-        : last === 1
-            ? 'отзыв'
-            : last >= 2 && last <= 4
+    const word =
+        lastTwo >= 11 && lastTwo <= 14
+            ? 'отзывов'
+            : last === 1
+              ? 'отзыв'
+              : last >= 2 && last <= 4
                 ? 'отзыва'
                 : 'отзывов';
 
@@ -57,7 +60,7 @@ export const ProfileSidebar = ({
             <p className={Styles.joined}>На сервисе с {formatRegistrationDate(createdAt)}</p>
             <div className={Styles.rating}>
                 <strong>{rating.toFixed(1).replace('.', ',')}</strong>
-                <Rating value={rating} tone="rating" className={Styles.ratingStars}/>
+                <Rating value={rating} tone="rating" className={Styles.ratingStars} />
                 <button type="button" className={Styles.reviewsLink} onClick={onReviewsClick}>
                     {formatReviewsCount(reviewsCount)}
                 </button>
@@ -65,17 +68,21 @@ export const ProfileSidebar = ({
         </div>
         <div className={Styles.counts} aria-label="Статистика профиля">
             <span>
-                <b>{productsCount}</b> {formatCountWord(productsCount, 'товар', 'товара', 'товаров')}
+                <b>{productsCount}</b>{' '}
+                {formatCountWord(productsCount, 'товар', 'товара', 'товаров')}
             </span>
             {exchangesCount !== undefined && (
                 <span>
-                    <b>{exchangesCount}</b> {formatCountWord(exchangesCount, 'обмен', 'обмена', 'обменов')}
+                    <b>{exchangesCount}</b>{' '}
+                    {formatCountWord(exchangesCount, 'обмен', 'обмена', 'обменов')}
                 </span>
             )}
         </div>
         {onLogout && (
             <div className={Styles.actions}>
-                <Button variant="text" onClick={onLogout}>Выйти</Button>
+                <Button variant="text" onClick={onLogout}>
+                    Выйти
+                </Button>
             </div>
         )}
     </aside>

@@ -1,13 +1,13 @@
-import {useMemo} from 'react';
+import { useMemo } from 'react';
 
-import {useGetMyChainsQuery} from '@entities/chain';
-import {useGetProductsQuery, useProductsById} from '@entities/product';
-import {selectIsAuthenticated, useGetCurrentUserQuery} from '@entities/user';
-import {useAppSelector} from '@app/redux';
+import { useGetMyChainsQuery } from '@entities/chain';
+import { useGetProductsQuery, useProductsById } from '@entities/product';
+import { selectIsAuthenticated, useGetCurrentUserQuery } from '@entities/user';
+import { useAppSelector } from '@app/redux';
 
-import {buildNotifications} from './buildNotifications';
-import {useGetNotificationReadsQuery} from '../api';
-import type {TNotification} from '../types';
+import { buildNotifications } from './buildNotifications';
+import { useGetNotificationReadsQuery } from '../api';
+import type { TNotification } from '../types';
 
 /**
  * Общий источник уведомлений для шапки и страницы.
@@ -17,9 +17,12 @@ import type {TNotification} from '../types';
 export const useNotificationsFeed = () => {
     const isAuthenticated = useAppSelector(selectIsAuthenticated);
 
-    const {data: currentUser, isLoading: isCurrentUserLoading} = useGetCurrentUserQuery(undefined, {
-        skip: !isAuthenticated,
-    });
+    const { data: currentUser, isLoading: isCurrentUserLoading } = useGetCurrentUserQuery(
+        undefined,
+        {
+            skip: !isAuthenticated,
+        },
+    );
     const {
         data: chains = [],
         isLoading: isChainsLoading,
@@ -28,10 +31,15 @@ export const useNotificationsFeed = () => {
     } = useGetMyChainsQuery(undefined, {
         skip: !isAuthenticated,
     });
-    const {data: products = []} = useGetProductsQuery(undefined, {
+    const { data: products = [] } = useGetProductsQuery(undefined, {
         skip: !isAuthenticated,
     });
-    const {data: reads = [], isLoading: isReadsLoading, isFetching: isReadsFetching, isError: isReadsError} = useGetNotificationReadsQuery(undefined, {
+    const {
+        data: reads = [],
+        isLoading: isReadsLoading,
+        isFetching: isReadsFetching,
+        isError: isReadsError,
+    } = useGetNotificationReadsQuery(undefined, {
         skip: !isAuthenticated,
     });
 
@@ -49,13 +57,13 @@ export const useNotificationsFeed = () => {
     );
 
     const notifications = useMemo<TNotification[]>(
-        () => (currentUserId
-            ? buildNotifications(chains, productsById, currentUserId)
-            : []
-        ).map((notification) => ({
-            ...notification,
-            read_at: readAtByNotificationId.get(notification.id) ?? null,
-        })),
+        () =>
+            (currentUserId ? buildNotifications(chains, productsById, currentUserId) : []).map(
+                (notification) => ({
+                    ...notification,
+                    read_at: readAtByNotificationId.get(notification.id) ?? null,
+                }),
+            ),
         [chains, currentUserId, productsById, readAtByNotificationId],
     );
 

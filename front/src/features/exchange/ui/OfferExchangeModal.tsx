@@ -1,13 +1,13 @@
-import {Button} from '@shared/ui/button';
-import {Input} from '@shared/ui/input';
-import {Modal} from '@shared/ui/modal';
-import {Preloader} from '@shared/ui/preloader';
-import {ProductPickerGrid} from '@shared/ui/productPicker';
-import type {TRouteContext} from '@entities/chain';
-import {QuickProductForm} from '@features/productForm';
+import { Button } from '@shared/ui/button';
+import { Input } from '@shared/ui/input';
+import { Modal } from '@shared/ui/modal';
+import { Preloader } from '@shared/ui/preloader';
+import { ProductPickerGrid } from '@shared/ui/productPicker';
+import type { TRouteContext } from '@entities/chain';
+import { QuickProductForm } from '@features/productForm';
 
 import Styles from './offer-exchange-modal.module.css';
-import {STANDALONE_GOAL_VALUE, useOfferExchangeForm} from './useOfferExchangeForm';
+import { STANDALONE_GOAL_VALUE, useOfferExchangeForm } from './useOfferExchangeForm';
 
 type TOfferExchangeModalProps = {
     isOpen: boolean;
@@ -76,11 +76,7 @@ export const OfferExchangeModal = ({
     });
 
     return (
-        <Modal
-            title="Предложить обмен"
-            isOpen={isOpen}
-            onClose={onClose}
-        >
+        <Modal title="Предложить обмен" isOpen={isOpen} onClose={onClose}>
             <form className={Styles.form} onSubmit={handleSubmit} noValidate>
                 <section className={Styles['form__section']}>
                     <h3 className={Styles['form__section-title']}>Выберите ваш товар</h3>

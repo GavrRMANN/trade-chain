@@ -1,7 +1,7 @@
-import type {TProduct} from '@entities/product';
-import {formatAmount, formatDate} from '@shared/lib';
-import {Button} from '@shared/ui/button';
-import {ProductImage} from '@entities/product';
+import type { TProduct } from '@entities/product';
+import { formatAmount, formatDate } from '@shared/lib';
+import { Button } from '@shared/ui/button';
+import { ProductImage } from '@entities/product';
 
 import Styles from './profile-product-row.module.css';
 
@@ -30,7 +30,7 @@ export const ProfileProductRow = ({
 }: TProfileProductRowProps) => (
     <article className={Styles.row}>
         <div className={Styles.media}>
-            <ProductImage src={product.image} alt={product.title} title={product.title}/>
+            <ProductImage src={product.image} alt={product.title} title={product.title} />
         </div>
         <div className={Styles.body}>
             <div className={Styles.titleRow}>
@@ -48,8 +48,16 @@ export const ProfileProductRow = ({
             {product.location && <p className={Styles.location}>{product.location}</p>}
             {product.description && <p className={Styles.description}>{product.description}</p>}
             <div className={Styles.actions}>
-                {product.status !== 'archived' && <Button variant="secondary" onClick={onOpen}>{openLabel}</Button>}
-                {isOwner && product.status !== 'archived' && <Button variant="text" onClick={onEdit}>Редактировать</Button>}
+                {product.status !== 'archived' && (
+                    <Button variant="secondary" onClick={onOpen}>
+                        {openLabel}
+                    </Button>
+                )}
+                {isOwner && product.status !== 'archived' && (
+                    <Button variant="text" onClick={onEdit}>
+                        Редактировать
+                    </Button>
+                )}
             </div>
         </div>
     </article>

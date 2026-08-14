@@ -5,7 +5,13 @@ import { SellerInfo } from './SellerInfo';
 const meta = {
     title: 'Widgets/SellerInfo',
     component: SellerInfo,
-    decorators: [(Story) => <MemoryRouter><Story /></MemoryRouter>],
+    decorators: [
+        (Story) => (
+            <MemoryRouter>
+                <Story />
+            </MemoryRouter>
+        ),
+    ],
     args: { name: 'elena@example.com', meta: '5.0 · Отзывов: 1', rating: 5, hasRating: true },
 } satisfies Meta<typeof SellerInfo>;
 export default meta;

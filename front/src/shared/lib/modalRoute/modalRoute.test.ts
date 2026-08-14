@@ -48,9 +48,9 @@ describe('buildModalRoutePath', () => {
                 search: '?view=exchanges&tab=incoming',
             }),
         ).toBe('/exchanges/filter?view=exchanges&tab=incoming');
-        expect(
-            buildModalRoutePath({ name: 'exchangeFilter', search: 'view=exchanges' }),
-        ).toBe('/exchanges/filter?view=exchanges');
+        expect(buildModalRoutePath({ name: 'exchangeFilter', search: 'view=exchanges' })).toBe(
+            '/exchanges/filter?view=exchanges',
+        );
     });
 });
 

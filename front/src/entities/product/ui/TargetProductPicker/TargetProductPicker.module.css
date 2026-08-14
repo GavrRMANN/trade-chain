@@ -99,7 +99,9 @@
     color: var(--neutral-primary);
     text-align: left;
     cursor: pointer;
-    transition: border-color var(--animation-fast), box-shadow var(--animation-fast);
+    transition:
+        border-color var(--animation-fast),
+        box-shadow var(--animation-fast);
 }
 
 .picker__target:hover:not(:disabled) {
@@ -167,7 +169,10 @@
     color: var(--neutral-primary);
     text-align: left;
     cursor: pointer;
-    transition: border-color var(--animation-fast), background var(--animation-fast), box-shadow var(--animation-fast);
+    transition:
+        border-color var(--animation-fast),
+        background var(--animation-fast),
+        box-shadow var(--animation-fast);
 }
 
 .picker__category:hover:not(:disabled) {

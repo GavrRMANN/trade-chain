@@ -22,7 +22,9 @@ export class CreateProductPage extends BasePage {
     private readonly descriptionInput: Locator = this.page.getByLabel('Описание');
     private readonly priceInput: Locator = this.page.getByLabel('Цена, ₽');
     private readonly locationInput: Locator = this.page.getByLabel('Город');
-    private readonly targetByCategoryTab: Locator = this.page.getByRole('button', { name: 'По категории' });
+    private readonly targetByCategoryTab: Locator = this.page.getByRole('button', {
+        name: 'По категории',
+    });
     private readonly targetCategorySelect: Locator = this.page
         .locator('label', { hasText: 'Категория цели' })
         .getByRole('combobox');

@@ -1,1 +1,1 @@
-export {WishlistEditor} from './ui/WishlistEditor';
+export { WishlistEditor } from './ui/WishlistEditor';

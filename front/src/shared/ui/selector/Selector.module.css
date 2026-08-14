@@ -15,7 +15,9 @@
 
     cursor: pointer;
 
-    transition: border-color var(--animation-normal), background-color var(--animation-normal);
+    transition:
+        border-color var(--animation-normal),
+        background-color var(--animation-normal);
 }
 
 .selector:focus {

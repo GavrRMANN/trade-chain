@@ -1,8 +1,11 @@
-import {useNavigate} from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
-import {useMarkAllNotificationsAsReadMutation, useMarkNotificationAsReadMutation} from '@entities/notification/api';
-import {useNotificationsFeed} from '@entities/notification/lib';
-import type {TNotification} from '@entities/notification/types';
+import {
+    useMarkAllNotificationsAsReadMutation,
+    useMarkNotificationAsReadMutation,
+} from '@entities/notification/api';
+import { useNotificationsFeed } from '@entities/notification/lib';
+import type { TNotification } from '@entities/notification/types';
 
 /**
  * Управляет данными и навигацией страницы «Уведомления».
@@ -11,13 +14,9 @@ import type {TNotification} from '@entities/notification/types';
 export const useNotificationsPage = () => {
     const navigate = useNavigate();
 
-    const {
-        notifications,
-        unreadCount,
-        isLoading,
-        isError,
-    } = useNotificationsFeed();
-    const [markAllNotificationsAsRead, {isLoading: isMarkingAllAsRead}] = useMarkAllNotificationsAsReadMutation();
+    const { notifications, unreadCount, isLoading, isError } = useNotificationsFeed();
+    const [markAllNotificationsAsRead, { isLoading: isMarkingAllAsRead }] =
+        useMarkAllNotificationsAsReadMutation();
     const [markNotificationAsRead] = useMarkNotificationAsReadMutation();
 
     const openExchange = async (notification: TNotification) => {

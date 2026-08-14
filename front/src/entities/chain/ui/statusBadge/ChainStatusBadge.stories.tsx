@@ -1,7 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { ChainStatusBadge } from './ChainStatusBadge';
 
-const meta = { title: 'Entities/ChainStatusBadge', component: ChainStatusBadge } satisfies Meta<typeof ChainStatusBadge>;
+const meta = { title: 'Entities/ChainStatusBadge', component: ChainStatusBadge } satisfies Meta<
+    typeof ChainStatusBadge
+>;
 export default meta;
 type Story = StoryObj<typeof meta>;
 export const Pending: Story = { args: { status: 'pending' } };

@@ -7,7 +7,5 @@
  * @returns Никогда не возвращает — бросает исключение.
  */
 export function assertNever(value: never, hint?: string): never {
-    throw new Error(
-        `Unhandled variant${hint ? ` in ${hint}` : ''}: ${JSON.stringify(value)}`,
-    );
+    throw new Error(`Unhandled variant${hint ? ` in ${hint}` : ''}: ${JSON.stringify(value)}`);
 }

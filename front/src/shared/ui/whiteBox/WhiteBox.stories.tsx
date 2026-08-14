@@ -17,15 +17,15 @@ export const Default: Story = {};
 export const Active: Story = {
     args: {
         active: true,
-    }
-}
+    },
+};
 export const Image: Story = {
     args: {
         img: 'https://i.pinimg.com/736x/05/68/c5/0568c500c59bad4b9da272e19cee57d5.jpg',
-    }
-}
+    },
+};
 export const Disabled: Story = {
     args: {
         disabled: true,
-    }
-}
+    },
+};

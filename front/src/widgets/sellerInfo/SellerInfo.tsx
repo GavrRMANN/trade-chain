@@ -39,7 +39,10 @@ export const SellerInfo = ({ name, meta, rating, hasRating, profileId }: TSeller
                 </span>
             )}
             {profileId ? (
-                <Link className={`${Styles.detailsLink} ${Styles.details}`} to={`/profile/${profileId}`}>
+                <Link
+                    className={`${Styles.detailsLink} ${Styles.details}`}
+                    to={`/profile/${profileId}`}
+                >
                     {details}
                 </Link>
             ) : (

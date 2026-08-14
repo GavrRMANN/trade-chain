@@ -6,14 +6,24 @@ const STATUS_WAIT_TIMEOUT = 15_000;
 
 /** Комната сделки, маршрут `/exchanges/:chainId` (pages/exchangeRoom/ExchangeRoomPage). */
 export class ExchangeRoomPage extends BasePage {
-    private readonly actionsSection: Locator = this.page.locator('section[aria-label="Действия по сделке"]');
+    private readonly actionsSection: Locator = this.page.locator(
+        'section[aria-label="Действия по сделке"]',
+    );
     private readonly acceptButton: Locator = this.page.getByRole('button', { name: 'Принять' });
     private readonly declineButton: Locator = this.page.getByRole('button', { name: 'Отклонить' });
-    private readonly cancelButton: Locator = this.page.getByRole('button', { name: 'Отменить предложение' });
-    private readonly confirmSuccessButton: Locator = this.page.getByRole('button', { name: 'Обмен состоялся' });
-    private readonly confirmFailedButton: Locator = this.page.getByRole('button', { name: 'Не договорились' });
+    private readonly cancelButton: Locator = this.page.getByRole('button', {
+        name: 'Отменить предложение',
+    });
+    private readonly confirmSuccessButton: Locator = this.page.getByRole('button', {
+        name: 'Обмен состоялся',
+    });
+    private readonly confirmFailedButton: Locator = this.page.getByRole('button', {
+        name: 'Не договорились',
+    });
     private readonly commentInput: Locator = this.page.getByLabel('Комментарий');
-    private readonly submitReviewButton: Locator = this.page.getByRole('button', { name: 'Отправить отзыв' });
+    private readonly submitReviewButton: Locator = this.page.getByRole('button', {
+        name: 'Отправить отзыв',
+    });
 
     async open(chainId: string): Promise<void> {
         await this.goto(`/exchanges/${chainId}`);
@@ -22,7 +32,9 @@ export class ExchangeRoomPage extends BasePage {
 
     /** Ждёт, пока плашка статуса сделки (ChainStatusBadge) покажет нужный текст. */
     async waitForStatusLabel(label: string): Promise<void> {
-        await expect(this.page.getByText(label, { exact: true })).toBeVisible({ timeout: STATUS_WAIT_TIMEOUT });
+        await expect(this.page.getByText(label, { exact: true })).toBeVisible({
+            timeout: STATUS_WAIT_TIMEOUT,
+        });
     }
 
     async accept(): Promise<void> {

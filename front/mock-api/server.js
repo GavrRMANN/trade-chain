@@ -174,7 +174,8 @@ async function handleCustomers(request, response, url) {
 
         if (request.method === 'POST' && parts.length === 2) {
             const body = await readJson(request);
-            for (const categoryId of body?.category_ids || []) addCustomerRecommendation(user.id, categoryId);
+            for (const categoryId of body?.category_ids || [])
+                addCustomerRecommendation(user.id, categoryId);
             return sendJson(response, 201, customerRecommendationList(user.id));
         }
 
@@ -275,8 +276,7 @@ async function handleProducts(request, response, url) {
             response,
             200,
             products.filter(
-                (product) =>
-                    product.customer_id === customerId && product.status !== 'archived',
+                (product) => product.customer_id === customerId && product.status !== 'archived',
             ),
         );
     }
@@ -333,8 +333,7 @@ async function handleProducts(request, response, url) {
        фильтрует по статусу) — на неё ведут ссылки из истории обменов, и фронт
        показывает её отдельным архивным видом. Скрыт архив только из списков. */
     if (request.method === 'GET') return sendJson(response, 200, products[index]);
-    if (products[index].status === 'archived')
-        return sendError(response, 404, 'Товар не найден');
+    if (products[index].status === 'archived') return sendError(response, 404, 'Товар не найден');
     if (request.method === 'PATCH') {
         const user = requireUser(request);
         if (!user) return sendError(response, 403, 'operation forbidden');
@@ -585,9 +584,7 @@ async function handleChains(request, response, url) {
         if (error) return sendChainError(response, error);
         chains[index].updated_at = new Date().toISOString();
         publishChainEvent(
-            chains[index].status === 'completed'
-                ? 'exchange.completed'
-                : 'exchange.chain.updated',
+            chains[index].status === 'completed' ? 'exchange.completed' : 'exchange.chain.updated',
             chains[index],
         );
         response.writeHead(204);

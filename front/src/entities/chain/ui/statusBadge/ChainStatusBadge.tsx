@@ -5,28 +5,21 @@ import type { TChainStatus } from '../../types';
 export type TChainStatusBadgeStatus = TChainStatus;
 
 export type TChainStatusBadgeTone =
-    | 'pending'
-    | 'active'
-    | 'completed'
-    | 'negative'
-    | 'warning'
-    | 'muted';
+    'pending' | 'active' | 'completed' | 'negative' | 'warning' | 'muted';
 
 type TChainStatusBadgeProps = {
     status: TChainStatus;
     className?: string;
 };
 
-export const ChainStatusBadge = ({status, className}: TChainStatusBadgeProps) => {
+export const ChainStatusBadge = ({ status, className }: TChainStatusBadgeProps) => {
     const classes = [
         Styles['status-badge'],
         Styles[`status-badge--${statusTone[status]}`],
         className,
-    ].filter(Boolean).join(' ');
+    ]
+        .filter(Boolean)
+        .join(' ');
 
-    return (
-        <span className={classes}>
-            {statusLabels[status]}
-        </span>
-    );
+    return <span className={classes}>{statusLabels[status]}</span>;
 };

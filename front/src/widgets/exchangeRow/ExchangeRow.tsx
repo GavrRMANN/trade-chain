@@ -4,8 +4,8 @@ import { ChainStatusBadge, RequiredAction } from '@entities/chain';
 import { formatDate } from '@shared/lib';
 
 import Styles from './ExchangeRow.module.css';
-import {ExchangeProducts} from './ExchangeProducts';
-import {useExchangeRow} from './useExchangeRow';
+import { ExchangeProducts } from './ExchangeProducts';
+import { useExchangeRow } from './useExchangeRow';
 
 export type TExchangeRowData = {
     chain: TChain;
@@ -25,7 +25,12 @@ type TExchangeRowProps = {
  * Используется в «Мои обмены», профиле и центре уведомлений.
  */
 export const ExchangeRow = ({ row, onOpen, className }: TExchangeRowProps) => {
-    const { chain, fromProduct: listedFromProduct, toProduct: listedToProduct, goalProduct: listedGoalProduct } = row;
+    const {
+        chain,
+        fromProduct: listedFromProduct,
+        toProduct: listedToProduct,
+        goalProduct: listedGoalProduct,
+    } = row;
     const {
         fromProduct,
         toProduct,
@@ -69,7 +74,7 @@ export const ExchangeRow = ({ row, onOpen, className }: TExchangeRowProps) => {
                     sellerEmail,
                     tone: 'target',
                 }}
-                second={{product: fromProduct, label: 'Отдаю', tone: 'source'}}
+                second={{ product: fromProduct, label: 'Отдаю', tone: 'source' }}
             />
             <RequiredAction action={requiredAction} />
             {chain.message && <p className={Styles['exchange-row__message']}>{chain.message}</p>}

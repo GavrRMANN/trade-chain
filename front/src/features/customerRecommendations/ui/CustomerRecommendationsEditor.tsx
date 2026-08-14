@@ -1,8 +1,8 @@
-import {Selector} from '@shared/ui/selector';
-import {Button} from '@shared/ui/button';
+import { Selector } from '@shared/ui/selector';
+import { Button } from '@shared/ui/button';
 
 import Styles from './customer-recommendations-editor.module.css';
-import {useCustomerRecommendationsEditor} from './useCustomerRecommendationsEditor';
+import { useCustomerRecommendationsEditor } from './useCustomerRecommendationsEditor';
 
 /** Список категорий, которые интересуют текущего клиента, с возможностью правки. */
 export const CustomerRecommendationsEditor = () => {
@@ -34,12 +34,17 @@ export const CustomerRecommendationsEditor = () => {
                     {isEditing ? 'Готово' : 'Редактировать'} {!isEditing && '✎'}
                 </button>
             </div>
-            <p className={Styles['editor__label']}>Показываем товары из этих категорий в первую очередь:</p>
+            <p className={Styles['editor__label']}>
+                Показываем товары из этих категорий в первую очередь:
+            </p>
 
             {selectedCategories.length > 0 ? (
                 <div className={Styles['editor__tags']}>
                     {selectedCategories.map((category) => (
-                        <span key={category!.category_id} className={`${Styles['editor__tag']} ${!isEditing ? Styles['editor__tag--readonly'] : ''}`}>
+                        <span
+                            key={category!.category_id}
+                            className={`${Styles['editor__tag']} ${!isEditing ? Styles['editor__tag--readonly'] : ''}`}
+                        >
                             {category!.name}
                             {isEditing && (
                                 <button
@@ -56,9 +61,7 @@ export const CustomerRecommendationsEditor = () => {
                     ))}
                 </div>
             ) : (
-                <p className={Styles['editor__empty']}>
-                    Вы ещё не отметили интересные категории.
-                </p>
+                <p className={Styles['editor__empty']}>Вы ещё не отметили интересные категории.</p>
             )}
 
             {!isEditing ? (

@@ -1,1 +1,1 @@
-export {CustomerRecommendationsEditor} from './ui/CustomerRecommendationsEditor';
+export { CustomerRecommendationsEditor } from './ui/CustomerRecommendationsEditor';

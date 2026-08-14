@@ -20,31 +20,37 @@ type TUseImageUploadReturn = {
     handleRemoveImage: () => void;
 };
 
-export const useImageUpload = ({ maxSize = 10 * 1024 * 1024, onImageLoaded }: TUseImageUploadOptions): TUseImageUploadReturn => {
+export const useImageUpload = ({
+    maxSize = 10 * 1024 * 1024,
+    onImageLoaded,
+}: TUseImageUploadOptions): TUseImageUploadReturn => {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [imageError, setImageError] = useState<string>();
 
-    const handleImageChange = useCallback(async (event: ChangeEvent<HTMLInputElement>) => {
-        setImageError(undefined);
-        const file = event.target.files?.[0];
-        if (!file) {
-            return;
-        }
-        if (!file.type.startsWith('image/')) {
-            setImageError('Выберите изображение');
-            return;
-        }
-        if (file.size > maxSize) {
-            setImageError('Размер изображения не должен превышать 10 МБ');
-            return;
-        }
-        try {
-            const dataUrl = await readFileAsDataUrl(file);
-            onImageLoaded(dataUrl);
-        } catch {
-            setImageError('Не удалось загрузить изображение');
-        }
-    }, [maxSize, onImageLoaded]);
+    const handleImageChange = useCallback(
+        async (event: ChangeEvent<HTMLInputElement>) => {
+            setImageError(undefined);
+            const file = event.target.files?.[0];
+            if (!file) {
+                return;
+            }
+            if (!file.type.startsWith('image/')) {
+                setImageError('Выберите изображение');
+                return;
+            }
+            if (file.size > maxSize) {
+                setImageError('Размер изображения не должен превышать 10 МБ');
+                return;
+            }
+            try {
+                const dataUrl = await readFileAsDataUrl(file);
+                onImageLoaded(dataUrl);
+            } catch {
+                setImageError('Не удалось загрузить изображение');
+            }
+        },
+        [maxSize, onImageLoaded],
+    );
 
     const handleRemoveImage = useCallback(() => {
         onImageLoaded('');

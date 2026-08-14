@@ -1,10 +1,10 @@
-import {useCallback, useEffect, useMemo} from 'react';
-import {useNavigate, useSearchParams} from 'react-router-dom';
+import { useCallback, useEffect, useMemo } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
-import {buildRoutePath, MODAL_ROUTE_PATHS, useIsMobile, useOpenModalRoute} from '@shared/lib';
+import { buildRoutePath, MODAL_ROUTE_PATHS, useIsMobile, useOpenModalRoute } from '@shared/lib';
 
-import {getFilterableProducts} from './getFilterableProducts';
-import {useExchangeRows} from './useExchangeRows';
+import { getFilterableProducts } from './getFilterableProducts';
+import { useExchangeRows } from './useExchangeRows';
 
 export type TExchangeTab = 'active' | 'incoming' | 'outgoing' | 'completed';
 
@@ -45,44 +45,52 @@ export const useExchanges = () => {
     const isMobile = useIsMobile();
     const [searchParams, setSearchParams] = useSearchParams();
 
-    const activeView: TExchangeView = searchParams.get('view') === 'exchanges' ? 'exchanges' : 'routes';
+    const activeView: TExchangeView =
+        searchParams.get('view') === 'exchanges' ? 'exchanges' : 'routes';
     const tab = searchParams.get('tab');
-    const activeTab: TExchangeTab = isExchangeTab(tab)
-        ? tab
-        : 'active';
-    const activeRouteTab: TExchangeRouteTab = isRouteTab(tab)
-        ? tab
-        : 'active';
+    const activeTab: TExchangeTab = isExchangeTab(tab) ? tab : 'active';
+    const activeRouteTab: TExchangeRouteTab = isRouteTab(tab) ? tab : 'active';
     const selectedTab = activeView === 'exchanges' ? activeTab : activeRouteTab;
     const productFilter = searchParams.get('product');
-    const setActiveTab = (value: TExchangeTab) => setSearchParams((currentParams) => {
-        currentParams.set('view', 'exchanges');
-        currentParams.set('tab', value);
-        currentParams.delete('product');
-        return currentParams;
-    });
-    const setActiveRouteTab = (value: TExchangeRouteTab) => setSearchParams((currentParams) => {
-        currentParams.set('view', 'routes');
-        currentParams.set('tab', value);
-        currentParams.delete('product');
-        return currentParams;
-    });
-    const setActiveView = (value: TExchangeView) => setSearchParams((currentParams) => {
-        const currentTab = currentParams.get('tab');
-        currentParams.set('view', value);
-        currentParams.delete('product');
-        currentParams.set(
-            'tab',
-            value === 'exchanges'
-                ? (isExchangeTab(currentTab) ? currentTab : 'active')
-                : (isRouteTab(currentTab) ? currentTab : 'active'),
+    const setActiveTab = (value: TExchangeTab) =>
+        setSearchParams((currentParams) => {
+            currentParams.set('view', 'exchanges');
+            currentParams.set('tab', value);
+            currentParams.delete('product');
+            return currentParams;
+        });
+    const setActiveRouteTab = (value: TExchangeRouteTab) =>
+        setSearchParams((currentParams) => {
+            currentParams.set('view', 'routes');
+            currentParams.set('tab', value);
+            currentParams.delete('product');
+            return currentParams;
+        });
+    const setActiveView = (value: TExchangeView) =>
+        setSearchParams((currentParams) => {
+            const currentTab = currentParams.get('tab');
+            currentParams.set('view', value);
+            currentParams.delete('product');
+            currentParams.set(
+                'tab',
+                value === 'exchanges'
+                    ? isExchangeTab(currentTab)
+                        ? currentTab
+                        : 'active'
+                    : isRouteTab(currentTab)
+                      ? currentTab
+                      : 'active',
+            );
+            return currentParams;
+        });
+    const resetProductFilter = () =>
+        setSearchParams(
+            (currentParams) => {
+                currentParams.delete('product');
+                return currentParams;
+            },
+            { replace: true },
         );
-        return currentParams;
-    });
-    const resetProductFilter = () => setSearchParams((currentParams) => {
-        currentParams.delete('product');
-        return currentParams;
-    }, {replace: true});
 
     /* Обе модалки страницы открываются как маршруты. Фильтр получает текущую
        query-строку: вкладка и выбранный товар нужны ему, чтобы показать те же
@@ -94,20 +102,23 @@ export const useExchanges = () => {
             navigate(MODAL_ROUTE_PATHS.routeBuilder);
             return;
         }
-        openModalRoute({name: 'routeBuilder'});
+        openModalRoute({ name: 'routeBuilder' });
     };
     const openProductFilter = () =>
-        openModalRoute({name: 'exchangeFilter', search: searchParams.toString()});
+        openModalRoute({ name: 'exchangeFilter', search: searchParams.toString() });
 
     useEffect(() => {
         if (searchParams.get('view') === activeView && searchParams.get('tab') === selectedTab) {
             return;
         }
-        setSearchParams((currentParams) => {
-            currentParams.set('view', activeView);
-            currentParams.set('tab', selectedTab);
-            return currentParams;
-        }, {replace: true});
+        setSearchParams(
+            (currentParams) => {
+                currentParams.set('view', activeView);
+                currentParams.set('tab', selectedTab);
+                return currentParams;
+            },
+            { replace: true },
+        );
     }, [activeView, searchParams, selectedTab, setSearchParams]);
 
     const {
@@ -129,7 +140,7 @@ export const useExchanges = () => {
     }, [activeRouteTab, routeGroups]);
 
     const filterableProducts = useMemo(
-        () => getFilterableProducts(activeTab, {incoming, outgoing}),
+        () => getFilterableProducts(activeTab, { incoming, outgoing }),
         [activeTab, incoming, outgoing],
     );
 
@@ -155,13 +166,19 @@ export const useExchanges = () => {
         return rows.filter((row) => row.fromProduct?.product_id === productFilter);
     }, [activeTab, active, incoming, outgoing, completed, productFilter]);
 
-    const openExchange = useCallback((chainId: string) => {
-        navigate(`/exchanges/${chainId}`);
-    }, [navigate]);
+    const openExchange = useCallback(
+        (chainId: string) => {
+            navigate(`/exchanges/${chainId}`);
+        },
+        [navigate],
+    );
 
-    const openRoute = useCallback((goalId: string, sourceId?: string, goalCategoryId?: string) => {
-        navigate(buildRoutePath({goalId, sourceProductId: sourceId, goalCategoryId}));
-    }, [navigate]);
+    const openRoute = useCallback(
+        (goalId: string, sourceId?: string, goalCategoryId?: string) => {
+            navigate(buildRoutePath({ goalId, sourceProductId: sourceId, goalCategoryId }));
+        },
+        [navigate],
+    );
 
     return {
         currentUserId,

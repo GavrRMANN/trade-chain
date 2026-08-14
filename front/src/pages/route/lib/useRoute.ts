@@ -4,7 +4,11 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useGetCategoriesQuery } from '@entities/category';
 import { buildChainPayload, useCreateChainMutation, useGetMyChainsQuery } from '@entities/chain';
 import type { TChain } from '@entities/chain';
-import { useGetProductsByCustomerQuery, useGetProductsQuery, useProductsById } from '@entities/product';
+import {
+    useGetProductsByCustomerQuery,
+    useGetProductsQuery,
+    useProductsById,
+} from '@entities/product';
 import type { TProduct } from '@entities/product';
 import { useFindCandidatesQuery, useFindChainQuery } from '@entities/search';
 import { useGetCurrentUserQuery } from '@entities/user';
@@ -42,7 +46,10 @@ export const useRoute = () => {
 
     const routeQuery = useFindChainQuery(
         { source_product_id: sourceId, target_product_id: targetId },
-        { skip: !targetId || !sourceId || Boolean(targetCategoryId), refetchOnMountOrArgChange: true },
+        {
+            skip: !targetId || !sourceId || Boolean(targetCategoryId),
+            refetchOnMountOrArgChange: true,
+        },
     );
     const currentUserQuery = useGetCurrentUserQuery();
     const currentCustomerId = currentUserQuery.data?.customer_id;
@@ -81,8 +88,7 @@ export const useRoute = () => {
         [chain],
     );
     const sourceProducts = useMemo(
-        () =>
-            (myProductsQuery.data ?? []).filter((product) => product.status === 'active'),
+        () => (myProductsQuery.data ?? []).filter((product) => product.status === 'active'),
         [myProductsQuery.data],
     );
 
@@ -131,7 +137,9 @@ export const useRoute = () => {
         requestedSource.status === 'active'
             ? requestedSource
             : undefined;
-    const goalProduct = targetCategoryId ? undefined : productsById.get(targetId) ?? chain[chain.length - 1];
+    const goalProduct = targetCategoryId
+        ? undefined
+        : (productsById.get(targetId) ?? chain[chain.length - 1]);
     const targetCategoryName = targetCategoryId
         ? categoriesQuery.data?.find((category) => category.category_id === targetCategoryId)?.name
         : undefined;
@@ -335,7 +343,13 @@ export const useRoute = () => {
                 },
             });
         },
-        [currentProduct, goalId, goalProduct?.title, lastCompletedRouteStep?.chain_id, targetCategoryId],
+        [
+            currentProduct,
+            goalId,
+            goalProduct?.title,
+            lastCompletedRouteStep?.chain_id,
+            targetCategoryId,
+        ],
     );
 
     const submitSelectedOffers = useCallback(async () => {
@@ -412,7 +426,9 @@ export const useRoute = () => {
         openModalRoute({
             name: 'offerExchange',
             productId: goalId,
-            ...(targetCategoryId ? { goalCategoryId: targetCategoryId } : { exchangeGoalId: goalId }),
+            ...(targetCategoryId
+                ? { goalCategoryId: targetCategoryId }
+                : { exchangeGoalId: goalId }),
             routeStepId: currentProduct?.product_id,
             previousChainId: lastCompletedRouteStep?.chain_id,
             goalTitle: goalProduct?.title ?? targetCategoryName,
@@ -454,7 +470,8 @@ export const useRoute = () => {
         myProductsQuery.isError ||
         myChainsQuery.isError ||
         candidatesQuery.isError;
-    const isEmpty = !isLoading && !isError && (!currentProduct || (!targetCategoryId && !goalProduct));
+    const isEmpty =
+        !isLoading && !isError && (!currentProduct || (!targetCategoryId && !goalProduct));
 
     return {
         targetId: targetId || targetCategoryId,

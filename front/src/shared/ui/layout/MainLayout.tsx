@@ -4,13 +4,9 @@ import { Outlet } from 'react-router-dom';
 import Styles from './main-layout.module.css';
 
 type MainLayoutProps = {
-  children?: ReactNode;
+    children?: ReactNode;
 };
 
 export function MainLayout({ children }: MainLayoutProps) {
-  return (
-    <main className={Styles.layout}>
-      {children ?? <Outlet />}
-    </main>
-  );
+    return <main className={Styles.layout}>{children ?? <Outlet />}</main>;
 }

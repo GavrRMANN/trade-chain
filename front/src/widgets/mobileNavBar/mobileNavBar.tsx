@@ -10,20 +10,26 @@ import Styles from './mobileNavBar.module.css';
 import { useMobileNavBarActions } from './useMobileNavBarActions';
 
 export const MobileNavBar = () => {
-    const { isExchangesPage, isProfilePage, onExchanges, onCreate, onProfile } = useMobileNavBarActions();
+    const { isExchangesPage, isProfilePage, onExchanges, onCreate, onProfile } =
+        useMobileNavBarActions();
     const { isAuthenticated, unreadCount } = useNotificationsFeed();
 
     return (
         <nav className={Styles['mobile-nav']} aria-label="Основная навигация">
             <NavLink
-                className={({isActive}) => [
-                    Styles['mobile-nav__item'],
-                    isActive && Styles['mobile-nav__item--active'],
-                ].filter(Boolean).join(' ')}
+                className={({ isActive }) =>
+                    [Styles['mobile-nav__item'], isActive && Styles['mobile-nav__item--active']]
+                        .filter(Boolean)
+                        .join(' ')
+                }
                 to="/"
                 end
             >
-                <svg className={Styles['mobile-nav__home-icon']} viewBox="0 0 24 24" aria-hidden="true">
+                <svg
+                    className={Styles['mobile-nav__home-icon']}
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                >
                     <path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1V10Z" />
                 </svg>
                 <span>Главная</span>
@@ -32,7 +38,9 @@ export const MobileNavBar = () => {
                 className={[
                     Styles['mobile-nav__item'],
                     isExchangesPage && Styles['mobile-nav__item--active'],
-                ].filter(Boolean).join(' ')}
+                ]
+                    .filter(Boolean)
+                    .join(' ')}
                 type="button"
                 onClick={onExchanges}
             >
@@ -45,20 +53,26 @@ export const MobileNavBar = () => {
                 aria-label="Разместить объявление"
                 onClick={onCreate}
             >
-                <span className={Styles['mobile-nav__create-icon']}><PlusSVG /></span>
+                <span className={Styles['mobile-nav__create-icon']}>
+                    <PlusSVG />
+                </span>
                 <span>Добавить</span>
             </button>
             <NavLink
-                className={({isActive}) => [
-                    Styles['mobile-nav__item'],
-                    isActive && Styles['mobile-nav__item--active'],
-                ].filter(Boolean).join(' ')}
+                className={({ isActive }) =>
+                    [Styles['mobile-nav__item'], isActive && Styles['mobile-nav__item--active']]
+                        .filter(Boolean)
+                        .join(' ')
+                }
                 to="/notifications"
             >
                 <span className={Styles['mobile-nav__notification-icon']}>
                     <BellIcon />
                     {isAuthenticated && unreadCount > 0 && (
-                        <span className={Styles['mobile-nav__notification-badge']} aria-hidden="true">
+                        <span
+                            className={Styles['mobile-nav__notification-badge']}
+                            aria-hidden="true"
+                        >
                             {unreadCount > 99 ? '99+' : unreadCount}
                         </span>
                     )}
@@ -69,7 +83,9 @@ export const MobileNavBar = () => {
                 className={[
                     Styles['mobile-nav__item'],
                     isProfilePage && Styles['mobile-nav__item--active'],
-                ].filter(Boolean).join(' ')}
+                ]
+                    .filter(Boolean)
+                    .join(' ')}
                 type="button"
                 onClick={onProfile}
             >

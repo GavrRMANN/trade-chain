@@ -115,7 +115,10 @@ export const AppRouter = () => {
                         <Route path="profile" element={<ProfilePage />} />
                         <Route path="profile/:customerId" element={<ProfilePage />} />
                         <Route path="exchanges" element={<ExchangesPage />} />
-                        <Route path="exchanges/:chainId" element={withSuspense(<ExchangeRoomPageLazy />)} />
+                        <Route
+                            path="exchanges/:chainId"
+                            element={withSuspense(<ExchangeRoomPageLazy />)}
+                        />
                         <Route path="route" element={withSuspense(<RoutePageLazy />)} />
                         {/* Подборка следующего шага — часть того же маршрута:
                             параметры цели и стартового товара остаются в query,
@@ -123,7 +126,10 @@ export const AppRouter = () => {
                             она рендерится, только если этап подтверждён вещами
                             текущего пользователя. */}
                         <Route path="route/feed" element={withSuspense(<RouteFeedPageLazy />)} />
-                        <Route path="notifications" element={withSuspense(<NotificationsPageLazy />)} />
+                        <Route
+                            path="notifications"
+                            element={withSuspense(<NotificationsPageLazy />)}
+                        />
                         {protectedModalRoutes.map(({ path, element }) => (
                             <Route key={path} path={path} element={element} />
                         ))}

@@ -90,7 +90,10 @@ export const RouteFeedPage = () => {
                 фото, той же полупрозрачной подложкой, что и у самой
                 карточки; шапка страницы остаётся только под desktop. */}
             <div
-                className={[Styles['route-feed__header'], hasFeed && Styles['route-feed__header--feed']]
+                className={[
+                    Styles['route-feed__header'],
+                    hasFeed && Styles['route-feed__header--feed'],
+                ]
                     .filter(Boolean)
                     .join(' ')}
             >

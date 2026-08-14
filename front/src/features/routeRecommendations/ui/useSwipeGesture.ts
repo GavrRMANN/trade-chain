@@ -11,7 +11,10 @@ type TSwipeThreshold = number | ((distance: number) => 'left' | 'right' | null);
 
 const DEFAULT_THRESHOLD = 60;
 
-const resolveDirection = (distance: number, threshold: TSwipeThreshold): 'left' | 'right' | null => {
+const resolveDirection = (
+    distance: number,
+    threshold: TSwipeThreshold,
+): 'left' | 'right' | null => {
     if (typeof threshold === 'function') {
         return threshold(distance);
     }
@@ -39,22 +42,25 @@ export const useSwipeGesture = (
         event.currentTarget.setPointerCapture(event.pointerId);
     }, []);
 
-    const handlePointerUp = useCallback((event: PointerEvent<HTMLDivElement>) => {
-        if (startX.current === undefined) {
-            return;
-        }
+    const handlePointerUp = useCallback(
+        (event: PointerEvent<HTMLDivElement>) => {
+            if (startX.current === undefined) {
+                return;
+            }
 
-        const distance = event.clientX - startX.current;
-        startX.current = undefined;
+            const distance = event.clientX - startX.current;
+            startX.current = undefined;
 
-        const direction = resolveDirection(distance, threshold);
+            const direction = resolveDirection(distance, threshold);
 
-        if (direction === 'left') {
-            callbacks.onSwipeLeft?.();
-        } else if (direction === 'right') {
-            callbacks.onSwipeRight?.();
-        }
-    }, [callbacks, threshold]);
+            if (direction === 'left') {
+                callbacks.onSwipeLeft?.();
+            } else if (direction === 'right') {
+                callbacks.onSwipeRight?.();
+            }
+        },
+        [callbacks, threshold],
+    );
 
     return { handlePointerDown, handlePointerUp };
 };

@@ -1,9 +1,9 @@
-import type {TProduct} from '@entities/product';
-import {Button} from '@shared/ui/button';
-import {ExchangeProducts} from '@widgets/exchangeRow';
+import type { TProduct } from '@entities/product';
+import { Button } from '@shared/ui/button';
+import { ExchangeProducts } from '@widgets/exchangeRow';
 
 import Styles from './exchanges-page.module.css';
-import {useRouteGroupCard} from './useRouteGroupCard';
+import { useRouteGroupCard } from './useRouteGroupCard';
 
 type TRouteGroupCardProps = {
     sourceProduct?: TProduct;
@@ -26,7 +26,7 @@ export const RouteGroupCard = ({
     formatActiveOffers,
     formatDate,
 }: TRouteGroupCardProps) => {
-    const {offersLabel, detailsLabel} = useRouteGroupCard({
+    const { offersLabel, detailsLabel } = useRouteGroupCard({
         openOffersCount,
         offersCount,
         updatedAt,
@@ -37,15 +37,17 @@ export const RouteGroupCard = ({
     return (
         <article className={Styles['route-group-card']}>
             <ExchangeProducts
-                first={{product: sourceProduct, label: 'Сейчас', tone: 'source'}}
-                second={{product: goalProduct, label: 'Цель', tone: 'target'}}
+                first={{ product: sourceProduct, label: 'Сейчас', tone: 'source' }}
+                second={{ product: goalProduct, label: 'Цель', tone: 'target' }}
             />
             <footer className={Styles['route-group-card__footer']}>
                 <div>
                     <strong>{offersLabel}</strong>
                     <small>{detailsLabel}</small>
                 </div>
-                <Button variant="secondary" onClick={onOpen}>Открыть</Button>
+                <Button variant="secondary" onClick={onOpen}>
+                    Открыть
+                </Button>
             </footer>
         </article>
     );

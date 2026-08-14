@@ -14,7 +14,9 @@
     font-size: var(--text-base-font-size);
     line-height: var(--line-height-normal);
 
-    transition: border-color var(--animation-normal), background-color var(--animation-normal);
+    transition:
+        border-color var(--animation-normal),
+        background-color var(--animation-normal);
 }
 
 .input:not(.input--disabled):hover {

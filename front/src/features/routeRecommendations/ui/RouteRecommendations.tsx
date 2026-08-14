@@ -6,7 +6,7 @@ import { formatVariantCount } from '../lib';
 import { RecommendationCard } from './RecommendationCard';
 import Styles from './route-recommendations.module.css';
 import { useRailCountdown } from './useRailCountdown';
-import {useRouteRecommendations} from './useRouteRecommendations';
+import { useRouteRecommendations } from './useRouteRecommendations';
 
 export type TRouteRecommendation = {
     product: TProduct;
@@ -40,9 +40,16 @@ export const RouteRecommendations = ({
     onOpenOffer,
     onOpenFeed,
 }: TRouteRecommendationsProps) => {
-    const {activeIndex, current, selected, advance, selectAndAdvance, handlePointerDown, handlePointerUp} =
-        useRouteRecommendations(items, selectedIds, onToggle);
-    const {railRef, remaining} = useRailCountdown(items.length);
+    const {
+        activeIndex,
+        current,
+        selected,
+        advance,
+        selectAndAdvance,
+        handlePointerDown,
+        handlePointerUp,
+    } = useRouteRecommendations(items, selectedIds, onToggle);
+    const { railRef, remaining } = useRailCountdown(items.length);
 
     if (items.length === 0) {
         return (
@@ -178,9 +185,7 @@ export const RouteRecommendations = ({
             {/* Счётчик появляется только когда есть что считать: правило «можно
                 выбрать несколько» уже сказано в подзаголовке блока. */}
             <div className={Styles.submit}>
-                {selectedIds.length > 0 && (
-                    <span>Выбрано вариантов: {selectedIds.length}</span>
-                )}
+                {selectedIds.length > 0 && <span>Выбрано вариантов: {selectedIds.length}</span>}
                 <Button
                     onClick={onSubmit}
                     disabled={selectedIds.length === 0}

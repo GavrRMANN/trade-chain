@@ -1,5 +1,1 @@
-export type {
-    TCategory,
-    TCreateCategoryRequest,
-    TUpdateCategoryRequest,
-} from './category';
+export type { TCategory, TCreateCategoryRequest, TUpdateCategoryRequest } from './category';

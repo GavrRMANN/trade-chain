@@ -1,5 +1,5 @@
-import {FormEvent, useEffect, useMemo, useReducer} from 'react';
-import {useNavigate, useSearchParams} from 'react-router-dom';
+import { FormEvent, useEffect, useMemo, useReducer } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import {
     useCreateProductMutation,
@@ -8,17 +8,11 @@ import {
     useUpdateProductMutation,
 } from '@entities/product';
 import { useCreateChainMutation } from '@entities/chain';
-import {useGetCategoriesQuery} from '@entities/category';
-import {useGetCurrentUserQuery} from '@entities/user';
-import type {TProductStatus, TTargetGoal} from '@entities/product';
+import { useGetCategoriesQuery } from '@entities/category';
+import { useGetCurrentUserQuery } from '@entities/user';
+import type { TProductStatus, TTargetGoal } from '@entities/product';
 
-export type TField =
-    | 'title'
-    | 'categoryId'
-    | 'description'
-    | 'price'
-    | 'location'
-    | 'targetGoal';
+export type TField = 'title' | 'categoryId' | 'description' | 'price' | 'location' | 'targetGoal';
 
 export type TErrors = Partial<Record<TField, string>>;
 
@@ -37,7 +31,7 @@ type TFormState = {
     isOwnerError: boolean;
     isInitialized: boolean;
 };
-type TFormAction = {type: 'update'; payload: Partial<TFormState>};
+type TFormAction = { type: 'update'; payload: Partial<TFormState> };
 const formReducer = (state: TFormState, action: TFormAction): TFormState => ({
     ...state,
     ...action.payload,
@@ -46,7 +40,12 @@ const formReducer = (state: TFormState, action: TFormAction): TFormState => ({
 const getErrorMessage = (error: unknown) => {
     if (typeof error === 'object' && error !== null && 'data' in error) {
         const data = error.data;
-        if (typeof data === 'object' && data !== null && 'error' in data && typeof data.error === 'string') {
+        if (
+            typeof data === 'object' &&
+            data !== null &&
+            'error' in data &&
+            typeof data.error === 'string'
+        ) {
             return data.error;
         }
     }
@@ -101,10 +100,10 @@ const validate = (
     return errors;
 };
 
-const statusOptions: {value: TProductStatus; label: string}[] = [
-    {value: 'active', label: 'Активен'},
-    {value: 'reserved', label: 'Зарезервирован'},
-    {value: 'exchanged', label: 'Обменян'},
+const statusOptions: { value: TProductStatus; label: string }[] = [
+    { value: 'active', label: 'Активен' },
+    { value: 'reserved', label: 'Зарезервирован' },
+    { value: 'exchanged', label: 'Обменян' },
 ];
 
 /** Управляет состоянием, валидацией и отправкой формы создания/редактирования товара. */
@@ -118,29 +117,49 @@ export const useProductForm = (productId?: string) => {
     const presetTargetProductId = searchParams.get('target')?.trim() ?? '';
     const presetTargetCategoryId = searchParams.get('targetCategory')?.trim() ?? '';
 
-    const {data: user, isLoading: isUserLoading} = useGetCurrentUserQuery();
-    const productQuery = useGetProductQuery(productId ?? '', {skip: !productId});
-    const targetProductsQuery = useGetProductsQuery(
-        {offset: 0, limit: 100},
-        {skip: isEdit},
-    );
-    const {data: categories = [], isLoading: isCategoriesLoading, isError: isCategoriesError} =
-        useGetCategoriesQuery();
+    const { data: user, isLoading: isUserLoading } = useGetCurrentUserQuery();
+    const productQuery = useGetProductQuery(productId ?? '', { skip: !productId });
+    const targetProductsQuery = useGetProductsQuery({ offset: 0, limit: 100 }, { skip: isEdit });
+    const {
+        data: categories = [],
+        isLoading: isCategoriesLoading,
+        isError: isCategoriesError,
+    } = useGetCategoriesQuery();
 
-    const [createProduct, {isLoading: isCreating}] = useCreateProductMutation();
-    const [createChain, {isLoading: isChainCreating}] = useCreateChainMutation();
-    const [updateProduct, {isLoading: isUpdating}] = useUpdateProductMutation();
+    const [createProduct, { isLoading: isCreating }] = useCreateProductMutation();
+    const [createChain, { isLoading: isChainCreating }] = useCreateChainMutation();
+    const [updateProduct, { isLoading: isUpdating }] = useUpdateProductMutation();
 
     const [state, dispatch] = useReducer(formReducer, {
-        title: '', categoryId: '', description: '', image: '', price: '', location: '',
-        status: 'active', targetGoal: {}, errors: {}, isOwnerError: false, isInitialized: false,
+        title: '',
+        categoryId: '',
+        description: '',
+        image: '',
+        price: '',
+        location: '',
+        status: 'active',
+        targetGoal: {},
+        errors: {},
+        isOwnerError: false,
+        isInitialized: false,
     });
     const {
-        title, categoryId, description, image, price, location, status, targetGoal,
-        createdProductId, errors, requestError, isOwnerError, isInitialized,
+        title,
+        categoryId,
+        description,
+        image,
+        price,
+        location,
+        status,
+        targetGoal,
+        createdProductId,
+        errors,
+        requestError,
+        isOwnerError,
+        isInitialized,
     } = state;
     const update = <K extends keyof TFormState>(key: K, value: TFormState[K]) =>
-        dispatch({type: 'update', payload: {[key]: value}});
+        dispatch({ type: 'update', payload: { [key]: value } });
     const setTitle = (value: string) => update('title', value);
     const setCategoryId = (value: string) => update('categoryId', value);
     const setDescription = (value: string) => update('description', value);
@@ -162,8 +181,8 @@ export const useProductForm = (productId?: string) => {
             type: 'update',
             payload: {
                 targetGoal: presetTargetProductId
-                    ? {productId: presetTargetProductId}
-                    : {categoryId: presetTargetCategoryId},
+                    ? { productId: presetTargetProductId }
+                    : { categoryId: presetTargetCategoryId },
                 isInitialized: true,
             },
         });
@@ -179,20 +198,25 @@ export const useProductForm = (productId?: string) => {
         }
         // Проверяем владельца: редактировать может только собственник.
         if (user && editableProduct.customer_id !== user.customer_id) {
-            dispatch({type: 'update', payload: {isOwnerError: true, isInitialized: true}});
+            dispatch({ type: 'update', payload: { isOwnerError: true, isInitialized: true } });
             return;
         }
-        dispatch({type: 'update', payload: {
-            title: editableProduct.title,
-            categoryId: editableProduct.category_id ?? '',
-            description: editableProduct.description ?? '',
-            image: editableProduct.image ?? '',
-            price: editableProduct.price !== undefined && editableProduct.price !== null
-                ? String(editableProduct.price) : '',
-            location: editableProduct.location ?? '',
-            status: editableProduct.status,
-            isInitialized: true,
-        }});
+        dispatch({
+            type: 'update',
+            payload: {
+                title: editableProduct.title,
+                categoryId: editableProduct.category_id ?? '',
+                description: editableProduct.description ?? '',
+                image: editableProduct.image ?? '',
+                price:
+                    editableProduct.price !== undefined && editableProduct.price !== null
+                        ? String(editableProduct.price)
+                        : '',
+                location: editableProduct.location ?? '',
+                status: editableProduct.status,
+                isInitialized: true,
+            },
+        });
     }, [isEdit, isInitialized, editableProduct, user]);
 
     const isLoading = isCreating || isUpdating || isChainCreating;
@@ -210,7 +234,9 @@ export const useProductForm = (productId?: string) => {
             guard.add(current.category_id);
             path.unshift(current);
             const parentId = current.parent_id;
-            current = parentId ? categories.find((category) => category.category_id === parentId) : undefined;
+            current = parentId
+                ? categories.find((category) => category.category_id === parentId)
+                : undefined;
         }
         return path;
     }, [categoryId, categories]);
@@ -261,7 +287,7 @@ export const useProductForm = (productId?: string) => {
                         status,
                     },
                 }).unwrap();
-                navigate(`/product/${productId}`, {replace: true});
+                navigate(`/product/${productId}`, { replace: true });
                 return;
             }
 
@@ -309,15 +335,16 @@ export const useProductForm = (productId?: string) => {
                 message: `Предложение по новому объявлению «${title.trim()}»`,
             }).unwrap();
 
-            const routeParams = new URLSearchParams({from: sourceProductId});
+            const routeParams = new URLSearchParams({ from: sourceProductId });
             if (targetGoal.productId) {
                 routeParams.set('target', targetGoal.productId);
             } else if (targetGoal.categoryId) {
                 routeParams.set('targetCategory', targetGoal.categoryId);
             }
-            navigate(`/route?${routeParams.toString()}`, {replace: true});
+            navigate(`/route?${routeParams.toString()}`, { replace: true });
         } catch (error) {
-            update('requestError',
+            update(
+                'requestError',
                 createdProductId
                     ? `Объявление уже создано. ${getErrorMessage(error)} Повторите отправку предложения.`
                     : getErrorMessage(error),

@@ -1,4 +1,4 @@
-import {useEffect, useMemo, useReducer, useRef, useState} from 'react';
+import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
 
 import ControlStyles from '../control/Control.module.css';
 import Styles from './Selector.module.css';
@@ -19,7 +19,15 @@ type TUseSelectorParams = {
 const SEARCH_THRESHOLD = 10;
 
 /** Инкапсулирует состояние и взаимодействия выпадающего списка. */
-export const useSelector = ({label, value, options, disabled, loading, error, onSelect}: TUseSelectorParams) => {
+export const useSelector = ({
+    label,
+    value,
+    options,
+    disabled,
+    loading,
+    error,
+    onSelect,
+}: TUseSelectorParams) => {
     const [state, dispatch] = useReducer(
         (currentState: { isExpanded: boolean }, action: { type: 'toggle' | 'collapse' }) => ({
             ...currentState,
@@ -27,7 +35,7 @@ export const useSelector = ({label, value, options, disabled, loading, error, on
         }),
         { isExpanded: false },
     );
-    const {isExpanded} = state;
+    const { isExpanded } = state;
     const wrapperRef = useRef<HTMLLabelElement>(null);
     const searchInputRef = useRef<HTMLInputElement>(null);
     const [searchQuery, setSearchQuery] = useState('');
@@ -35,7 +43,10 @@ export const useSelector = ({label, value, options, disabled, loading, error, on
         () => options.find((option) => option.value === value)?.label || label || options[0]?.label,
         [label, options, value],
     );
-    const selectableOptions = useMemo(() => options.filter((option) => option.value !== ''), [options]);
+    const selectableOptions = useMemo(
+        () => options.filter((option) => option.value !== ''),
+        [options],
+    );
     const isSearchable = selectableOptions.length > SEARCH_THRESHOLD;
     const visibleOptions = useMemo(() => {
         if (!isSearchable || !searchQuery.trim()) {
@@ -50,10 +61,15 @@ export const useSelector = ({label, value, options, disabled, loading, error, on
         isExpanded && Styles['selector--active'],
         (disabled || loading) && Styles['selector--disabled'],
         error?.showError && Styles['selector--error'],
-    ].filter(Boolean).join(' ');
+    ]
+        .filter(Boolean)
+        .join(' ');
     const buttonClasses = [loading ? Styles.loading : Styles.arrow].filter(Boolean).join(' ');
     const wrapperClasses = [Styles.wrapper, ControlStyles.text].filter(Boolean).join(' ');
-    const textClasses = [ControlStyles.text, (disabled || loading) && ControlStyles['text--disabled']]
+    const textClasses = [
+        ControlStyles.text,
+        (disabled || loading) && ControlStyles['text--disabled'],
+    ]
         .filter(Boolean)
         .join(' ');
     const toggle = () => {

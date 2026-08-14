@@ -72,7 +72,10 @@ export const RoutePage = () => {
                 <div className={Styles['route-page__source-picker']}>
                     <div>
                         <h2>С чего начинаем?</h2>
-                        <p>Выберите своё активное объявление, которое хотите обменять по цепочке на целевой товар.</p>
+                        <p>
+                            Выберите своё активное объявление, которое хотите обменять по цепочке на
+                            целевой товар.
+                        </p>
                     </div>
                     {sourceProducts.length ? (
                         <div className={Styles['route-page__source-list']}>
@@ -126,7 +129,9 @@ export const RoutePage = () => {
                     <div className={Styles['route-page__empty']}>
                         <h2>Подходящий путь пока не найден</h2>
                         <p>Не удалось определить исходный товар для маршрута.</p>
-                        {goalProduct && <Button onClick={openGoalOffer}>Предложить прямой обмен</Button>}
+                        {goalProduct && (
+                            <Button onClick={openGoalOffer}>Предложить прямой обмен</Button>
+                        )}
                     </div>
                 ) : (
                     <>

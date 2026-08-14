@@ -4,7 +4,11 @@ import { Provider } from 'react-redux';
 import { store } from '@app/redux';
 import { ProfileContent } from './ProfileContent';
 
-const user = { customer_id: 'customer-1', email: 'alexey@example.com', created_at: '2024-04-12T10:00:00Z' };
+const user = {
+    customer_id: 'customer-1',
+    email: 'alexey@example.com',
+    created_at: '2024-04-12T10:00:00Z',
+};
 
 const baseViewModel = {
     activeTab: 'products' as const,
@@ -49,6 +53,12 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const EmptyOwner: Story = {};
-export const LoadingProducts: Story = { args: { viewModel: { ...baseViewModel, isProductsLoading: true } } };
-export const ProductsError: Story = { args: { viewModel: { ...baseViewModel, isProductsError: true } } };
-export const PublicProfile: Story = { args: { isOwner: false, viewModel: { ...baseViewModel, maskedName: 'al***@example.com' } } };
+export const LoadingProducts: Story = {
+    args: { viewModel: { ...baseViewModel, isProductsLoading: true } },
+};
+export const ProductsError: Story = {
+    args: { viewModel: { ...baseViewModel, isProductsError: true } },
+};
+export const PublicProfile: Story = {
+    args: { isOwner: false, viewModel: { ...baseViewModel, maskedName: 'al***@example.com' } },
+};

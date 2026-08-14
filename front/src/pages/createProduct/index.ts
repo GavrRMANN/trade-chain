@@ -1,1 +1,1 @@
-export {CreateProductPage} from './ui/CreateProductPage';
+export { CreateProductPage } from './ui/CreateProductPage';

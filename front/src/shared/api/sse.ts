@@ -13,7 +13,9 @@ const parseEvent = (chunk: string): TSseEvent | undefined => {
 
     try {
         const payload = JSON.parse(data) as Partial<TSseEvent>;
-        return typeof payload.chain_id === 'string' ? {type, chain_id: payload.chain_id} : undefined;
+        return typeof payload.chain_id === 'string'
+            ? { type, chain_id: payload.chain_id }
+            : undefined;
     } catch {
         return undefined;
     }
@@ -26,7 +28,7 @@ export const subscribeToEvents = async (
     onEvent: (event: TSseEvent) => void,
 ): Promise<void> => {
     const response = await fetch(`${getApiBaseUrl()}/api/v1/events`, {
-        headers: {Authorization: `Bearer ${token}`},
+        headers: { Authorization: `Bearer ${token}` },
         signal,
     });
 
@@ -39,10 +41,10 @@ export const subscribeToEvents = async (
     let buffer = '';
 
     while (!signal.aborted) {
-        const {done, value} = await reader.read();
+        const { done, value } = await reader.read();
         if (done) return;
 
-        buffer += decoder.decode(value, {stream: true});
+        buffer += decoder.decode(value, { stream: true });
         const frames = buffer.split('\n\n');
         buffer = frames.pop() ?? '';
 

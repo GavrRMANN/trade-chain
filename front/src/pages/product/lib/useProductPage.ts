@@ -51,8 +51,7 @@ export const useProductPage = () => {
     const canOffer = status === 'active' && !isOwner && isAuthenticated;
     // Пока список своих товаров не загружен, считаем, что они есть —
     // чтобы не мигать кнопкой «Добавить объявление» до ответа сервера.
-    const needsOwnProductToOffer =
-        canOffer && isOwnProductsKnown && !hasOwnActiveProducts;
+    const needsOwnProductToOffer = canOffer && isOwnProductsKnown && !hasOwnActiveProducts;
 
     const openOffer = useCallback(() => {
         if (!isAuthenticated) {

@@ -28,14 +28,20 @@ export const productApi = createApi({
             }),
             providesTags: (result) => [
                 { type: 'Product', id: 'LIST' },
-                ...(result ?? []).map(({ product_id }) => ({ type: 'Product' as const, id: product_id })),
+                ...(result ?? []).map(({ product_id }) => ({
+                    type: 'Product' as const,
+                    id: product_id,
+                })),
             ],
         }),
         getProductsByCustomer: builder.query<TProduct[], string>({
             query: (customerId) => `/products/by-customer/${customerId}`,
             providesTags: (result, _error, customerId) => [
                 { type: 'Product', id: `customer-${customerId}` },
-                ...(result ?? []).map(({ product_id }) => ({ type: 'Product' as const, id: product_id })),
+                ...(result ?? []).map(({ product_id }) => ({
+                    type: 'Product' as const,
+                    id: product_id,
+                })),
             ],
         }),
         getMyProducts: builder.query<TProduct[], void>({
@@ -47,7 +53,9 @@ export const productApi = createApi({
         }),
         getProductRecommendations: builder.query<TProductRecommendations, string>({
             query: (productId) => `/products/${productId}/recommendations`,
-            providesTags: (_result, _error, productId) => [{ type: 'Product', id: `recommendations-${productId}` }],
+            providesTags: (_result, _error, productId) => [
+                { type: 'Product', id: `recommendations-${productId}` },
+            ],
         }),
         createProduct: builder.mutation<TProduct, TCreateProductRequest>({
             query: (body) => ({ url: '/products', method: 'POST', body }),

@@ -1,13 +1,13 @@
-import {MainSection} from '@shared/ui/mainSection';
-import {Preloader} from '@shared/ui/preloader';
-import {PageError} from '@shared/ui/pageError';
-import {PageHeader} from '@shared/ui/pageHeader';
-import {Button} from '@shared/ui/button';
-import {Pagination} from '@shared/ui/pagination';
+import { MainSection } from '@shared/ui/mainSection';
+import { Preloader } from '@shared/ui/preloader';
+import { PageError } from '@shared/ui/pageError';
+import { PageHeader } from '@shared/ui/pageHeader';
+import { Button } from '@shared/ui/button';
+import { Pagination } from '@shared/ui/pagination';
 
 import Styles from './notifications-page.module.css';
-import {NotificationRow} from '@entities/notification';
-import {useNotificationsPage, useNotificationsPagination} from '../lib';
+import { NotificationRow } from '@entities/notification';
+import { useNotificationsPage, useNotificationsPagination } from '../lib';
 
 export const NotificationsPage = () => {
     const {
@@ -20,14 +20,8 @@ export const NotificationsPage = () => {
         markAllAsRead,
         isMarkingAllAsRead,
     } = useNotificationsPage();
-    const {
-        currentPage,
-        itemsPerPage,
-        listRef,
-        paginationRef,
-        setCurrentPage,
-        totalPages,
-    } = useNotificationsPagination(notifications.length);
+    const { currentPage, itemsPerPage, listRef, paginationRef, setCurrentPage, totalPages } =
+        useNotificationsPagination(notifications.length);
     const paginatedNotifications = notifications.slice(
         (currentPage - 1) * itemsPerPage,
         currentPage * itemsPerPage,
@@ -73,9 +67,8 @@ export const NotificationsPage = () => {
                     <div className={Styles['notifications-page__empty']}>
                         <h2>Пока пусто</h2>
                         <p>
-                            Здесь будут отображаться предложения обмена и статусы
-                            ваших сделок. Загляните в каталог, чтобы найти, что
-                            предложить.
+                            Здесь будут отображаться предложения обмена и статусы ваших сделок.
+                            Загляните в каталог, чтобы найти, что предложить.
                         </p>
                         <Button onClick={openCatalog}>Перейти в каталог</Button>
                     </div>

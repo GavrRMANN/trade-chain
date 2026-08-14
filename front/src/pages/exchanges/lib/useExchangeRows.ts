@@ -1,10 +1,10 @@
-import {useMemo} from 'react';
+import { useMemo } from 'react';
 
-import {FINAL_CHAIN_STATUSES, groupChainsByGoal, useGetMyChainsQuery} from '@entities/chain';
-import type {TChain} from '@entities/chain';
-import {useGetProductsQuery, useProductsById} from '@entities/product';
-import type {TProduct} from '@entities/product';
-import {useGetCurrentUserQuery} from '@entities/user';
+import { FINAL_CHAIN_STATUSES, groupChainsByGoal, useGetMyChainsQuery } from '@entities/chain';
+import type { TChain } from '@entities/chain';
+import { useGetProductsQuery, useProductsById } from '@entities/product';
+import type { TProduct } from '@entities/product';
+import { useGetCurrentUserQuery } from '@entities/user';
 
 export type TExchangeRow = {
     chain: TChain;
@@ -39,25 +39,21 @@ export type TExchangeRouteGroup = {
  *   — «Исходящие»: незавершённые И инициатор — текущий пользователь.
  */
 export const useExchangeRows = () => {
-    const {data: currentUser} = useGetCurrentUserQuery();
+    const { data: currentUser } = useGetCurrentUserQuery();
     const currentUserId = currentUser?.customer_id ?? '';
 
-    const {
-        data: chains = [],
-        isLoading,
-        isFetching,
-        isError,
-    } = useGetMyChainsQuery();
+    const { data: chains = [], isLoading, isFetching, isError } = useGetMyChainsQuery();
 
-    const {data: products = []} = useGetProductsQuery();
+    const { data: products = [] } = useGetProductsQuery();
 
     const productIds = useMemo(
-        () => chains.flatMap((chain) => [
-            chain.from_product_id,
-            chain.to_product_id,
-            chain.exchange_goal_id,
-            chain.route_step_id,
-        ]),
+        () =>
+            chains.flatMap((chain) => [
+                chain.from_product_id,
+                chain.to_product_id,
+                chain.exchange_goal_id,
+                chain.route_step_id,
+            ]),
         [chains],
     );
     const productsById = useProductsById(productIds, products);
@@ -88,7 +84,7 @@ export const useExchangeRows = () => {
         [chains, currentUserId, productsById],
     );
 
-    const {active, incoming, outgoing, completed} = useMemo(() => {
+    const { active, incoming, outgoing, completed } = useMemo(() => {
         const active: TExchangeRow[] = [];
         const inc: TExchangeRow[] = [];
         const out: TExchangeRow[] = [];
@@ -111,7 +107,7 @@ export const useExchangeRows = () => {
             }
         }
 
-        return {active, incoming: inc, outgoing: out, completed: done};
+        return { active, incoming: inc, outgoing: out, completed: done };
     }, [chains, currentUserId, buildRow]);
 
     return {

@@ -32,7 +32,7 @@ export const PasswordForm = () => {
                     placeholder="you@example.com"
                     onChange={setEmail}
                     disabled={isLoading}
-                    error={{showError: Boolean(errors.email), errorMessage: errors.email ?? ''}}
+                    error={{ showError: Boolean(errors.email), errorMessage: errors.email ?? '' }}
                 />
                 <Input
                     label="Пароль"
@@ -42,7 +42,10 @@ export const PasswordForm = () => {
                     placeholder="Минимум 8 символов"
                     onChange={setPassword}
                     disabled={isLoading}
-                    error={{showError: Boolean(errors.password), errorMessage: errors.password ?? ''}}
+                    error={{
+                        showError: Boolean(errors.password),
+                        errorMessage: errors.password ?? '',
+                    }}
                 />
                 {mode === 'register' && (
                     <Input
@@ -53,7 +56,10 @@ export const PasswordForm = () => {
                         placeholder="Повторите пароль"
                         onChange={setConfirmPassword}
                         disabled={isLoading}
-                        error={{showError: Boolean(errors.confirmPassword), errorMessage: errors.confirmPassword ?? ''}}
+                        error={{
+                            showError: Boolean(errors.confirmPassword),
+                            errorMessage: errors.confirmPassword ?? '',
+                        }}
                     />
                 )}
             </div>

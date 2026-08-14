@@ -1,15 +1,15 @@
-import {Button} from '@shared/ui/button';
-import {Input} from '@shared/ui/input';
-import {Selector} from '@shared/ui/selector';
-import {Textarea} from '@shared/ui/textarea';
-import type {TCategory} from '@entities/category';
+import { Button } from '@shared/ui/button';
+import { Input } from '@shared/ui/input';
+import { Selector } from '@shared/ui/selector';
+import { Textarea } from '@shared/ui/textarea';
+import type { TCategory } from '@entities/category';
 import { TargetProductPicker } from '@entities/product';
-import type {TProduct, TProductStatus} from '@entities/product';
+import type { TProduct, TProductStatus } from '@entities/product';
 
-import {CategoryPicker} from './CategoryPicker';
+import { CategoryPicker } from './CategoryPicker';
 import Styles from './product-form.module.css';
-import {useImageUpload} from './useImageUpload';
-import {usePriceChange} from './usePriceChange';
+import { useImageUpload } from './useImageUpload';
+import { usePriceChange } from './usePriceChange';
 
 type TField = 'title' | 'categoryId' | 'description' | 'price' | 'location' | 'targetGoal';
 type TErrors = Partial<Record<TField, string>>;
@@ -19,7 +19,7 @@ type TProductFormProps = {
     categories: TCategory[];
     targetProducts: TProduct[];
     currentCustomerId: string;
-    statusOptions: {value: TProductStatus; label: string}[];
+    statusOptions: { value: TProductStatus; label: string }[];
     title: string;
     categoryId: string;
     description: string;
@@ -99,7 +99,7 @@ export const ProductForm = ({
                     placeholder="Например, Велосипед Merida"
                     onChange={setTitle}
                     disabled={isLoading}
-                    error={{showError: Boolean(errors.title), errorMessage: errors.title ?? ''}}
+                    error={{ showError: Boolean(errors.title), errorMessage: errors.title ?? '' }}
                 />
 
                 <div className={Styles['form__field']}>
@@ -138,7 +138,10 @@ export const ProductForm = ({
                         placeholder="0"
                         onChange={handlePriceChange}
                         disabled={isLoading}
-                        error={{showError: Boolean(errors.price), errorMessage: errors.price ?? ''}}
+                        error={{
+                            showError: Boolean(errors.price),
+                            errorMessage: errors.price ?? '',
+                        }}
                     />
                     <Input
                         label="Город"
@@ -172,7 +175,11 @@ export const ProductForm = ({
                     <div className={Styles['form__image']}>
                         {image ? (
                             <>
-                                <img className={Styles['form__image-preview']} src={image} alt="Предпросмотр" />
+                                <img
+                                    className={Styles['form__image-preview']}
+                                    src={image}
+                                    alt="Предпросмотр"
+                                />
                                 <Button
                                     type="button"
                                     variant="secondary"
@@ -192,7 +199,9 @@ export const ProductForm = ({
                                 <span className={Styles['form__dropzone-text']}>
                                     Нажмите, чтобы загрузить фото
                                 </span>
-                                <span className={Styles['form__dropzone-hint']}>JPG, PNG до 10 МБ</span>
+                                <span className={Styles['form__dropzone-hint']}>
+                                    JPG, PNG до 10 МБ
+                                </span>
                             </button>
                         )}
                         <input

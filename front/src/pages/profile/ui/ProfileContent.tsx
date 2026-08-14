@@ -1,15 +1,15 @@
-import type {TProduct} from '@entities/product';
-import type {TReview} from '@entities/review';
-import type {TProfileExchange, TProfileTab} from '@pages/profile/lib/useProfile';
-import {Button} from '@shared/ui/button';
-import {ExchangeRow} from '@widgets/exchangeRow';
-import {ProfileSidebar} from '@widgets/profileSidebar';
-import {ReviewCard} from '@entities/review';
-import {ProfileProductRow} from '@widgets/profile';
-import {PageHeader} from '@shared/ui/pageHeader';
-import {CustomerRecommendationsEditor} from '@features/customerRecommendations';
+import type { TProduct } from '@entities/product';
+import type { TReview } from '@entities/review';
+import type { TProfileExchange, TProfileTab } from '@pages/profile/lib/useProfile';
+import { Button } from '@shared/ui/button';
+import { ExchangeRow } from '@widgets/exchangeRow';
+import { ProfileSidebar } from '@widgets/profileSidebar';
+import { ReviewCard } from '@entities/review';
+import { ProfileProductRow } from '@widgets/profile';
+import { PageHeader } from '@shared/ui/pageHeader';
+import { CustomerRecommendationsEditor } from '@features/customerRecommendations';
 
-import {EmptyState} from './EmptyState';
+import { EmptyState } from './EmptyState';
 import Styles from './profile-content.module.css';
 
 type TProfileContentViewModel = {
@@ -38,26 +38,22 @@ type TProfileContentViewModel = {
 };
 
 type TProfileContentProps = {
-    user: {customer_id: string; email: string; created_at: string};
+    user: { customer_id: string; email: string; created_at: string };
     isOwner: boolean;
     viewModel: TProfileContentViewModel;
 };
 
-const OWNER_TABS: {id: TProfileTab; label: string}[] = [
-    {id: 'products', label: 'Товары'},
-    {id: 'archive', label: 'Архив'},
-    {id: 'exchanges', label: 'Цепочки обменов'},
-    {id: 'reviews', label: 'Отзывы'},
+const OWNER_TABS: { id: TProfileTab; label: string }[] = [
+    { id: 'products', label: 'Товары' },
+    { id: 'archive', label: 'Архив' },
+    { id: 'exchanges', label: 'Цепочки обменов' },
+    { id: 'reviews', label: 'Отзывы' },
 ];
 
-const PUBLIC_TABS = OWNER_TABS.filter(({id}) => id !== 'exchanges');
+const PUBLIC_TABS = OWNER_TABS.filter(({ id }) => id !== 'exchanges');
 
 /** Собирает публичные данные профиля и приватные возможности владельца. */
-export const ProfileContent = ({
-    user,
-    isOwner,
-    viewModel,
-}: TProfileContentProps) => {
+export const ProfileContent = ({ user, isOwner, viewModel }: TProfileContentProps) => {
     const tabs = isOwner ? OWNER_TABS : PUBLIC_TABS;
 
     const renderContent = () => {
@@ -98,7 +94,7 @@ export const ProfileContent = ({
             return viewModel.reviews.length ? (
                 <section id="reviews" className={Styles.list}>
                     {viewModel.reviews.map((review) => (
-                        <ReviewCard key={review.review_id} review={review}/>
+                        <ReviewCard key={review.review_id} review={review} />
                     ))}
                 </section>
             ) : (
@@ -118,9 +114,15 @@ export const ProfileContent = ({
 
         return (
             <>
-                {(viewModel.activeTab === 'archive' ? viewModel.archivedProducts : viewModel.products).length ? (
+                {(viewModel.activeTab === 'archive'
+                    ? viewModel.archivedProducts
+                    : viewModel.products
+                ).length ? (
                     <div className={Styles.list}>
-                        {(viewModel.activeTab === 'archive' ? viewModel.archivedProducts : viewModel.products).map((product) => (
+                        {(viewModel.activeTab === 'archive'
+                            ? viewModel.archivedProducts
+                            : viewModel.products
+                        ).map((product) => (
                             <ProfileProductRow
                                 key={product.product_id}
                                 product={product}
@@ -132,10 +134,30 @@ export const ProfileContent = ({
                     </div>
                 ) : (
                     <EmptyState
-                        title={viewModel.activeTab === 'archive' ? 'Архив пока пуст' : isOwner ? 'У вас пока нет товаров' : 'У пользователя пока нет товаров'}
-                        description={viewModel.activeTab === 'archive' ? 'Здесь сохраняются товары после завершённых обменов и снятые с обмена объявления.' : isOwner ? 'Добавьте первый товар, чтобы начать обмен.' : 'Здесь появятся активные объявления пользователя.'}
-                        actionLabel={isOwner && viewModel.activeTab !== 'archive' ? 'Добавить товар' : undefined}
-                        onAction={isOwner && viewModel.activeTab !== 'archive' ? viewModel.openCreate : undefined}
+                        title={
+                            viewModel.activeTab === 'archive'
+                                ? 'Архив пока пуст'
+                                : isOwner
+                                  ? 'У вас пока нет товаров'
+                                  : 'У пользователя пока нет товаров'
+                        }
+                        description={
+                            viewModel.activeTab === 'archive'
+                                ? 'Здесь сохраняются товары после завершённых обменов и снятые с обмена объявления.'
+                                : isOwner
+                                  ? 'Добавьте первый товар, чтобы начать обмен.'
+                                  : 'Здесь появятся активные объявления пользователя.'
+                        }
+                        actionLabel={
+                            isOwner && viewModel.activeTab !== 'archive'
+                                ? 'Добавить товар'
+                                : undefined
+                        }
+                        onAction={
+                            isOwner && viewModel.activeTab !== 'archive'
+                                ? viewModel.openCreate
+                                : undefined
+                        }
                     />
                 )}
             </>
@@ -179,7 +201,9 @@ export const ProfileContent = ({
                 />
 
                 <section className={Styles.content}>
-                    {isOwner && viewModel.activeTab === 'products' && <CustomerRecommendationsEditor />}
+                    {isOwner && viewModel.activeTab === 'products' && (
+                        <CustomerRecommendationsEditor />
+                    )}
 
                     <div className={Styles.heading}>
                         <div>
@@ -197,8 +221,8 @@ export const ProfileContent = ({
                             </h2>
                             {viewModel.activeTab === 'exchanges' && (
                                 <p>
-                                    Показываем только ваши цепочки: чужая история недоступна
-                                    через API.
+                                    Показываем только ваши цепочки: чужая история недоступна через
+                                    API.
                                 </p>
                             )}
                         </div>

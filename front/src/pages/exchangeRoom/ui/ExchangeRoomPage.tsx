@@ -103,7 +103,9 @@ export const ExchangeRoomPage = () => {
                             <p className={Styles['product-empty']}>Товар недоступен</p>
                         )}
                     </div>
-                    <span className={Styles['products__arrow']} aria-hidden="true">→</span>
+                    <span className={Styles['products__arrow']} aria-hidden="true">
+                        →
+                    </span>
                     <div className={Styles.product}>
                         {toProduct ? (
                             <ProductCard
@@ -168,7 +170,8 @@ export const ExchangeRoomPage = () => {
 
                     {isWaitingForOtherConfirmation && (
                         <p className={Styles['actions__note']}>
-                            Вы подтвердили, что обмен состоялся. Ожидаем подтверждение второй стороны.
+                            Вы подтвердили, что обмен состоялся. Ожидаем подтверждение второй
+                            стороны.
                         </p>
                     )}
 

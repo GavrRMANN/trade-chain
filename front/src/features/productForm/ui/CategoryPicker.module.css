@@ -20,7 +20,9 @@
     color: var(--neutral-primary);
     font-family: var(--font-text), sans-serif;
     font-size: 15px;
-    transition: border-color var(--animation-normal), box-shadow var(--animation-normal);
+    transition:
+        border-color var(--animation-normal),
+        box-shadow var(--animation-normal);
 }
 
 .picker__search::placeholder {
@@ -99,7 +101,9 @@
     background: var(--bg-primary);
 
     cursor: pointer;
-    transition: background-color var(--animation-normal), border-color var(--animation-normal),
+    transition:
+        background-color var(--animation-normal),
+        border-color var(--animation-normal),
         color var(--animation-normal);
 }
 

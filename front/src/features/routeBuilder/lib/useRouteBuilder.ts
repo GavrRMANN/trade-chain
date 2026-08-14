@@ -17,17 +17,19 @@ export const useRouteBuilder = () => {
     const productsQuery = useGetProductsQuery({ offset: 0, limit: 100 });
     const categoriesQuery = useGetCategoriesQuery();
 
-    const [{sourceId, targetGoal}, dispatch] = useReducer(
-        (state: {sourceId: string; targetGoal: TTargetGoal}, action: {type: 'source' | 'target'; value: string | TTargetGoal}) =>
+    const [{ sourceId, targetGoal }, dispatch] = useReducer(
+        (
+            state: { sourceId: string; targetGoal: TTargetGoal },
+            action: { type: 'source' | 'target'; value: string | TTargetGoal },
+        ) =>
             action.type === 'source'
-                ? {...state, sourceId: action.value as string}
-                : {...state, targetGoal: action.value as TTargetGoal},
-        {sourceId: '', targetGoal: {}},
+                ? { ...state, sourceId: action.value as string }
+                : { ...state, targetGoal: action.value as TTargetGoal },
+        { sourceId: '', targetGoal: {} },
     );
 
     const sourceProducts = useMemo(
-        () =>
-            (myProductsQuery.data ?? []).filter((product) => product.status === 'active'),
+        () => (myProductsQuery.data ?? []).filter((product) => product.status === 'active'),
         [myProductsQuery.data],
     );
 
@@ -42,7 +44,10 @@ export const useRouteBuilder = () => {
     const hasTarget = Boolean(targetGoal.productId || targetGoal.categoryId);
     const targetLabel = selectedTarget?.title ?? selectedCategoryName ?? 'Выберите цель';
     const sourceProductMeta = new Map(
-        sourceProducts.map((product) => [product.product_id, getProductMeta(product) || 'Активное объявление']),
+        sourceProducts.map((product) => [
+            product.product_id,
+            getProductMeta(product) || 'Активное объявление',
+        ]),
     );
 
     const buildRoute = () => {
@@ -76,8 +81,8 @@ export const useRouteBuilder = () => {
         isSourcesLoading: currentUserQuery.isLoading || myProductsQuery.isLoading,
         isTargetsLoading: categoriesQuery.isLoading || productsQuery.isLoading,
         hasTargetError: categoriesQuery.isError || productsQuery.isError,
-        setSourceId: (value: string) => dispatch({type: 'source', value}),
-        setTargetGoal: (value: TTargetGoal) => dispatch({type: 'target', value}),
+        setSourceId: (value: string) => dispatch({ type: 'source', value }),
+        setTargetGoal: (value: TTargetGoal) => dispatch({ type: 'target', value }),
         buildRoute,
     };
 };
